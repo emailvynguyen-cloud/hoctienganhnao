@@ -18,6 +18,9 @@ import {
   MessageSquare,
   Search,
   Share2,
+  Check,
+  AlertCircle,
+  BarChart2,
 } from 'lucide-react';
 
 interface ClassDetailsViewProps {
@@ -125,7 +128,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         </div>
       </div>
 
-      {/* 2. ENROLLED STUDENTS SUMMARY GRID (CLICK ANY STUDENT TO OPEN INDIVIDUAL LEARNING PORTAL) */}
+      {/* 2. ENROLLED STUDENTS SUMMARY GRID */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center uppercase tracking-wider">
@@ -284,7 +287,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
       </div>
 
-      {/* 4. SESSIONS LIST */}
+      {/* 4. SESSIONS LIST (INCLUDES CONCISE STUDENT HOMEWORK PROGRESS STRIP) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
@@ -410,6 +413,54 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   ) : (
                     <p className="text-xs text-slate-400 italic">Không có bài tập về nhà đính kèm.</p>
                   )}
+                </div>
+
+                {/* CONCISE STUDENT HOMEWORK PROGRESS STRIP IN THIS SESSION */}
+                <div className="pt-3 border-t border-purple-200/60 space-y-2">
+                  <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-1.5 text-pink-500" /> Tóm Tắt Tiến Độ Làm Bài Tập Buổi Này Của Các Học Viên:
+                  </span>
+
+                  <div className="flex flex-wrap gap-2.5">
+                    {classStudents.map((std) => {
+                      const completedCount = itemsList.filter((item) =>
+                        std.completedHomeworkTaskIds?.includes(item.id)
+                      ).length;
+                      const totalItems = itemsList.length;
+                      const percent = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 100;
+
+                      const isDone = totalItems > 0 && completedCount === totalItems;
+                      const isPartial = completedCount > 0 && completedCount < totalItems;
+
+                      return (
+                        <div
+                          key={std.id}
+                          onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
+                          className={`px-3 py-1.5 rounded-2xl border text-xs font-extrabold flex items-center space-x-2 transition cursor-pointer shadow-2xs hover:scale-102 ${
+                            isDone
+                              ? 'bg-emerald-100 text-emerald-950 border-emerald-300'
+                              : isPartial
+                              ? 'bg-amber-100 text-amber-950 border-amber-300'
+                              : 'bg-rose-100 text-rose-950 border-rose-300'
+                          }`}
+                          title={`Bấm để xem trang học tập cá nhân của em ${std.name}`}
+                        >
+                          <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-5 h-5 rounded-full object-cover shrink-0 border border-white" />
+                          <span>{std.name}:</span>
+                          <span className="font-black">
+                            {completedCount}/{totalItems} Bài ({percent}%)
+                          </span>
+                          {isDone ? (
+                            <span className="text-emerald-700 font-black">✓</span>
+                          ) : isPartial ? (
+                            <span className="text-amber-700 font-black">⏳</span>
+                          ) : (
+                            <span className="text-rose-700 font-black">⚠️</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
               </div>
