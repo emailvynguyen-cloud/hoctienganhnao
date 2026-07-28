@@ -55,11 +55,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   }
 
   // Student's classes
-  const studentClasses = classes.filter((c) => currentStudent.classIds.includes(c.id));
-  const primaryClass = studentClasses[0] || classes[0];
+  const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
+  const primaryClass = studentClasses[0] || (classes || [])[0];
 
   // Student's sessions
-  const studentSessions = sessions.filter((s) => s.classId === primaryClass?.id);
+  const studentSessions = (sessions || []).filter((s) => s && s.classId === primaryClass?.id);
 
   // Progress Bar Calculation
   const totalCount = Math.max(1, studentSessions.length);
@@ -134,7 +134,42 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       {/* Mascot Widget */}
       <MascotWidget studentName={currentStudent.name} starsCount={currentStudent.stars} />
 
-      {/* 2. OVERALL PROGRESS BAR */}
+      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH (ĐƯA LÊN TRÊN ĐỂ DỄ XEM KHÔNG BỊ TRÔI) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-4">
+        <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+          <FolderOpen className="w-5 h-5 mr-2 text-purple-600 animate-bounce" /> Kho Tài Liệu & Giáo Trình Lớp Học
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
+            primaryClass.resourceLinks.map((res) => (
+              <a
+                key={res.id}
+                href={res.url}
+                target="_blank"
+                rel="noreferrer"
+                className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 hover:border-purple-300 transition flex items-center space-x-3 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black group-hover:scale-110 transition">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-purple-600 transition">
+                    {res.title}
+                  </h4>
+                  <span className="text-[10px] text-purple-600 font-bold underline">
+                    Bấm để tải về / xem tài liệu →
+                  </span>
+                </div>
+              </a>
+            ))
+          ) : (
+            <p className="text-xs text-slate-400 italic col-span-2">Chưa có tài liệu đính kèm.</p>
+          )}
+        </div>
+      </div>
+
+      {/* 3. OVERALL PROGRESS BAR */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -157,7 +192,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </p>
       </div>
 
-      {/* 3. SESSION LIST (PER-SESSION INFORMATION) */}
+      {/* 4. SESSION LIST (PER-SESSION INFORMATION) */}
       <div className="space-y-4">
         <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
           <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
@@ -241,7 +276,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   {itemsList.length > 0 ? (
                     itemsList.map((hwItem) => {
                       const isItemChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id) || false;
-                      const subRecord = homeworkSubmissions.find((s) => s.studentId === currentStudent.id && s.homeworkTaskId === hwItem.id);
+                      const subRecord = (homeworkSubmissions || []).find((s) => s && s.studentId === currentStudent.id && s.homeworkTaskId === hwItem.id);
 
                       return (
                         <div
@@ -317,41 +352,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             Chưa có thông tin buổi học nào được cập nhật.
           </div>
         )}
-      </div>
-
-      {/* 4. ALL SESSION MATERIALS HUB */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-          <FolderOpen className="w-5 h-5 mr-2 text-purple-600" /> Kho Tài Liệu & Giáo Trình Buổi Học
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
-            primaryClass.resourceLinks.map((res) => (
-              <a
-                key={res.id}
-                href={res.url}
-                target="_blank"
-                rel="noreferrer"
-                className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 hover:border-purple-300 transition flex items-center space-x-3 group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black group-hover:scale-110 transition">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-purple-600 transition">
-                    {res.title}
-                  </h4>
-                  <span className="text-[10px] text-purple-600 font-bold underline">
-                    Bấm để tải về / xem tài liệu →
-                  </span>
-                </div>
-              </a>
-            ))
-          ) : (
-            <p className="text-xs text-slate-400 italic col-span-2">Chưa có tài liệu đính kèm.</p>
-          )}
-        </div>
       </div>
 
     </div>
