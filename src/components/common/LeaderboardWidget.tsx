@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Student, Session } from '../../types';
+import { Student, Session, HomeworkSubmission } from '../../types';
+import { StorageEngine } from '../../lib/storage';
 import { Trophy, Star, Award, Sparkles, CheckCircle2, Flame, Medal, X, ArrowLeft } from 'lucide-react';
 import { KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
@@ -35,23 +36,32 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
 
   const activeStudents = (students || []).filter((s) => s && s.status !== 'soft_deleted');
+  const allSubmissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
+
+  const currentYearMonth = new Date().toISOString().slice(0, 7); // e.g. "2025-07"
 
   const rankedStudents = activeStudents.map((student) => {
-    const studentSessions = (sessions || []).filter((ses) =>
-      ses && ses.attendance && ses.attendance.some((att) => att && att.studentId === student.id)
-    );
+    // Filter submissions for this student
+    const studentSubs = allSubmissions.filter((sub) => sub && sub.studentId === student.id);
 
-    const totalCount = Math.max(1, studentSessions.length);
-    const completedCount = student.completedHomeworkTaskIds ? student.completedHomeworkTaskIds.length : 0;
-    const rate = Math.min(100, Math.round((completedCount / totalCount) * 100));
+    let filteredSubs = studentSubs;
+    if (timeFilter === 'month') {
+      filteredSubs = studentSubs.filter((sub) => sub.submissionDate && sub.submissionDate.startsWith(currentYearMonth));
+    }
+
+    const totalSubmitted = Math.max(1, filteredSubs.length);
+    const feedbackCount = filteredSubs.filter((sub) => sub.isTeacherFeedbackChecked).length;
+
+    // Calculate feedback rate in week/month
+    const rate = Math.min(100, Math.round((feedbackCount / totalSubmitted) * 100));
 
     return {
       student,
-      totalCount,
-      completedCount,
+      totalSubmitted,
+      feedbackCount,
       rate,
     };
-  }).sort((a, b) => b.rate - a.rate || b.completedCount - a.completedCount);
+  }).sort((a, b) => b.rate - a.rate || b.feedbackCount - a.feedbackCount);
 
   const titlesList = timeFilter === 'week' ? WEEKLY_TITLES : MONTHLY_TITLES;
 
@@ -74,7 +84,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 </span>
               </div>
               <p className="text-xs text-amber-100 mt-1 font-medium">
-                Vinh danh Top 5 danh hiệu cao quý nhất theo Tuần & Tháng của MS. VY ENGLISH
+                Xếp hạng dựa trên tỷ lệ bài tập về nhà đã được Giáo viên/Admin Feedback trong {timeFilter === 'week' ? 'Tuần' : 'Tháng'}
               </p>
             </div>
           </div>
@@ -180,7 +190,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                    Đã hoàn thành <strong>{item.completedCount}</strong> bài tập về nhà
+                    Đã được Giáo viên Feedback <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
                   </p>
                 </div>
               </div>
@@ -188,7 +198,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               <div className="sm:w-48 space-y-1.5 shrink-0">
                 <div className="flex justify-between items-center text-xs font-black">
                   <span className="text-purple-700 flex items-center">
-                    <Flame className="w-3.5 h-3.5 mr-1 text-pink-500" /> Tỷ lệ hoàn thành:
+                    <Flame className="w-3.5 h-3.5 mr-1 text-pink-500" /> Tỷ lệ Feedback:
                   </span>
                   <span className="text-amber-600 font-extrabold">{item.rate}%</span>
                 </div>
