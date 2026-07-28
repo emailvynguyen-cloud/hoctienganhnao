@@ -39,16 +39,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   };
 
-  const handleQuickLogin = (role: 'super_admin' | 'admin' | 'teacher') => {
-    const users = StorageEngine.getUsers();
-    const targetUser = users.find((u) => u.role === role) || users[0];
-    if (targetUser) {
-      StorageEngine.setCurrentUser(targetUser);
-      onLoginSuccess(targetUser);
-      onClose();
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-purple-100 dark:border-purple-800 p-6 sm:p-8 space-y-6 relative overflow-hidden">
@@ -103,7 +93,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <Mail className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
               <input
                 type="text"
-                placeholder="superadmin / admin / teacher..."
+                placeholder="Nhập email hoặc tên tài khoản..."
                 value={emailOrUsername}
                 onChange={(e) => setEmailOrUsername(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-purple-200 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
@@ -134,39 +124,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             Đăng Nhập Hệ Thống
           </button>
         </form>
-
-        {/* Quick Demo Selectors */}
-        <div className="border-t border-purple-100 dark:border-purple-800 pt-4 space-y-2">
-          <span className="block text-[11px] font-bold text-center text-slate-400 uppercase tracking-wider">
-            Nút Thử Đăng Nhập Nhanh (Demo)
-          </span>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleQuickLogin('super_admin')}
-              className="p-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-black text-center transition flex flex-col items-center justify-center space-y-1"
-            >
-              <Crown className="w-4 h-4 text-amber-600" />
-              <span>Super Admin</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickLogin('admin')}
-              className="p-2.5 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-[11px] font-black text-center transition flex flex-col items-center justify-center space-y-1"
-            >
-              <Shield className="w-4 h-4 text-purple-600" />
-              <span>Quản Trị</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickLogin('teacher')}
-              className="p-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 text-[11px] font-black text-center transition flex flex-col items-center justify-center space-y-1"
-            >
-              <UserCheck className="w-4 h-4 text-indigo-600" />
-              <span>Giáo Viên</span>
-            </button>
-          </div>
-        </div>
 
       </div>
     </div>
