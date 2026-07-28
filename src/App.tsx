@@ -17,7 +17,7 @@ import { Crown, Shield, UserCheck, GraduationCap, Eye, LogIn, Trophy } from 'luc
 const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
   bankId: 'MB',
   bankName: 'MBBank',
-  accountNo: '0388999888',
+  accountNo: '0355176317',
   accountName: 'MS. VY ENGLISH - MS VY',
   centerLogoUrl: '/logo.jpg',
 };
@@ -123,7 +123,7 @@ export default function App() {
         }}
       />
 
-      {/* SUPER ADMIN QUICK ROLE SWITCHER BAR (Chuyển nhanh giao diện khi đã đăng nhập Super Admin) */}
+      {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}
       {currentUser?.role === 'super_admin' && !activePublicHash && (
         <div className="bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 text-white py-2 px-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
@@ -233,9 +233,10 @@ export default function App() {
             </div>
           </div>
         ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN VIEW */
+          /* ADMIN & SUPER ADMIN VIEW (WITH REAL-TIME EFFECTIVE ROLE PROP PASSED) */
           <AdminDashboard
             currentUser={currentUser}
+            effectiveRole={effectiveRole}
             students={students}
             classes={classes}
             invoices={invoices}
@@ -289,7 +290,6 @@ export default function App() {
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => {
-          // If not logged in, keep login modal open unless visiting public student link
           if (currentUser || activePublicHash) {
             setIsLoginOpen(false);
           }
