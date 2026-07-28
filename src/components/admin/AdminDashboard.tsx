@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Student, Class, Invoice, BankConfig, Session, User } from '../../types';
+import { Student, Class, Invoice, BankConfig, Session, User, UserRole } from '../../types';
 import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
@@ -32,6 +32,7 @@ import {
 
 interface AdminDashboardProps {
   currentUser: User | null;
+  effectiveRole?: UserRole;
   students: Student[];
   classes: Class[];
   invoices: Invoice[];
@@ -47,6 +48,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
+  effectiveRole,
   students,
   classes,
   invoices,
@@ -59,7 +61,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenAddSession,
   onOpenAccountManagement,
 }) => {
-  const isSuperAdmin = currentUser?.role === 'super_admin';
+  // Respect effectiveRole from Super Admin Quick Role Switcher bar
+  const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
 
@@ -308,7 +311,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 3: TEACHERS MANAGEMENT (CLICK TEACHER TO VIEW ASSIGNED CLASSES & ACCESS THEM) */}
+      {/* TAB 3: TEACHERS MANAGEMENT */}
       {activeTab === 'teachers' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
