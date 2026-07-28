@@ -28,6 +28,7 @@ import {
   X,
   Smile,
   AlertCircle,
+  History,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -55,6 +56,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
 
   if (!currentStudent) {
     return (
@@ -68,11 +70,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
 
-  // Student's sessions
-  const studentSessions = (sessions || []).filter((s) => s && s.classId === primaryClass?.id);
+  // Student's sessions sorted chronologically descending (newest first)
+  const studentSessions = (sessions || [])
+    .filter((s) => s && s.classId === primaryClass?.id)
+    .sort((a, b) => b.sessionNumber - a.sessionNumber);
 
-  // LATEST SESSION FOR PROGRESS CALCULATION (Buổi học gần nhất)
-  const latestSession = studentSessions[studentSessions.length - 1] || studentSessions[0];
+  // Split sessions: 2 Most Recent Sessions vs Older Sessions
+  const recent2Sessions = studentSessions.slice(0, 2);
+  const olderSessions = studentSessions.slice(2);
+
+  // LATEST SESSION FOR PROGRESS CALCULATION
+  const latestSession = studentSessions[0];
   const latestSessionItems = latestSession?.homeworkItems || [];
   const completedLatestItemsCount = latestSessionItems.filter((item) =>
     currentStudent.completedHomeworkTaskIds?.includes(item.id)
@@ -140,6 +148,170 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const studentAvatarSrc = currentStudent.avatar && currentStudent.avatar.length > 20
     ? currentStudent.avatar
     : KAKAOTALK_SVG_AVATARS.ryan;
+
+  // Helper render single session card
+  const renderSessionCard = (session: Session) => {
+    const myFeedback = session.studentFeedbacks ? session.studentFeedbacks[currentStudent.id] : null;
+    const itemsList = session.homeworkItems || [];
+
+    return (
+      <div
+        key={session.id}
+        className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800/60 p-6 shadow-sm space-y-4 hover:border-purple-300 transition"
+      >
+        {/* Session Header: Number & Date */}
+        <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+          <div className="flex items-center space-x-3">
+            <span className="w-10 h-10 rounded-2xl bg-purple-600 text-white font-black text-sm flex items-center justify-center shadow-md">
+              #{session.sessionNumber}
+            </span>
+            <div>
+              <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                Buổi Học Số {session.sessionNumber}
+              </h4>
+              <span className="text-xs text-slate-500 font-medium">
+                Ngày học: {session.date} • GV: {session.teacherName || 'Ms. Vy'}
+              </span>
+            </div>
+          </div>
+
+          {session.recordLink && (
+            <a
+              href={session.recordLink}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-100 text-indigo-800 text-xs font-bold hover:bg-indigo-200 transition flex items-center"
+            >
+              <Video className="w-3.5 h-3.5 mr-1" /> Xem Record Video
+            </a>
+          )}
+        </div>
+
+        {/* Lesson Content */}
+        <div className="space-y-1">
+          <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+            📘 Nội Dung Học Trong Buổi:
+          </span>
+          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-purple-50/50 p-3 rounded-2xl border border-purple-100">
+            {session.lessonContent}
+          </p>
+        </div>
+
+        {/* INDIVIDUAL TEACHER COMMENT FOR THIS STUDENT */}
+        {myFeedback && (myFeedback.strengths || myFeedback.improvements) && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 space-y-2 text-xs">
+            <span className="font-black text-pink-900 uppercase block">
+              💬 Nhận Xét Của Giáo Viên Dành Cho {currentStudent.name}:
+            </span>
+
+            {myFeedback.strengths && (
+              <p className="text-emerald-800 font-medium">
+                💪 <strong>Điểm mạnh:</strong> {myFeedback.strengths}
+              </p>
+            )}
+
+            {myFeedback.improvements && (
+              <p className="text-amber-800 font-medium">
+                🎯 <strong>Điểm cần cải thiện:</strong> {myFeedback.improvements}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* PER-ITEM HOMEWORK TASKS & CHECKBOX */}
+        <div className="space-y-2">
+          <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+            📝 Bài Tập Về Nhà Cần Làm ({itemsList.length} bài):
+          </span>
+
+          {itemsList.length > 0 ? (
+            itemsList.map((hwItem) => {
+              const isItemChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id) || false;
+              const subRecord = (homeworkSubmissions || []).find((s) => s && s.studentId === currentStudent.id && s.homeworkTaskId === hwItem.id);
+
+              return (
+                <div
+                  key={hwItem.id}
+                  className={`p-4 rounded-2xl border transition space-y-2 ${
+                    isItemChecked
+                      ? 'bg-emerald-50/50 border-emerald-200'
+                      : 'bg-rose-50/70 border-rose-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                          {hwItem.title}
+                        </h5>
+                        {!isItemChecked && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white animate-pulse">
+                            ⚠️ CHƯA NỘP BÀI
+                          </span>
+                        )}
+                      </div>
+                      {hwItem.content && (
+                        <p className="text-xs text-slate-600 font-medium">{hwItem.content}</p>
+                      )}
+                      {hwItem.attachmentUrl && (
+                        <a
+                          href={hwItem.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-purple-700 font-bold underline inline-block"
+                        >
+                          🔗 Xem File / Ảnh bài tập đính kèm
+                        </a>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleHomeworkItem(session.id, hwItem.id, hwItem.title)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center shrink-0 shadow-md ${
+                        isItemChecked
+                          ? 'bg-emerald-600 text-white border-2 border-emerald-700 shadow-sm'
+                          : 'bg-rose-600 hover:bg-rose-700 text-white border-2 border-rose-700 animate-pulse ring-2 ring-rose-300'
+                      }`}
+                    >
+                      {isItemChecked ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                          ✓ Đã Làm Bài
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 mr-1.5 animate-bounce" />
+                          ⚡ CHƯA LÀM BÀI (TICK NGAY)
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {subRecord && (
+                    <div className="pt-2 border-t border-purple-100/60 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Trạng thái chấm bài của GV:</span>
+                      {subRecord.isTeacherFeedbackChecked ? (
+                        <span className="font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                          ✓ Đã Feedback ({subRecord.ratingStars || 3} ⭐): {subRecord.feedbackText}
+                        </span>
+                      ) : (
+                        <span className="font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                          ⏳ Đã nộp bài - Đang chờ Giáo viên / Admin feedback
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-xs text-slate-400 italic">Không có bài tập về nhà cho buổi này.</p>
+          )}
+        </div>
+
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -339,185 +511,58 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </p>
       </div>
 
-      {/* 4. SESSION LIST */}
+      {/* 4. SESSION LIST (ONLY 2 RECENT SESSIONS FULLY OPEN, PREVIOUS ONES COLLAPSED) */}
       <div className="space-y-4">
-        <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-          <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+            <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
+          </h3>
+          <span className="text-xs text-purple-700 font-bold bg-purple-100 px-3 py-1 rounded-full">
+            Đang hiển thị 2 buổi học gần nhất
+          </span>
+        </div>
 
-        {studentSessions.length > 0 ? (
-          studentSessions.map((session) => {
-            const myFeedback = session.studentFeedbacks ? session.studentFeedbacks[currentStudent.id] : null;
-            const itemsList = session.homeworkItems || [];
-
-            return (
-              <div
-                key={session.id}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800/60 p-6 shadow-sm space-y-4 hover:border-purple-300 transition"
-              >
-                {/* Session Header: Number & Date */}
-                <div className="flex items-center justify-between border-b border-purple-100 pb-3">
-                  <div className="flex items-center space-x-3">
-                    <span className="w-10 h-10 rounded-2xl bg-purple-600 text-white font-black text-sm flex items-center justify-center shadow-md">
-                      #{session.sessionNumber}
-                    </span>
-                    <div>
-                      <h4 className="font-black text-sm text-slate-900 dark:text-white">
-                        Buổi Học Số {session.sessionNumber}
-                      </h4>
-                      <span className="text-xs text-slate-500 font-medium">
-                        Ngày học: {session.date} • GV: {session.teacherName || 'Ms. Vy'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {session.recordLink && (
-                    <a
-                      href={session.recordLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-100 text-indigo-800 text-xs font-bold hover:bg-indigo-200 transition flex items-center"
-                    >
-                      <Video className="w-3.5 h-3.5 mr-1" /> Xem Record Video
-                    </a>
-                  )}
-                </div>
-
-                {/* Lesson Content */}
-                <div className="space-y-1">
-                  <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
-                    📘 Nội Dung Học Trong Buổi:
-                  </span>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-purple-50/50 p-3 rounded-2xl border border-purple-100">
-                    {session.lessonContent}
-                  </p>
-                </div>
-
-                {/* INDIVIDUAL TEACHER COMMENT FOR THIS STUDENT */}
-                {myFeedback && (myFeedback.strengths || myFeedback.improvements) && (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 space-y-2 text-xs">
-                    <span className="font-black text-pink-900 uppercase block">
-                      💬 Nhận Xét Của Giáo Viên Dành Cho {currentStudent.name}:
-                    </span>
-
-                    {myFeedback.strengths && (
-                      <p className="text-emerald-800 font-medium">
-                        💪 <strong>Điểm mạnh:</strong> {myFeedback.strengths}
-                      </p>
-                    )}
-
-                    {myFeedback.improvements && (
-                      <p className="text-amber-800 font-medium">
-                        🎯 <strong>Điểm cần cải thiện:</strong> {myFeedback.improvements}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* PER-ITEM HOMEWORK TASKS & CHECKBOX (RED IF UNCHECKED FOR HIGH VISIBILITY) */}
-                <div className="space-y-2">
-                  <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
-                    📝 Bài Tập Về Nhà Cần Làm ({itemsList.length} bài):
-                  </span>
-
-                  {itemsList.length > 0 ? (
-                    itemsList.map((hwItem) => {
-                      const isItemChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id) || false;
-                      const subRecord = (homeworkSubmissions || []).find((s) => s && s.studentId === currentStudent.id && s.homeworkTaskId === hwItem.id);
-
-                      return (
-                        <div
-                          key={hwItem.id}
-                          className={`p-4 rounded-2xl border transition space-y-2 ${
-                            isItemChecked
-                              ? 'bg-emerald-50/50 border-emerald-200'
-                              : 'bg-rose-50/70 border-rose-300'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                                  {hwItem.title}
-                                </h5>
-                                {!isItemChecked && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white animate-pulse">
-                                    ⚠️ CHƯA NỘP BÀI
-                                  </span>
-                                )}
-                              </div>
-                              {hwItem.content && (
-                                <p className="text-xs text-slate-600 font-medium">{hwItem.content}</p>
-                              )}
-                              {hwItem.attachmentUrl && (
-                                <a
-                                  href={hwItem.attachmentUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-xs text-purple-700 font-bold underline inline-block"
-                                >
-                                  🔗 Xem File / Ảnh bài tập đính kèm
-                                </a>
-                              )}
-                            </div>
-
-                            {/* PER-ITEM CHECKBOX (MÀU ĐỎ NỔI BẬT LÚC CHƯA TICK) */}
-                            <button
-                              onClick={() => handleToggleHomeworkItem(session.id, hwItem.id, hwItem.title)}
-                              className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center shrink-0 shadow-md ${
-                                isItemChecked
-                                  ? 'bg-emerald-600 text-white border-2 border-emerald-700 shadow-sm'
-                                  : 'bg-rose-600 hover:bg-rose-700 text-white border-2 border-rose-700 animate-pulse ring-2 ring-rose-300'
-                              }`}
-                            >
-                              {isItemChecked ? (
-                                <>
-                                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                                  ✓ Đã Làm Bài
-                                </>
-                              ) : (
-                                <>
-                                  <AlertCircle className="w-4 h-4 mr-1.5 animate-bounce" />
-                                  ⚡ CHƯA LÀM BÀI (TICK NGAY)
-                                </>
-                              )}
-                            </button>
-                          </div>
-
-                          {/* TEACHER FEEDBACK STATUS */}
-                          {subRecord && (
-                            <div className="pt-2 border-t border-purple-100/60 flex items-center justify-between text-[11px]">
-                              <span className="text-slate-500 font-medium">Trạng thái chấm bài của GV:</span>
-                              {subRecord.isTeacherFeedbackChecked ? (
-                                <span className="font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                                  ✓ Đã Feedback ({subRecord.ratingStars || 3} ⭐): {subRecord.feedbackText}
-                                </span>
-                              ) : (
-                                <span className="font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                                  ⏳ Đã nộp bài - Đang chờ Giáo viên / Admin feedback
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-xs text-slate-400 italic">Không có bài tập về nhà cho buổi này.</p>
-                  )}
-                </div>
-
-              </div>
-            );
-          })
+        {/* 2 MOST RECENT SESSIONS FULLY OPEN */}
+        {recent2Sessions.length > 0 ? (
+          recent2Sessions.map((session) => renderSessionCard(session))
         ) : (
           <div className="p-8 text-center bg-white rounded-3xl border border-purple-100 text-xs text-slate-500 italic">
             Chưa có thông tin buổi học nào được cập nhật.
           </div>
         )}
+
+        {/* OLDER SESSIONS COLLAPSIBLE ACCORDION */}
+        {olderSessions.length > 0 && (
+          <div className="pt-2 space-y-4">
+            <button
+              onClick={() => setIsOlderSessionsOpen(!isOlderSessionsOpen)}
+              className="w-full py-3.5 px-6 rounded-3xl bg-gradient-to-r from-purple-100 via-pink-100 to-indigo-100 hover:from-purple-200 hover:to-pink-200 text-purple-950 font-black text-xs transition shadow-sm flex items-center justify-center space-x-2 border border-purple-200"
+            >
+              {isOlderSessionsOpen ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-purple-600" />
+                  <span>Thu Gọn Lịch Sử {olderSessions.length} Buổi Học Trước Đó</span>
+                </>
+              ) : (
+                <>
+                  <History className="w-4 h-4 text-purple-600 animate-spin" />
+                  <span>📂 Mở Xem Lịch Sử {olderSessions.length} Buổi Học Trước Đó</span>
+                  <ChevronDown className="w-4 h-4 text-purple-600" />
+                </>
+              )}
+            </button>
+
+            {isOlderSessionsOpen && (
+              <div className="space-y-4 animate-fadeIn">
+                {olderSessions.map((session) => renderSessionCard(session))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* AVATAR PICKER MODAL (KAKAOTALK FRIENDS & UPLOAD PHOTO) */}
+      {/* AVATAR PICKER MODAL */}
       {isAvatarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-5 relative">
