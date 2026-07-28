@@ -3,6 +3,7 @@ import { HomeworkSubmission, Student } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { CheckCircle2, Clock, MessageSquare, Star, Send, Award, Sparkles, Filter } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface HomeworkGradingWidgetProps {
   students: Student[];
@@ -111,9 +112,12 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={student?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                      src={resolveAvatarUrl(student?.avatar)}
                       alt={sub.studentName}
-                      className="w-10 h-10 rounded-2xl object-cover border border-purple-200"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                      }}
+                      className="w-10 h-10 rounded-2xl object-cover border border-purple-200 shrink-0"
                     />
                     <div>
                       <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
