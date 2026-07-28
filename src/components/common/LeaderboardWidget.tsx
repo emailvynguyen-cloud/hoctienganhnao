@@ -12,7 +12,7 @@ interface LeaderboardWidgetProps {
 }
 
 const WEEKLY_TITLES = [
-  '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑',
+  '🥇 Bậc Thầy Chăm Chỉ 👑',
   '🥈 Ngôi Sao Nỗ Lực ⭐',
   '🥉 Chiến Binh Kiên Trì 💪',
   '🏅 Nhà Chinh Phục 🚀',
@@ -77,14 +77,14 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
             <div>
               <div className="flex items-center justify-center sm:justify-start space-x-2">
                 <h3 className="text-xl font-black tracking-tight">
-                  Bảng Thành Tích Thi Đua Vinh Danh
+                  Bảng Thành Tích Thi Đua Toàn Bộ Học Viên
                 </h3>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/30 uppercase tracking-wider">
-                  HOT TOP 5
+                  {rankedStudents.length} HỌC VIÊN
                 </span>
               </div>
               <p className="text-xs text-amber-100 mt-1 font-medium">
-                Xếp hạng dựa trên tỷ lệ bài tập về nhà đã được Giáo viên/Admin Feedback trong {timeFilter === 'week' ? 'Tuần' : 'Tháng'}
+                Vinh danh Top 5 danh hiệu cao quý và xếp hạng toàn bộ học viên trung tâm MS. VY ENGLISH
               </p>
             </div>
           </div>
@@ -100,7 +100,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     : 'text-amber-100 hover:bg-white/10'
                 }`}
               >
-                Top 5 Tuần
+                Xếp Hạng Tuần
               </button>
               <button
                 onClick={() => setTimeFilter('month')}
@@ -110,7 +110,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     : 'text-amber-100 hover:bg-white/10'
                 }`}
               >
-                Top 5 Tháng
+                Xếp Hạng Tháng
               </button>
             </div>
 
@@ -127,13 +127,15 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         </div>
       </div>
 
-      {/* Leaderboard List */}
+      {/* Leaderboard List - ALL STUDENTS */}
       <div className="space-y-3">
         {rankedStudents.map((item, index) => {
           const isTop1 = index === 0;
           const isTop2 = index === 1;
           const isTop3 = index === 2;
-          const honorTitle = titlesList[index] || '⭐ Học Viên Tích Cực';
+          
+          // TOP 5 HAVE TITLES, BEYOND TOP 5 DO NOT HAVE TITLES
+          const honorTitle = index < 5 ? titlesList[index] : null;
 
           const avatarSrc = item.student.avatar && item.student.avatar.length > 20
             ? item.student.avatar
@@ -149,6 +151,8 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                   ? 'bg-gradient-to-r from-slate-100/90 via-purple-50 to-pink-50 border-slate-300'
                   : isTop3
                   ? 'bg-gradient-to-r from-orange-50/90 to-pink-50 border-orange-200'
+                  : index < 5
+                  ? 'bg-gradient-to-r from-purple-50 to-pink-50/50 border-purple-200'
                   : 'bg-white dark:bg-slate-900 border-purple-100 dark:border-purple-800/60'
               }`}
             >
@@ -165,7 +169,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                   ) : index === 4 ? (
                     <span className="text-2xl">🌟</span>
                   ) : (
-                    <span className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
+                    <span className="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black text-xs">
                       #{index + 1}
                     </span>
                   )}
@@ -185,12 +189,15 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     <h4 className="font-black text-sm text-slate-900 dark:text-white">
                       {item.student.name}
                     </h4>
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 shadow-xs">
-                      {honorTitle}
-                    </span>
+                    {/* ONLY TOP 5 SHOW HONOR TITLES */}
+                    {honorTitle && (
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 shadow-xs">
+                        {honorTitle}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                    Đã được Giáo viên Feedback <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
+                    Đã được Feedback <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
                   </p>
                 </div>
               </div>
