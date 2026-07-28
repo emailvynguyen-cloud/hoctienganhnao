@@ -1,4 +1,5 @@
 import { User, Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, Badge, StarReward, BankConfig } from '../types';
+import { KAKAOTALK_SVG_AVATARS } from '../lib/kakaotalkAvatars';
 
 export const INITIAL_BANK_CONFIG: BankConfig = {
   bankId: 'MB',
@@ -118,9 +119,9 @@ export const INITIAL_STUDENTS: Student[] = [
     status: 'active',
     stars: 35,
     badges: ['b_super_star', 'b_homework_hero', 'b_top_performer'],
-    avatar: '/ryan.jpg',
+    avatar: KAKAOTALK_SVG_AVATARS.ryan,
     notes: 'Học sinh rất tích cực, phát âm chuẩn tự tin. Cần chú ý Coherence bài viết Writing.',
-    honorNickname: '👑 Vua/ Nữ Hoàng Chăm Chỉ 👑',
+    honorNickname: '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑',
     completedHomeworkTaskIds: ['hw_item_101_1', 'hw_item_101_2'],
     createdAt: '2025-06-20',
   },
@@ -139,7 +140,7 @@ export const INITIAL_STUDENTS: Student[] = [
     status: 'active',
     stars: 28,
     badges: ['b_vocab_wizard'],
-    avatar: '/frodo.jpg',
+    avatar: KAKAOTALK_SVG_AVATARS.frodo,
     notes: 'Kỹ năng Listening xuất sắc. Cần làm thêm bài tập nói hàng tuần.',
     honorNickname: '🥈 Ngôi Sao Nỗ Lực ⭐',
     completedHomeworkTaskIds: ['hw_item_101_1'],
@@ -160,7 +161,7 @@ export const INITIAL_STUDENTS: Student[] = [
     status: 'active',
     stars: 22,
     badges: ['b_super_star'],
-    avatar: '/muzi.jpg',
+    avatar: KAKAOTALK_SVG_AVATARS.muzi,
     notes: 'Rất hào hứng tương tác trong lớp, hát bài hát tiếng Anh đúng nhịp.',
     honorNickname: '🥉 Chiến Binh Kiên Trì 💪',
     completedHomeworkTaskIds: ['hw_item_102_1'],
@@ -181,7 +182,7 @@ export const INITIAL_STUDENTS: Student[] = [
     status: 'active',
     stars: 15,
     badges: ['b_pronunciation_master'],
-    avatar: '/apeach.jpg',
+    avatar: KAKAOTALK_SVG_AVATARS.apeach,
     notes: 'Cần mẫn nghe giảng, nhớ từ vựng qua hình ảnh rất nhanh.',
     honorNickname: '🏅 Nhà Chinh Phục 🚀',
     completedHomeworkTaskIds: ['hw_item_102_1'],
