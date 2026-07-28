@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Class, Student, Session, HomeworkSubmission, BankConfig } from '../../types';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import {
   ArrowLeft,
   BookOpen,
@@ -147,7 +148,14 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
               className="p-4 rounded-3xl border border-purple-100 bg-purple-50/40 hover:bg-purple-100/60 hover:border-purple-400 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
             >
               <div className="flex items-center space-x-3">
-                <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0 group-hover:scale-105 transition" />
+                <img
+                  src={resolveAvatarUrl(std.avatar)}
+                  alt={std.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                  }}
+                  className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0 group-hover:scale-105 transition"
+                />
                 <div>
                   <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-700 transition underline decoration-purple-300">
                     {std.name}
@@ -445,7 +453,14 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                           }`}
                           title={`Bấm để xem trang học tập cá nhân của em ${std.name}`}
                         >
-                          <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-5 h-5 rounded-full object-cover shrink-0 border border-white" />
+                          <img
+                            src={resolveAvatarUrl(std.avatar)}
+                            alt={std.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                            }}
+                            className="w-5 h-5 rounded-full object-cover shrink-0 border border-white"
+                          />
                           <span>{std.name}:</span>
                           <span className="font-black">
                             {completedCount}/{totalItems} Bài ({percent}%)
