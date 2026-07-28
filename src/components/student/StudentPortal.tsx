@@ -151,6 +151,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <img
               src={currentStudent.avatar || '/ryan.jpg'}
               alt={currentStudent.name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/ryan.jpg';
+              }}
               className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-100 shadow-md transition group-hover:scale-105"
             />
             <button
@@ -168,7 +171,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {currentStudent.name}
               </h2>
               <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 inline-block">
-                {currentStudent.honorNickname || '⭐ Chiến Thần Chăm Học'}
+                {currentStudent.honorNickname || '⭐ Vua/ Nữ Hoàng Chăm Chỉ 👑'}
               </span>
 
               <button
@@ -543,7 +546,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     onClick={() => handleSelectKakaoAvatar(k.url)}
                     className="p-2 rounded-2xl border border-purple-100 hover:border-purple-400 bg-purple-50/40 hover:bg-purple-100/50 transition flex flex-col items-center space-y-1.5 group cursor-pointer"
                   >
-                    <img src={k.url} alt={k.name} className="w-14 h-14 rounded-2xl object-cover border-2 border-white group-hover:scale-110 transition shadow-sm" />
+                    <img
+                      src={k.url}
+                      alt={k.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/ryan.jpg';
+                      }}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white group-hover:scale-110 transition shadow-sm"
+                    />
                     <span className="text-[10px] font-bold text-purple-900 text-center leading-tight">
                       {k.name}
                     </span>
