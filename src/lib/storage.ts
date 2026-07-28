@@ -298,6 +298,7 @@ export const StorageEngine = {
       id: `cls_${Date.now()}`,
       totalStudents: 0,
       status: 'active',
+      startSessionNumber: classData.startSessionNumber || 1,
       resourceLinks: classData.resourceLinks || [],
     };
     classes.push(newClass);
@@ -322,7 +323,8 @@ export const StorageEngine = {
     const targetClass = classes.find((c) => c && c.id === sessionData.classId);
 
     const existingClassSessions = sessions.filter((s) => s && s.classId === sessionData.classId);
-    const sessionNumber = existingClassSessions.length + 1;
+    const startNum = targetClass?.startSessionNumber || 1;
+    const sessionNumber = startNum + existingClassSessions.length;
 
     const newSession: Session = {
       id: `ses_${Date.now()}`,
