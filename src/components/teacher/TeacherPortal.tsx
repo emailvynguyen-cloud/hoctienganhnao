@@ -17,6 +17,8 @@ import {
   Flame,
   X,
   User,
+  Coffee,
+  Heart,
 } from 'lucide-react';
 
 interface TeacherPortalProps {
@@ -45,8 +47,53 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     return c.teacherId === currentUser.uid || c.teacherName === currentUser.displayName;
   });
 
-  const todayClasses = assignedClasses;
-  const currentOngoingClass = todayClasses[0];
+  // HELPER: Check if a class is ongoing right now based on local time & schedule
+  const getOngoingClassRightNow = (classesList: Class[]) => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sun, 1 = Mon ...
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeVal = currentHours * 60 + currentMinutes;
+
+    const dayTokens: Record<number, string[]> = {
+      1: ['t2', 'thứ 2', 'thứ hai', '2'],
+      2: ['t3', 'thứ 3', 'thứ ba', '3'],
+      3: ['t4', 'thứ 4', 'thứ tư', '4'],
+      4: ['t5', 'thứ 5', 'thứ năm', '5'],
+      5: ['t6', 'thứ 6', 'thứ sáu', '6'],
+      6: ['t7', 'thứ 7', 'thứ bảy', '7'],
+      0: ['cn', 'chủ nhật'],
+    };
+
+    const todayKeys = dayTokens[currentDay] || [];
+
+    for (const cls of classesList) {
+      if (!cls || !cls.schedule) continue;
+      const schLower = cls.schedule.toLowerCase();
+
+      const matchesDay = todayKeys.some((token) => schLower.includes(token));
+      if (!matchesDay) continue;
+
+      const timeMatch = schLower.match(/(\d{1,2})[:h](\d{2})\s*[-–\to]+\s*(\d{1,2})[:h](\d{2})/);
+      if (timeMatch) {
+        const startH = parseInt(timeMatch[1], 10);
+        const startM = parseInt(timeMatch[2], 10);
+        const endH = parseInt(timeMatch[3], 10);
+        const endM = parseInt(timeMatch[4], 10);
+
+        const startTimeVal = startH * 60 + startM;
+        const endTimeVal = endH * 60 + endM;
+
+        if (currentTimeVal >= startTimeVal && currentTimeVal <= endTimeVal) {
+          return cls;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const currentOngoingClass = getOngoingClassRightNow(assignedClasses);
 
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
@@ -107,7 +154,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* TAB 1: HÔM NAY */}
       {activeTab === 'today' && (
         <div className="space-y-6">
-          {currentOngoingClass && (
+          
+          {/* ONGOING CLASS BANNER OR RELAXING PRINCESS BANNER */}
+          {currentOngoingClass ? (
             <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 text-white p-6 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden space-y-4">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 relative z-10">
                 <div className="flex items-center space-x-4">
@@ -149,6 +198,19 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 )}
               </div>
             </div>
+          ) : (
+            /* NO ONGOING CLASS RIGHT NOW BANNER */
+            <div className="p-8 rounded-3xl border-2 border-purple-200/80 bg-gradient-to-r from-pink-100/90 via-purple-100/90 to-indigo-100/90 dark:from-purple-950/80 dark:to-slate-900 text-center space-y-2 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-purple-900 text-pink-500 flex items-center justify-center mx-auto shadow-sm text-2xl animate-bounce">
+                ☕
+              </div>
+              <h3 className="text-lg font-black text-purple-950 dark:text-purple-100 flex items-center justify-center">
+                Hiện không có lớp, nghỉ ngơi đi nhé công chúa <Heart className="w-5 h-5 ml-1.5 text-pink-500 fill-pink-500 animate-pulse" />
+              </h3>
+              <p className="text-xs text-purple-800 dark:text-purple-300 font-medium max-w-md mx-auto">
+                Hệ thống sẽ tự động kích hoạt khung lớp học trên đầu khi tới đúng ca dạy của bạn!
+              </p>
+            </div>
           )}
 
           {/* Today's Schedule List */}
@@ -156,7 +218,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-purple-600" /> Danh Sách Lớp Dạy Hôm Nay
+                  <Clock className="w-5 h-5 mr-2 text-purple-600" /> Danh Sách Tất Cả Lớp Phụ Trách
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   Bấm vào từng lớp để xem trang chi tiết thông tin lớp & danh sách buổi học
@@ -172,7 +234,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             </div>
 
             <div className="space-y-3">
-              {todayClasses.map((cls) => {
+              {assignedClasses.map((cls) => {
                 const classStudents = students.filter((s) => s.classIds.includes(cls.id));
 
                 return (
@@ -241,7 +303,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 3: LỚP PHỤ TRÁCH (CLICKING ANY CLASS OPENS DEDICATED CLASS PAGE) */}
+      {/* TAB 3: LỚP PHỤ TRÁCH */}
       {activeTab === 'all_classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 shadow-sm p-6 space-y-6">
           <div className="flex items-center justify-between">
