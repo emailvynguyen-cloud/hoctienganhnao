@@ -77,6 +77,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newSchedule, setNewSchedule] = useState('T2 - T4 - T6 (18:00 - 19:30)');
   const [newCourseName, setNewCourseName] = useState('IELTS Breakthrough');
   const [newZoomLink, setNewZoomLink] = useState('');
+  const [newStartSessionNumber, setNewStartSessionNumber] = useState(1);
 
   // New Student Form State
   const [newStudentName, setNewStudentName] = useState('');
@@ -122,10 +123,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       room: 'Phòng Online / Zoom Premium',
       courseName: newCourseName,
       zoomLink: newZoomLink,
+      startSessionNumber: newStartSessionNumber || 1,
       resourceLinks: [],
     });
 
-    alert('Đã tạo lớp học thành công!');
+    alert(`Đã tạo lớp học thành công! Các buổi học sẽ bắt đầu tính từ Buổi #${newStartSessionNumber || 1}`);
     setIsAddClassOpen(false);
     onUpdateClasses();
   };
@@ -148,7 +150,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       totalPaidSessions: newSessionCount,
       tuitionPackagePrice: newTuitionPrice,
       packageSessionCount: newSessionCount,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatar: '/ryan.jpg',
     });
 
     alert('Đã thêm học viên mới vào lớp thành công!');
@@ -234,7 +236,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'revenue'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-50'
-            }`}
+          }`}
           >
             Doanh Thu Tháng
           </button>
@@ -269,7 +271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'invoices'
                 ? 'bg-purple-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
-            }`}
+          }`}
           >
             Hóa Đơn Học Phí
           </button>
@@ -322,7 +324,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               return (
                 <div key={t.uid} className="p-5 rounded-3xl border border-indigo-100 bg-indigo-50/40 space-y-3">
                   <div className="flex items-center space-x-3">
-                    <img src={t.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} alt={t.displayName} className="w-12 h-12 rounded-2xl object-cover border border-indigo-200" />
+                    <img src={t.avatarUrl || '/logo.jpg'} alt={t.displayName} className="w-12 h-12 rounded-2xl object-cover border border-indigo-200" />
                     <div>
                       <h4 className="font-black text-sm text-slate-900 dark:text-white">{t.displayName}</h4>
                       <p className="text-xs text-slate-500 font-mono">Email: {t.email} • SĐT: {t.phoneNumber || '0912345678'}</p>
@@ -389,55 +391,104 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
 
-          {/* Add Class Form */}
+          {/* Add Class Form (INCLUDES START SESSION NUMBER OPTION) */}
           {isAddClassOpen && isSuperAdmin && (
-            <form onSubmit={handleCreateClass} className="p-4 rounded-3xl bg-purple-50/80 border border-purple-200 space-y-3 animate-fadeIn text-xs">
-              <h4 className="font-black text-purple-900 uppercase">Tạo Lớp Học Mới</h4>
+            <form onSubmit={handleCreateClass} className="p-5 rounded-3xl bg-purple-50/90 border border-purple-200 space-y-4 animate-fadeIn text-xs shadow-sm">
+              <div className="flex items-center justify-between border-b border-purple-200 pb-2">
+                <h4 className="font-black text-purple-950 uppercase tracking-wider">Tạo Lớp Học Mới Vừa Chuyển Nền Tảng</h4>
+                <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
+                  Hỗ trợ lớp chuyển từ hệ thống cũ
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Tên lớp (e.g. IELTS Intensive 6.5+)"
-                  value={newClassName}
-                  onChange={(e) => setNewClassName(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Mã lớp (e.g. VY-IELTS-65)"
-                  value={newClassCode}
-                  onChange={(e) => setNewClassCode(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Tên giáo viên phụ trách"
-                  value={newTeacherName}
-                  onChange={(e) => setNewTeacherName(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                />
-                <input
-                  type="text"
-                  placeholder="Lịch học (e.g. T2 - T4 - T6 18:00 - 19:30)"
-                  value={newSchedule}
-                  onChange={(e) => setNewSchedule(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                />
-                <input
-                  type="text"
-                  placeholder="Giáo trình học"
-                  value={newCourseName}
-                  onChange={(e) => setNewCourseName(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                />
-                <input
-                  type="url"
-                  placeholder="Link Zoom học trực tuyến"
-                  value={newZoomLink}
-                  onChange={(e) => setNewZoomLink(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-mono"
-                />
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tên lớp học *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. IELTS Intensive 6.5+"
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Mã lớp học *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. VY-IELTS-65"
+                    value={newClassCode}
+                    onChange={(e) => setNewClassCode(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
+                    required
+                  />
+                </div>
+
+                {/* OPTION BẮT ĐẦU TỪ BUỔI SỐ MẤY */}
+                <div className="sm:col-span-2 p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                  <label className="block font-extrabold text-amber-900 text-xs uppercase">
+                    ⭐ Buổi Học Bắt Đầu Của Lớp (Tùy chọn cho lớp chuyển nền tảng):
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 1 (mặc định) hoặc 12, 15, 20..."
+                      value={newStartSessionNumber}
+                      onChange={(e) => setNewStartSessionNumber(Number(e.target.value))}
+                      className="w-48 p-2.5 rounded-xl border border-amber-300 bg-white font-black text-amber-900 text-xs"
+                    />
+                    <span className="text-xs text-amber-800 font-medium">
+                      Buổi học đầu tiên ghi nhận cho lớp này sẽ là <strong>Buổi #{newStartSessionNumber || 1}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Giáo viên phụ trách</label>
+                  <input
+                    type="text"
+                    placeholder="Tên giáo viên phụ trách"
+                    value={newTeacherName}
+                    onChange={(e) => setNewTeacherName(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Lịch học hàng tuần</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. T2 - T4 - T6 (18:00 - 19:30)"
+                    value={newSchedule}
+                    onChange={(e) => setNewSchedule(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tên giáo trình</label>
+                  <input
+                    type="text"
+                    placeholder="Giáo trình học"
+                    value={newCourseName}
+                    onChange={(e) => setNewCourseName(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Link phòng học Zoom (nếu có)</label>
+                  <input
+                    type="url"
+                    placeholder="Link Zoom học trực tuyến"
+                    value={newZoomLink}
+                    onChange={(e) => setNewZoomLink(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-mono"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-2">
@@ -476,7 +527,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <p className="text-xs text-slate-600"><strong>Giáo viên:</strong> {cls.teacherName}</p>
                 <p className="text-xs text-slate-600"><strong>Lịch học:</strong> {cls.schedule}</p>
-                <p className="text-xs text-slate-600"><strong>Giáo trình:</strong> {cls.courseName}</p>
+                <p className="text-xs text-slate-600"><strong>Bắt đầu từ buổi #:</strong> {cls.startSessionNumber || 1}</p>
 
                 {cls.zoomLink && (
                   <a href={cls.zoomLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-indigo-600 font-bold underline block truncate">
