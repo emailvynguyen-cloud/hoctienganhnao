@@ -4,6 +4,7 @@ import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
+import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
 import {
@@ -24,6 +25,8 @@ import {
   MessageSquare,
   UserCheck,
   Calendar,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -61,6 +64,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Dedicated Class Details Inspection View
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
+
+  // Selected Student for Receipt Generator Tool
+  const [selectedStudentForReceipt, setSelectedStudentForReceipt] = useState<Student | null>(null);
 
   // Search Queries
   const [classSearchQuery, setClassSearchQuery] = useState('');
@@ -102,6 +108,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     (s.phone || '').includes(studentSearchQuery || '') ||
     (s.email || '').toLowerCase().includes((studentSearchQuery || '').toLowerCase())
   );
+
+  // TUITION COUNTDOWN LIST (SORTED ASCENDING BY REMAINING SESSIONS: ÍT DẦN TỪ TRÊN XUỐNG)
+  const tuitionCountdownStudents = [...safeStudents]
+    .filter((s) => s && s.status !== 'soft_deleted')
+    .sort((a, b) => (a.remainingSessions || 0) - (b.remainingSessions || 0));
 
   const teachersList = StorageEngine.getUsers().filter((u) => u && (u.role === 'teacher' || u.role === 'super_admin'));
 
@@ -273,7 +284,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
           }`}
           >
-            Hóa Đơn Học Phí
+            Quản Lý Học Phí & VietQR
           </button>
         )}
       </div>
@@ -685,29 +696,92 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 7: INVOICES */}
+      {/* TAB 7: TUITION COUNTDOWN & VIETQR RECEIPT GENERATOR (BẢNG ĐẾM NGƯỢC SỐ BUỔI CÒN LẠI ÍT DẦN TỪ TRÊN XUỐNG) */}
       {activeTab === 'invoices' && isSuperAdmin && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
-          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-emerald-600" /> Quản Lý Hóa Đơn Học Phí
-          </h3>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-5">
+          <div>
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+              <DollarSign className="w-5 h-5 mr-2 text-emerald-600" /> Bảng Đếm Ngược Học Phí & Tool Tạo Phiếu Thu VietQR
+            </h3>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Danh sách tất cả học viên được sắp xếp theo <strong>số buổi còn lại ít dần từ trên xuống</strong>. Bấm vào học viên để tạo Phiếu thu kèm mã VietQR tự động!
+            </p>
+          </div>
 
+          {/* Countdown List Sorted Ascending */}
           <div className="space-y-3">
-            {(invoices || []).map((inv) => (
-              <div key={inv.id} className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 flex items-center justify-between">
-                <div>
-                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">{inv.code} • {inv.studentName}</h4>
-                  <p className="text-xs text-slate-500 font-mono">Số tiền: {formatVND(inv.amount || 0)} • {inv.sessionsPurchased || 0} buổi</p>
+            {tuitionCountdownStudents.map((std) => {
+              const stdClass = safeClasses.find((c) => c.id === std.classIds[0]);
+              const remCount = std.remainingSessions || 0;
+
+              return (
+                <div
+                  key={std.id}
+                  onClick={() => setSelectedStudentForReceipt(std)}
+                  className={`p-4 rounded-3xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group shadow-xs ${
+                    remCount === 0
+                      ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-300/40'
+                      : remCount <= 2
+                      ? 'bg-amber-50 border-amber-300'
+                      : 'bg-purple-50/40 border-purple-100 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3.5">
+                    <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0" />
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-black text-sm text-slate-900 dark:text-white group-hover:text-purple-600 transition">
+                          {std.name}
+                        </h4>
+                        <span className="text-xs text-slate-500 font-medium">({stdClass?.className || 'Lớp Ms. Vy'})</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">SĐT: {std.phone} • Gói học: {formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 shrink-0">
+                    {/* COUNTDOWN PILL */}
+                    {remCount === 0 ? (
+                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse flex items-center shadow-sm">
+                        <AlertCircle className="w-4 h-4 mr-1" /> 0 BUỔI - ĐÃ HẾT HỌC PHÍ!
+                      </span>
+                    ) : remCount <= 2 ? (
+                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-amber-500 text-white flex items-center shadow-sm">
+                        <Clock className="w-4 h-4 mr-1 animate-spin" /> CÒN {remCount} BUỔI - NỘP GẤP!
+                      </span>
+                    ) : (
+                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Còn {remCount} Buổi Học Phí
+                      </span>
+                    )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedStudentForReceipt(std);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs hover:from-purple-700 hover:to-indigo-700 transition shadow-sm flex items-center"
+                    >
+                      <QrCode className="w-3.5 h-3.5 mr-1" /> Tạo Phiếu VietQR →
+                    </button>
+                  </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-black ${
-                  inv.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {inv.status === 'paid' ? '✓ Đã Thanh Toán' : 'Chưa Thanh Toán'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+      )}
+
+      {/* RECEIPT GENERATOR MODAL */}
+      {selectedStudentForReceipt && (
+        <ReceiptGeneratorModal
+          isOpen={Boolean(selectedStudentForReceipt)}
+          onClose={() => setSelectedStudentForReceipt(null)}
+          student={selectedStudentForReceipt}
+          classes={safeClasses}
+          bankConfig={bankConfig}
+          onRefreshData={onUpdateStudents}
+        />
       )}
 
     </div>
