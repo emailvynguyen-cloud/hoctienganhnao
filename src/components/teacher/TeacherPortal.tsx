@@ -28,6 +28,7 @@ interface TeacherPortalProps {
   sessions: Session[];
   onRefreshData: () => void;
   onOpenAddSession: (classId?: string) => void;
+  onOpenPublicStudentLink?: (hash: string) => void;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
@@ -37,6 +38,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   sessions,
   onRefreshData,
   onOpenAddSession,
+  onOpenPublicStudentLink,
 }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'all_classes'>('today');
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
@@ -105,6 +107,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
         onBack={() => setInspectedClass(null)}
         onOpenAddSession={onOpenAddSession}
+        onOpenPublicStudentLink={onOpenPublicStudentLink}
       />
     );
   }
