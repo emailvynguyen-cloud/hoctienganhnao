@@ -130,6 +130,13 @@ export const StorageEngine = {
     setItem(STORAGE_KEYS.SESSIONS, sessions);
   },
 
+  getHomeworkTasks(): HomeworkTask[] {
+    return getItem<HomeworkTask[]>(STORAGE_KEYS.HOMEWORK_TASKS, INITIAL_HOMEWORK_TASKS);
+  },
+  saveHomeworkTasks(tasks: HomeworkTask[]) {
+    setItem(STORAGE_KEYS.HOMEWORK_TASKS, tasks);
+  },
+
   getHomeworkSubmissions(): HomeworkSubmission[] {
     return getItem<HomeworkSubmission[]>(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, INITIAL_HOMEWORK_SUBMISSIONS);
   },
@@ -156,6 +163,7 @@ export const StorageEngine = {
     setItem(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
     setItem(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
     setItem(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
+    setItem(STORAGE_KEYS.HOMEWORK_TASKS, INITIAL_HOMEWORK_TASKS);
     setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, INITIAL_HOMEWORK_SUBMISSIONS);
     setItem(STORAGE_KEYS.INVOICES, INITIAL_INVOICES);
     setItem(STORAGE_KEYS.USERS, INITIAL_USERS);
