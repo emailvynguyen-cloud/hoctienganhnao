@@ -12,6 +12,7 @@ import { AccountManagementModal } from './components/auth/AccountManagementModal
 import { LeaderboardWidget } from './components/common/LeaderboardWidget';
 import { AddSessionModal } from './components/common/AddSessionModal';
 import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
+import { Crown, Shield, UserCheck, GraduationCap, Eye } from 'lucide-react';
 
 const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
   bankId: 'MB',
@@ -22,7 +23,9 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
 };
 
 export default function App() {
+  // Always default to Super Admin if no user logged in, so site opens DIRECTLY into dashboard
   const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser() || INITIAL_USERS[0]);
+  const [activeRoleView, setActiveRoleView] = useState<UserRole>('super_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
 
@@ -88,7 +91,7 @@ export default function App() {
     setIsAddSessionOpen(true);
   };
 
-  const currentRole: UserRole = currentUser?.role || 'super_admin';
+  const effectiveRole: UserRole = currentUser?.role === 'super_admin' ? activeRoleView : currentUser?.role || 'super_admin';
   const currentStudent = students.find((s) => s && s.status === 'active') || students[0];
 
   return (
@@ -97,7 +100,7 @@ export default function App() {
       {/* Header Bar */}
       <Header
         currentUser={currentUser}
-        currentRole={currentRole}
+        currentRole={effectiveRole}
         onOpenLogin={() => setIsLoginOpen(true)}
         onLogout={() => {
           StorageEngine.setCurrentUser(null);
@@ -115,6 +118,64 @@ export default function App() {
           window.history.pushState({}, '', window.location.pathname);
         }}
       />
+
+      {/* SUPER ADMIN QUICK ROLE SWITCHER BAR (Chuyển nhanh giao diện không cần đăng xuất) */}
+      {currentUser?.role === 'super_admin' && !activePublicHash && (
+        <div className="bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 text-white py-2 px-4 shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div className="flex items-center space-x-2 font-black">
+              <Eye className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>SUPER ADMIN ROLE SWITCHER (Chuyển Nhanh Giao Diện):</span>
+            </div>
+
+            <div className="flex items-center space-x-1.5 overflow-x-auto">
+              <button
+                onClick={() => setActiveRoleView('super_admin')}
+                className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
+                  activeRoleView === 'super_admin'
+                    ? 'bg-white text-amber-900 shadow-md'
+                    : 'bg-black/20 hover:bg-black/30 text-white'
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 mr-1 text-amber-400" /> Super Admin
+              </button>
+
+              <button
+                onClick={() => setActiveRoleView('admin')}
+                className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
+                  activeRoleView === 'admin'
+                    ? 'bg-white text-purple-900 shadow-md'
+                    : 'bg-black/20 hover:bg-black/30 text-white'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 mr-1 text-purple-400" /> Admin
+              </button>
+
+              <button
+                onClick={() => setActiveRoleView('teacher')}
+                className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
+                  activeRoleView === 'teacher'
+                    ? 'bg-white text-indigo-900 shadow-md'
+                    : 'bg-black/20 hover:bg-black/30 text-white'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5 mr-1 text-indigo-400" /> Giáo Viên
+              </button>
+
+              <button
+                onClick={() => setActiveRoleView('student')}
+                className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
+                  activeRoleView === 'student'
+                    ? 'bg-white text-pink-900 shadow-md'
+                    : 'bg-black/20 hover:bg-black/30 text-white'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5 mr-1 text-pink-400" /> Học Viên
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -136,7 +197,7 @@ export default function App() {
               window.history.pushState({}, '', window.location.pathname);
             }}
           />
-        ) : currentRole === 'super_admin' || currentRole === 'admin' ? (
+        ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
           /* ADMIN & SUPER ADMIN VIEW (DEFAULT DIRECT VIEW) */
           <AdminDashboard
             currentUser={currentUser}
@@ -152,7 +213,7 @@ export default function App() {
             onOpenAddSession={handleOpenAddSession}
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
           />
-        ) : currentRole === 'teacher' ? (
+        ) : effectiveRole === 'teacher' ? (
           /* TEACHER VIEW */
           <TeacherPortal
             currentUser={currentUser}
