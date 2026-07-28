@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 15px;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #FAF5FF;
+  color: #334155;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* Custom Soft Pastel Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3E8FF;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D8B4FE;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C084FC;
+}
+
+/* Gentle Pastel Card Styling */
+.pastel-card {
+  background: #FFFFFF;
+  border: 1px solid #F3E8FF;
+  box-shadow: 0 4px 15px -2px rgba(192, 132, 252, 0.05);
+}
+
+.pastel-bg-pink {
+  background-color: #FCE7F3;
+}
+
+.pastel-bg-purple {
+  background-color: #F3E8FF;
+}
+
+.pastel-bg-mint {
+  background-color: #DCFCE7;
+}
+
+.pastel-bg-yellow {
+  background-color: #FEF3C7;
+}
+
+/* Cute Bounce & Glow Animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
