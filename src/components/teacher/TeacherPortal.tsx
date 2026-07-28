@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Class, Student, Session } from '../../types';
+import { Class, Student, Session, User as UserType } from '../../types';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import {
   Calendar,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 interface TeacherPortalProps {
+  currentUser?: UserType | null;
   classes: Class[];
   students: Student[];
   sessions: Session[];
@@ -26,6 +27,7 @@ interface TeacherPortalProps {
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
+  currentUser,
   classes,
   students,
   sessions,
@@ -33,16 +35,21 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onOpenAddSession,
 }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'all_classes'>('today');
-  const [scheduleView, setScheduleView] = useState<'week' | 'month'>('week');
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
-  const todayClasses = classes;
+  // Restrict classes so teacher only sees their assigned classes
+  const assignedClasses = (classes || []).filter((c) => {
+    if (!currentUser || currentUser.role === 'super_admin' || currentUser.role === 'admin') return true;
+    return c.teacherId === currentUser.uid || c.teacherName === currentUser.displayName;
+  });
+
+  const todayClasses = assignedClasses;
   const currentOngoingClass = todayClasses[0];
 
   return (
     <div className="space-y-6">
       
-      {/* Teacher Portal Navigation Tabs (Clean Headers without "Mục 1, 2, 3") */}
+      {/* Teacher Portal Navigation Tabs */}
       <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-purple-100 dark:border-purple-800 shadow-sm overflow-x-auto">
         <button
           onClick={() => setActiveTab('today')}
@@ -65,7 +72,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           }`}
         >
           <Calendar className="w-4 h-4" />
-          <span>LỊCH DẠY</span>
+          <span>LỊCH DẠY BẢNG TUẦN</span>
         </button>
 
         <button
@@ -77,7 +84,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>TẤT CẢ LỚP HỌC ({classes.length})</span>
+          <span>LỚP PHỤ TRÁCH ({assignedClasses.length})</span>
         </button>
       </div>
 
@@ -200,36 +207,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 2: LỊCH DẠY (Grid Table Format) */}
+      {/* TAB 2: LỊCH DẠY BẢNG TUẦN (Ruled Table Format, Month View Removed) */}
       {activeTab === 'schedule' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-purple-100 shadow-sm">
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Lịch Dạy Theo Kẻ Bảng Trực Quan
+              <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Lịch Dạy Phân Bổ Theo Tuần
             </h3>
-
-            <div className="bg-purple-50 p-1 rounded-2xl flex items-center space-x-1 border border-purple-200">
-              <button
-                onClick={() => setScheduleView('week')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                  scheduleView === 'week' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600'
-                }`}
-              >
-                Lịch Tuần
-              </button>
-              <button
-                onClick={() => setScheduleView('month')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                  scheduleView === 'month' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600'
-                }`}
-              >
-                Lịch Tháng
-              </button>
-            </div>
           </div>
 
           <WeeklyTimetable
-            classes={classes}
+            classes={assignedClasses}
             students={students}
             sessions={sessions}
             onOpenAddSession={onOpenAddSession}
@@ -237,13 +225,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 3: TẤT CẢ LỚP HỌC (Clickable to inspect Class & Students) */}
+      {/* TAB 3: LỚP PHỤ TRÁCH */}
       {activeTab === 'all_classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 shadow-sm p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                <BookOpen className="w-5 h-5 mr-2 text-purple-600" /> Thống Kê Tất Cả Các Lớp Học Đang Phụ Trách
+                <BookOpen className="w-5 h-5 mr-2 text-purple-600" /> Thống Kê Các Lớp Học Đang Phụ Trách ({assignedClasses.length} lớp)
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Nhấn vào từng lớp để xem danh sách học viên trực thuộc và tạo buổi học
@@ -259,7 +247,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {classes.map((cls) => {
+            {assignedClasses.map((cls) => {
               const classStudents = students.filter((s) => s.classIds.includes(cls.id));
 
               return (
