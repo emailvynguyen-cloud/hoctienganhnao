@@ -22,7 +22,6 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
 };
 
 export default function App() {
-  // Always default to Super Admin if no user logged in, so site opens DIRECTLY into dashboard
   const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser() || INITIAL_USERS[0]);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
@@ -156,6 +155,7 @@ export default function App() {
         ) : currentRole === 'teacher' ? (
           /* TEACHER VIEW */
           <TeacherPortal
+            currentUser={currentUser}
             classes={classes}
             students={students}
             sessions={sessions}
