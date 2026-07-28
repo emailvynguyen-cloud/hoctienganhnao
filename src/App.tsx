@@ -12,7 +12,7 @@ import { AccountManagementModal } from './components/auth/AccountManagementModal
 import { LeaderboardWidget } from './components/common/LeaderboardWidget';
 import { AddSessionModal } from './components/common/AddSessionModal';
 import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
-import { Crown, Shield, UserCheck, GraduationCap, Eye } from 'lucide-react';
+import { Crown, Shield, UserCheck, GraduationCap, Eye, LogIn, Trophy } from 'lucide-react';
 
 const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
   bankId: 'MB',
@@ -23,14 +23,13 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
 };
 
 export default function App() {
-  // Always default to Super Admin if no user logged in, so site opens DIRECTLY into dashboard
-  const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser() || INITIAL_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser());
   const [activeRoleView, setActiveRoleView] = useState<UserRole>('super_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
 
-  // Modals visibility
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  // Automatically open Login Modal by default if not logged in
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !StorageEngine.getCurrentUser());
   const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
@@ -55,7 +54,7 @@ export default function App() {
     setHomeworkSubmissions(StorageEngine.getHomeworkSubmissions());
     setInvoices(StorageEngine.getInvoices());
     setBankConfig(StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
-    const user = StorageEngine.getCurrentUser() || INITIAL_USERS[0];
+    const user = StorageEngine.getCurrentUser();
     setCurrentUser(user);
   };
 
@@ -67,6 +66,7 @@ export default function App() {
     const hash = urlParams.get('hash') || urlParams.get('student');
     if (hash) {
       setActivePublicHash(hash);
+      setIsLoginOpen(false);
     }
   }, []);
 
@@ -105,6 +105,7 @@ export default function App() {
         onLogout={() => {
           StorageEngine.setCurrentUser(null);
           setCurrentUser(null);
+          setIsLoginOpen(true);
         }}
         onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
@@ -119,7 +120,7 @@ export default function App() {
         }}
       />
 
-      {/* SUPER ADMIN QUICK ROLE SWITCHER BAR (Chuyển nhanh giao diện không cần đăng xuất) */}
+      {/* SUPER ADMIN QUICK ROLE SWITCHER BAR (Chuyển nhanh giao diện khi đã đăng nhập Super Admin) */}
       {currentUser?.role === 'super_admin' && !activePublicHash && (
         <div className="bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 text-white py-2 px-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
@@ -197,8 +198,39 @@ export default function App() {
               window.history.pushState({}, '', window.location.pathname);
             }}
           />
+        ) : !currentUser ? (
+          /* NOT LOGGED IN LANDING CARD VIEW WITH LOGIN PROMPT */
+          <div className="space-y-6 my-8 animate-fadeIn">
+            <div className="bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-3xl border-2 border-purple-100 dark:border-purple-800 text-center max-w-2xl mx-auto shadow-xl space-y-6">
+              <img src="/logo.jpg" alt="Ms. Vy English Logo" style={{ width: '96px', height: '96px' }} className="w-24 h-24 rounded-3xl object-cover border-4 border-purple-200 mx-auto shadow-md" />
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                  Hệ Thống Theo Dõi Học Tập Online - MS. VY ENGLISH
+                </h2>
+                <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
+                  Vui lòng đăng nhập với tài khoản Quản lý / Giáo viên để truy cập hệ thống quản lý.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs hover:from-purple-700 hover:to-pink-700 transition shadow-lg shadow-purple-500/20 w-full sm:w-auto flex items-center justify-center"
+                >
+                  <LogIn className="w-4 h-4 mr-2" /> Đăng Nhập Quản Lý / Giáo Viên
+                </button>
+
+                <button
+                  onClick={() => setIsLeaderboardOpen(true)}
+                  className="px-6 py-3.5 rounded-2xl bg-amber-100 text-amber-900 font-extrabold text-xs hover:bg-amber-200 transition border border-amber-200 w-full sm:w-auto flex items-center justify-center"
+                >
+                  <Trophy className="w-4 h-4 mr-2 text-amber-600" /> Xem Bảng Thành Tích Thi Đua
+                </button>
+              </div>
+            </div>
+          </div>
         ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN VIEW (DEFAULT DIRECT VIEW) */
+          /* ADMIN & SUPER ADMIN VIEW */
           <AdminDashboard
             currentUser={currentUser}
             students={students}
@@ -253,9 +285,15 @@ export default function App() {
       {/* MODALS */}
       <LoginModal
         isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+        onClose={() => {
+          // If not logged in, keep login modal open unless visiting public student link
+          if (currentUser || activePublicHash) {
+            setIsLoginOpen(false);
+          }
+        }}
         onLoginSuccess={(user) => {
           setCurrentUser(user);
+          setActiveRoleView(user.role);
           loadData();
         }}
       />
