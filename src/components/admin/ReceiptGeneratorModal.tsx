@@ -34,12 +34,16 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   const receiptCode = `VY-REC-${Date.now().toString().slice(-6)}`;
   const transferInfo = `VY HOCPHI ${student.name.toUpperCase().replace(/[^A-Z0-9 ]/g, '')} ${packageSessions}BUOI`;
 
+  const activeBankId = bankConfig.bankId || 'MB';
+  const activeAccountNo = bankConfig.accountNo || '0355176317';
+  const activeAccountName = bankConfig.accountName || 'MS. VY ENGLISH - MS VY';
+
   const qrUrl = getVietQRUrl(
-    bankConfig.bankId || 'MB',
-    bankConfig.accountNo || '0388999888',
+    activeBankId,
+    activeAccountNo,
     packagePrice,
     transferInfo,
-    bankConfig.accountName || 'MS. VY ENGLISH - MS VY'
+    activeAccountName
   );
 
   const handleMarkAsPaid = () => {
@@ -154,7 +158,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
             <div className="flex justify-between py-1 border-b border-purple-100">
               <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
-              <strong>MBBank ({bankConfig.accountNo}) - {bankConfig.accountName}</strong>
+              <strong>MBBank ({activeAccountNo}) - {activeAccountName}</strong>
             </div>
 
             <div className="flex justify-between py-1 border-b border-purple-100">
