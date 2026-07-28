@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Student, BankConfig, Class } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
-import { X, Printer, Copy, Check, QrCode, Sparkles, Send, ShieldCheck, DollarSign } from 'lucide-react';
+import { X, Copy, Check, QrCode, Sparkles, Send, ShieldCheck, DollarSign, Download, ImageIcon } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ReceiptGeneratorModalProps {
@@ -24,7 +24,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 }) => {
   const [packagePrice, setPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
   const [packageSessions, setPackageSessions] = useState(student.packageSessionCount || 8);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [copiedContent, setCopiedContent] = useState(false);
 
   if (!isOpen) return null;
@@ -62,8 +61,31 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  // HANDLE DOWNLOAD / SAVE RECEIPT IMAGE (TẢI ẢNH PHIẾU THU KÈM QR)
+  const handleSaveReceiptImage = async () => {
+    try {
+      // Fetch VietQR image blob and trigger download
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Ma_VietQR_Hoc_Phi_${student.name.replace(/\s+/g, '_')}_${packageSessions}Buoi.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+
+      alert(`Đã lưu ảnh Mã VietQR cho học viên ${student.name}! Bạn có thể gửi ảnh này trực tiếp qua Zalo cho Phụ huynh.`);
+    } catch (e) {
+      // Fallback direct window download
+      const link = document.createElement('a');
+      link.href = qrUrl;
+      link.target = '_blank';
+      link.download = `Ma_VietQR_Hoc_Phi_${student.name}.png`;
+      link.click();
+    }
   };
 
   return (
@@ -116,7 +138,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           </div>
         </div>
 
-        {/* PRINTABLE OFFICIAL RECEIPT VOUCHER */}
+        {/* OFFICIAL RECEIPT VOUCHER */}
         <div id="printable-receipt" className="p-6 rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 space-y-4 shadow-md text-slate-800">
           
           <div className="flex items-center justify-between border-b border-purple-200 pb-3">
@@ -194,17 +216,18 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
                 setCopiedContent(true);
                 setTimeout(() => setCopiedContent(false), 2000);
               }}
-              className="px-3.5 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center"
+              className="px-3.5 py-2.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center"
             >
               {copiedContent ? <Check className="w-4 h-4 mr-1 text-emerald-600" /> : <Copy className="w-4 h-4 mr-1" />}
               {copiedContent ? 'Đã Copy Cú Pháp' : 'Copy Cú Pháp Nộp'}
             </button>
 
+            {/* BUTTON LƯU / TẢI ẢNH PHIẾU THU MÃ VIETQR */}
             <button
-              onClick={handlePrint}
-              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center"
+              onClick={handleSaveReceiptImage}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md"
             >
-              <Printer className="w-4 h-4 mr-1" /> In Phiếu Thu
+              <Download className="w-4 h-4 mr-1.5" /> 📸 Tải / Lưu Ảnh Phiếu Thu (PNG)
             </button>
           </div>
 
