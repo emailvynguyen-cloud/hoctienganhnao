@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StorageEngine } from '../../lib/storage';
-import { DollarSign, Calendar, TrendingUp, Users, CheckCircle2, Award, ChevronDown } from 'lucide-react';
+import { DollarSign, Calendar } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
 
 export const MonthlyRevenueWidget: React.FC = () => {
@@ -21,7 +21,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
             </h3>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Chỉ tính doanh thu các buổi thực tế đã học trong tháng (Đơn giá 1 buổi = Gói học phí ÷ Số buổi gói)
+            Doanh thu thực tế tính từ các buổi học đã diễn ra trong tháng
           </p>
         </div>
 
@@ -42,8 +42,8 @@ export const MonthlyRevenueWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* Revenue Result Display Box */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Revenue Result Display Box (2 Columns, Formula Removed) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg space-y-2">
           <span className="text-xs font-extrabold uppercase text-emerald-100">
             Tổng Doanh Thu Tháng {selectedMonth.split('-')[1]}
@@ -65,15 +65,6 @@ export const MonthlyRevenueWidget: React.FC = () => {
           </h4>
           <p className="text-[11px] text-slate-500 font-medium">
             Tham gia các lớp trực thuộc trung tâm
-          </p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-pink-50 dark:bg-pink-950/40 border border-pink-100 dark:border-pink-800 space-y-2">
-          <span className="text-xs font-bold uppercase text-pink-600 dark:text-pink-300">
-            Công Thức Tính Chuẩn Xác
-          </span>
-          <p className="text-xs text-slate-700 dark:text-pink-200 font-medium leading-snug">
-            Ví dụ: Gói 8 buổi 2tr $\rightarrow$ 250k/buổi. Học 7 buổi trong tháng 7 $\rightarrow$ $7 \times 250k = 1.750.000$đ.
           </p>
         </div>
       </div>
