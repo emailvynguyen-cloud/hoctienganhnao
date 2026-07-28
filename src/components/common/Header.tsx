@@ -53,11 +53,12 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Logo & Branding */}
           <div className="flex items-center space-x-3">
-            <div className="relative group">
+            <div className="relative group shrink-0">
               <img
                 src="/logo.jpg"
                 alt="Ms. Vy English Logo"
-                className="w-13 h-13 rounded-2xl object-cover border-2 border-purple-200 dark:border-purple-700 shadow-md transform group-hover:scale-105 transition duration-300"
+                style={{ width: '52px', height: '52px', maxWidth: '52px', maxHeight: '52px' }}
+                className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 dark:border-purple-700 shadow-md transform group-hover:scale-105 transition duration-300 shrink-0"
               />
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-pink-400 rounded-full border-2 border-white animate-pulse" />
             </div>
