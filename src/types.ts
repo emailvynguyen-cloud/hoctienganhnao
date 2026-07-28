@@ -65,6 +65,7 @@ export interface Class {
   courseName: string;
   totalStudents: number;
   status: 'active' | 'completed' | 'paused';
+  startSessionNumber?: number; // Số thứ tự buổi học bắt đầu khi tạo lớp (mặc định 1)
   zoomLink?: string;
   resourceLinks?: ResourceLink[];
 }
