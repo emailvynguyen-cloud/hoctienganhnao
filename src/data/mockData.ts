@@ -4,7 +4,7 @@ import { KAKAOTALK_SVG_AVATARS } from '../lib/kakaotalkAvatars';
 export const INITIAL_BANK_CONFIG: BankConfig = {
   bankId: 'MB',
   bankName: 'MBBank (Ngân hàng Quân Đội)',
-  accountNo: '0388999888',
+  accountNo: '0355176317',
   accountName: 'MS. VY ENGLISH - MS VY',
   centerLogoUrl: '/logo.jpg',
 };
@@ -282,7 +282,7 @@ export const INITIAL_HOMEWORK_SUBMISSIONS: HomeworkSubmission[] = [
     studentId: 'std_01',
     studentName: 'Trần Minh Anh',
     isStudentChecked: true,
-    isTeacherFeedbackChecked: false, // Cần Admin/Super Admin chấm & feedback!
+    isTeacherFeedbackChecked: false,
     studentContent: 'Con đã hoàn thành bài viết essay 280 từ trên file Google Docs.',
     submissionDate: '2025-07-24',
   },
@@ -309,7 +309,7 @@ export const INITIAL_HOMEWORK_SUBMISSIONS: HomeworkSubmission[] = [
     studentId: 'std_03',
     studentName: 'Lê Nam Khánh',
     isStudentChecked: true,
-    isTeacherFeedbackChecked: false, // Cần Admin/Super Admin chấm & feedback!
+    isTeacherFeedbackChecked: false,
     studentContent: 'Con đã thu âm: "This is a lion. It is yellow and very strong!"',
     submissionDate: '2025-07-23',
   },
@@ -332,7 +332,7 @@ export const INITIAL_INVOICES: Invoice[] = [
     paidDate: '2025-06-20',
     qrContent: 'VY HOCPHI TRAN MINH ANH STD01',
     bankId: 'MB',
-    accountNo: '0388999888',
+    accountNo: '0355176317',
     accountName: 'MS. VY ENGLISH - MS VY',
   },
   {
@@ -349,7 +349,7 @@ export const INITIAL_INVOICES: Invoice[] = [
     paidDate: '2025-06-25',
     qrContent: 'VY HOCPHI LE NAM KHANH STD03',
     bankId: 'MB',
-    accountNo: '0388999888',
+    accountNo: '0355176317',
     accountName: 'MS. VY ENGLISH - MS VY',
   },
 ];
