@@ -524,7 +524,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       </div>
 
-      {/* 3. OVERALL PROGRESS BAR (DỰA VÀO BUỔI HỌC GẦN NHẤT) */}
+      {/* 3. OVERALL PROGRESS BAR (DỰ A VÀO BUỔI HỌC GẦN NHẤT) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -553,9 +553,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
           </h3>
-          <span className="text-xs text-purple-700 font-bold bg-purple-100 px-3 py-1 rounded-full">
-            Nền màu nhạt phân biệt giữa các buổi
-          </span>
         </div>
 
         {/* 2 MOST RECENT SESSIONS FULLY OPEN */}
