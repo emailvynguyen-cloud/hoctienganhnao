@@ -7,6 +7,7 @@ import { ClassDetailsView } from './ClassDetailsView';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import {
   Users,
   BookOpen,
@@ -165,7 +166,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       totalPaidSessions: newSessionCount,
       tuitionPackagePrice: newTuitionPrice,
       packageSessionCount: newSessionCount,
-      avatar: '/ryan.jpg',
+      avatar: KAKAOTALK_SVG_AVATARS.ryan,
     });
 
     alert('Đã thêm học viên mới vào lớp thành công!');
@@ -345,7 +346,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="p-5 rounded-3xl border border-indigo-100 bg-indigo-50/40 space-y-4 shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <img src={t.avatarUrl || '/logo.jpg'} alt={t.displayName} className="w-12 h-12 rounded-2xl object-cover border border-indigo-200 shrink-0" />
+                    <img
+                      src={resolveAvatarUrl(t.avatarUrl)}
+                      alt={t.displayName}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                      }}
+                      className="w-12 h-12 rounded-2xl object-cover border border-indigo-200 shrink-0"
+                    />
                     <div>
                       <h4 className="font-black text-sm text-slate-900 dark:text-white">{t.displayName}</h4>
                       <p className="text-xs text-slate-500 font-mono">Email: {t.email} • SĐT: {t.phoneNumber || '0912345678'}</p>
@@ -594,7 +602,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 6: STUDENTS LIST */}
+      {/* TAB 6: STUDENTS LIST (USES RESOLVED KAKAOTALK SVG AVATARS) */}
       {activeTab === 'students' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
           
@@ -703,7 +711,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {filteredStudents.map((std) => (
               <div key={std.id} className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
-                  <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-12 h-12 rounded-2xl object-cover border border-purple-200" />
+                  <img
+                    src={resolveAvatarUrl(std.avatar)}
+                    alt={std.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                    }}
+                    className="w-12 h-12 rounded-2xl object-cover border border-purple-200 shrink-0"
+                  />
                   <div>
                     <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{std.name}</h4>
                     <p className="text-xs text-slate-500">SĐT: {std.phone || ''} • Gói: {formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</p>
@@ -755,7 +770,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }`}
                 >
                   <div className="flex items-center space-x-3.5">
-                    <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0" />
+                    <img
+                      src={resolveAvatarUrl(std.avatar)}
+                      alt={std.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                      }}
+                      className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0"
+                    />
                     <div>
                       <div className="flex items-center space-x-2">
                         <h4 className="font-black text-sm text-slate-900 dark:text-white group-hover:text-purple-600 transition">
