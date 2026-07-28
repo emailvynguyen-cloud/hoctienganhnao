@@ -53,6 +53,15 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
     date: s.date,
   })));
 
+  // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION (HỒNG NHẠT, XANH NHẠT, VÀNG NHẠT, TÍM NHẠT)
+  const getSessionBgStyle = (sessionNumber: number) => {
+    const mod = Math.abs(sessionNumber) % 4;
+    if (mod === 1) return 'bg-gradient-to-r from-pink-50/90 via-purple-50/70 to-pink-50/90 border-pink-200 dark:bg-slate-900';
+    if (mod === 2) return 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200 dark:bg-slate-900';
+    if (mod === 3) return 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200 dark:bg-slate-900';
+    return 'bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-indigo-50/90 border-indigo-200 dark:bg-slate-900';
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-fadeIn">
       
@@ -249,7 +258,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
       </div>
 
-      {/* 4. SESSIONS LIST (FORMATTED EXACTLY LIKE STUDENT VIEW) */}
+      {/* 4. SESSIONS LIST (FORMATTED EXACTLY LIKE STUDENT VIEW WITH ALTERNATING PASTEL BACKGROUNDS) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
@@ -267,14 +276,15 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         {classSessions.length > 0 ? (
           classSessions.map((session) => {
             const itemsList = session.homeworkItems || [];
+            const bgStyle = getSessionBgStyle(session.sessionNumber);
 
             return (
               <div
                 key={session.id}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800/60 p-6 shadow-sm space-y-4 hover:border-purple-300 transition"
+                className={`rounded-3xl border p-6 shadow-sm space-y-4 hover:shadow-md transition duration-200 ${bgStyle}`}
               >
                 {/* Session Header: Number & Date */}
-                <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+                <div className="flex items-center justify-between border-b border-purple-200/60 pb-3">
                   <div className="flex items-center space-x-3">
                     <span className="w-10 h-10 rounded-2xl bg-purple-600 text-white font-black text-sm flex items-center justify-center shadow-md">
                       #{session.sessionNumber}
@@ -283,7 +293,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                       <h4 className="font-black text-sm text-slate-900 dark:text-white">
                         Buổi Học Số {session.sessionNumber}
                       </h4>
-                      <span className="text-xs text-slate-500 font-medium">
+                      <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                         Ngày học: {session.date} • GV: {session.teacherName || selectedClass.teacherName}
                       </span>
                     </div>
@@ -294,7 +304,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                       href={session.recordLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-100 text-indigo-800 text-xs font-bold hover:bg-indigo-200 transition flex items-center"
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition flex items-center shadow-xs"
                     >
                       <Video className="w-3.5 h-3.5 mr-1" /> Xem Record Video
                     </a>
@@ -306,7 +316,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
                     📘 Nội Dung Bài Học:
                   </span>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-purple-50/50 p-3 rounded-2xl border border-purple-100">
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-purple-100/80 backdrop-blur-xs">
                     {session.lessonContent}
                   </p>
                 </div>
@@ -323,7 +333,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                         if (!fb.strengths && !fb.improvements) return null;
 
                         return (
-                          <div key={stdId} className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 text-xs space-y-1">
+                          <div key={stdId} className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1 backdrop-blur-xs">
                             <span className="font-black text-pink-900 block">
                               👤 {stdObj?.name || 'Học viên'}:
                             </span>
@@ -350,7 +360,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     itemsList.map((hwItem) => (
                       <div
                         key={hwItem.id}
-                        className="p-3.5 rounded-2xl bg-slate-50 border border-purple-100 flex items-center justify-between text-xs"
+                        className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-purple-100 flex items-center justify-between text-xs"
                       >
                         <div>
                           <h5 className="font-extrabold text-slate-900 dark:text-white">
