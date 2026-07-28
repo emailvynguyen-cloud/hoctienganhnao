@@ -24,6 +24,8 @@ import {
   INITIAL_BANK_CONFIG,
 } from '../data/mockData';
 import { generatePublicHash } from './obfuscate';
+import { db } from './firebase';
+import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
 
 const STORAGE_KEYS = {
   STUDENTS: 'vy_students_v3',
@@ -35,6 +37,7 @@ const STORAGE_KEYS = {
   USERS: 'vy_users_v3',
   BANK_CONFIG: 'vy_bank_config_v3',
   CURRENT_USER: 'vy_current_user_v3',
+  CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v3',
 };
 
 function getItem<T>(key: string, defaultValue: T): T {
@@ -58,6 +61,24 @@ function setItem<T>(key: string, value: T): void {
   }
 }
 
+// Background Cloud Sync Helper (Non-blocking)
+async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
+  collectionName: string,
+  items: T[]
+) {
+  try {
+    if (!db) return;
+    for (const item of items) {
+      const docId = item.id || item.uid;
+      if (docId) {
+        await setDoc(doc(db, collectionName, docId), item, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.warn(`Cloud sync notice for ${collectionName}:`, err);
+  }
+}
+
 export const StorageEngine = {
   getCurrentUser(): User | null {
     return getItem<User | null>(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
@@ -72,6 +93,7 @@ export const StorageEngine = {
   },
   saveUsers(users: User[]) {
     setItem(STORAGE_KEYS.USERS, users);
+    syncCollectionToCloud('users', users);
   },
   authenticateUser(emailOrUsername: string, passwordInput: string): User | null {
     const users = this.getUsers() || [];
@@ -114,6 +136,7 @@ export const StorageEngine = {
   },
   saveStudents(students: Student[]) {
     setItem(STORAGE_KEYS.STUDENTS, students);
+    syncCollectionToCloud('students', students);
   },
 
   getClasses(): Class[] {
@@ -121,6 +144,7 @@ export const StorageEngine = {
   },
   saveClasses(classes: Class[]) {
     setItem(STORAGE_KEYS.CLASSES, classes);
+    syncCollectionToCloud('classes', classes);
   },
 
   getSessions(): Session[] {
@@ -128,6 +152,7 @@ export const StorageEngine = {
   },
   saveSessions(sessions: Session[]) {
     setItem(STORAGE_KEYS.SESSIONS, sessions);
+    syncCollectionToCloud('sessions', sessions);
   },
 
   getHomeworkTasks(): HomeworkTask[] {
@@ -135,6 +160,7 @@ export const StorageEngine = {
   },
   saveHomeworkTasks(tasks: HomeworkTask[]) {
     setItem(STORAGE_KEYS.HOMEWORK_TASKS, tasks);
+    syncCollectionToCloud('homework_tasks', tasks);
   },
 
   getHomeworkSubmissions(): HomeworkSubmission[] {
@@ -142,6 +168,7 @@ export const StorageEngine = {
   },
   saveHomeworkSubmissions(subs: HomeworkSubmission[]) {
     setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, subs);
+    syncCollectionToCloud('homework_submissions', subs);
   },
 
   getInvoices(): Invoice[] {
@@ -149,6 +176,7 @@ export const StorageEngine = {
   },
   saveInvoices(invoices: Invoice[]) {
     setItem(STORAGE_KEYS.INVOICES, invoices);
+    syncCollectionToCloud('invoices', invoices);
   },
 
   getBankConfig(): BankConfig {
@@ -156,6 +184,7 @@ export const StorageEngine = {
   },
   saveBankConfig(config: BankConfig) {
     setItem(STORAGE_KEYS.BANK_CONFIG, config);
+    syncCollectionToCloud('bank_config', [config]);
   },
 
   resetDatabase() {
@@ -169,6 +198,9 @@ export const StorageEngine = {
     setItem(STORAGE_KEYS.USERS, INITIAL_USERS);
     setItem(STORAGE_KEYS.BANK_CONFIG, INITIAL_BANK_CONFIG);
     setItem(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
+    syncCollectionToCloud('students', INITIAL_STUDENTS);
+    syncCollectionToCloud('classes', INITIAL_CLASSES);
+    syncCollectionToCloud('sessions', INITIAL_SESSIONS);
   },
 
   addStudent(studentData: Omit<Student, 'id' | 'publicHash' | 'createdAt' | 'status' | 'stars' | 'badges'>): Student {
