@@ -28,8 +28,8 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
 
-  // Automatically open Login Modal by default if not logged in
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !StorageEngine.getCurrentUser());
+  // ALWAYS FORCE LOGIN MODAL TO OPEN ON INITIAL PAGE LOAD
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(true);
   const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
@@ -67,6 +67,9 @@ export default function App() {
     if (hash) {
       setActivePublicHash(hash);
       setIsLoginOpen(false);
+    } else {
+      // If visiting main site, ALWAYS FORCE POPUP LOGIN MODAL
+      setIsLoginOpen(true);
     }
   }, []);
 
