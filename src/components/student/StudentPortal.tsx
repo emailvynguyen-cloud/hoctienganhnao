@@ -20,6 +20,8 @@ import {
   ExternalLink,
   ChevronRight,
   FolderOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -45,6 +47,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   onRefreshData,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
+  const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
 
   if (!currentStudent) {
     return (
@@ -60,6 +63,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   // Student's sessions
   const studentSessions = (sessions || []).filter((s) => s && s.classId === primaryClass?.id);
+
+  // Extract all session-attached materials
+  const allSessionMaterials = studentSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
+    ...m,
+    sessionNum: s.sessionNumber,
+    date: s.date,
+  })));
 
   // Progress Bar Calculation
   const totalCount = Math.max(1, studentSessions.length);
@@ -131,42 +141,113 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
       </div>
 
-      {/* Mascot Widget */}
+      {/* Mascot Widget with 6 Custom Quotes */}
       <MascotWidget studentName={currentStudent.name} starsCount={currentStudent.stars} />
 
-      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH (ĐƯA LÊN TRÊN ĐỂ DỄ XEM KHÔNG BỊ TRÔI) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-          <FolderOpen className="w-5 h-5 mr-2 text-purple-600 animate-bounce" /> Kho Tài Liệu & Giáo Trình Lớp Học
-        </h3>
+      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH (2 PHẦN: GOOGLE DRIVE CHÍNH & TÀI LIỆU CÁC BUỔI CÓ THỂ ĐÓNG/MỞ) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
+        
+        {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH XUYÊN SUỐT KHÓA HỌC */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <FolderOpen className="w-5 h-5 text-purple-600 animate-pulse" />
+            <h3 className="font-black text-base text-purple-950 dark:text-white uppercase tracking-wider">
+              Kho Tài Liệu & Giáo Trình Chính (Google Drive Khóa Học)
+            </h3>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
-            primaryClass.resourceLinks.map((res) => (
-              <a
-                key={res.id}
-                href={res.url}
-                target="_blank"
-                rel="noreferrer"
-                className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 hover:border-purple-300 transition flex items-center space-x-3 group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black group-hover:scale-110 transition">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-purple-600 transition">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500 via-indigo-600 to-pink-500 text-white shadow-md space-y-2">
+            <h4 className="font-black text-sm">
+              📁 Thư Mục Google Drive Giáo Trình Xuyên Suốt Khóa: {primaryClass?.courseName || 'Tiếng Anh Ms. Vy'}
+            </h4>
+            <p className="text-xs text-purple-100 font-medium">
+              Chứa đầy đủ Sách Ebook, File Audio Nghe, Từ vựng Academic & Đề thi luyện tập toàn khóa.
+            </p>
+
+            <div className="pt-2 flex flex-wrap gap-2">
+              {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
+                primaryClass.resourceLinks.map((res) => (
+                  <a
+                    key={res.id}
+                    href={res.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
                     {res.title}
-                  </h4>
-                  <span className="text-[10px] text-purple-600 font-bold underline">
-                    Bấm để tải về / xem tài liệu →
-                  </span>
-                </div>
-              </a>
-            ))
-          ) : (
-            <p className="text-xs text-slate-400 italic col-span-2">Chưa có tài liệu đính kèm.</p>
+                  </a>
+                ))
+              ) : (
+                <a
+                  href="https://drive.google.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                  Mở Thư Mục Google Drive Giáo Trình Chính
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* PHẦN 2: TÀI LIỆU & BÀI TẬP ĐÍNH KÈM THEO BUỔI HỌC (ĐÓNG / MỞ NÓI CHUNG) */}
+        <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
+              📎 Tài Liệu & Bài Tập Kèm Theo Ở Các Buổi Học ({allSessionMaterials.length} file)
+            </span>
+
+            <button
+              onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
+              className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 text-xs font-extrabold transition flex items-center"
+            >
+              {isExtraMaterialsOpen ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn Kho Tài Liệu Buổi
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Rộng Xem Tất Cả ({allSessionMaterials.length} file)
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Collapsible Materials Container */}
+          {isExtraMaterialsOpen && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fadeIn">
+              {allSessionMaterials.length > 0 ? (
+                allSessionMaterials.map((mat) => (
+                  <a
+                    key={mat.id}
+                    href={mat.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3.5 rounded-2xl border border-purple-100 bg-purple-50/50 hover:border-purple-300 transition flex items-center space-x-3 group"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-600 transition">
+                        Buổi {mat.sessionNum}: {mat.title}
+                      </h5>
+                      <span className="text-[10px] text-purple-600 font-bold underline">
+                        Bấm để xem / tải về →
+                      </span>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic col-span-2">Chưa có bài tập hay tài liệu bổ sung theo từng buổi.</p>
+              )}
+            </div>
           )}
         </div>
+
       </div>
 
       {/* 3. OVERALL PROGRESS BAR */}
