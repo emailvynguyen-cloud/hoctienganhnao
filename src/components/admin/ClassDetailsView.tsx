@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Users,
   MessageSquare,
+  Search,
 } from 'lucide-react';
 
 interface ClassDetailsViewProps {
@@ -39,6 +40,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   onOpenPublicStudentLink,
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
+  const [materialSearchQuery, setMaterialSearchQuery] = useState('');
 
   // Filter students in this class
   const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
@@ -53,7 +55,14 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
     date: s.date,
   })));
 
-  // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION (HỒNG NHẠT, XANH NHẠT, VÀNG NHẠT, TÍM NHẠT)
+  // Filter materials search query
+  const filteredSessionMaterials = allSessionMaterials.filter((mat) =>
+    (mat.title || '').toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+    `buoi ${mat.sessionNum}`.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+    `${mat.sessionNum}`.includes(materialSearchQuery)
+  );
+
+  // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION
   const getSessionBgStyle = (sessionNumber: number) => {
     const mod = Math.abs(sessionNumber) % 4;
     if (mod === 1) return 'bg-gradient-to-r from-pink-50/90 via-purple-50/70 to-pink-50/90 border-pink-200 dark:bg-slate-900';
@@ -152,7 +161,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         </div>
       </div>
 
-      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC (2 PHẦN) */}
+      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC (2 PHẦN + Ô TÌM KIẾM TÀI LIỆU) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
         
         {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH */}
@@ -201,34 +210,51 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
           </div>
         </div>
 
-        {/* PHẦN 2: TÀI LIỆU CÁC BUỔI (THU GỌN / MỞ RỘNG) */}
+        {/* PHẦN 2: TÀI LIỆU CÁC BUỔI (THU GỌN / MỞ RỘNG + Ô TÌM KIẾM TÀI LIỆU) */}
         <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
               📎 Tài Liệu & Bài Tập Kèm Theo Ở Các Buổi Học ({allSessionMaterials.length} file)
             </span>
 
-            <button
-              onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
-              className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 text-xs font-extrabold transition flex items-center"
-            >
-              {isExtraMaterialsOpen ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn Kho Tài Liệu Buổi
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Rộng Xem Tất Cả ({allSessionMaterials.length} file)
-                </>
-              )}
-            </button>
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
+              {/* LIVE SEARCH BAR FOR SESSION MATERIALS */}
+              <div className="relative flex-1 sm:w-56">
+                <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Tra cứu tên bài tập, số buổi..."
+                  value={materialSearchQuery}
+                  onChange={(e) => {
+                    setMaterialSearchQuery(e.target.value);
+                    if (!isExtraMaterialsOpen) setIsExtraMaterialsOpen(true);
+                  }}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-purple-200 text-xs bg-purple-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+
+              <button
+                onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
+                className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 text-xs font-extrabold transition flex items-center shrink-0"
+              >
+                {isExtraMaterialsOpen ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn Kho
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Rộng Tất Cả
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Collapsible Materials Container */}
+          {/* Collapsible & Search-Filtered Materials Container */}
           {isExtraMaterialsOpen && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fadeIn">
-              {allSessionMaterials.length > 0 ? (
-                allSessionMaterials.map((mat) => (
+              {filteredSessionMaterials.length > 0 ? (
+                filteredSessionMaterials.map((mat) => (
                   <a
                     key={mat.id}
                     href={mat.url}
@@ -250,7 +276,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   </a>
                 ))
               ) : (
-                <p className="text-xs text-slate-400 italic col-span-2">Chưa có bài tập hay tài liệu bổ sung theo từng buổi.</p>
+                <p className="text-xs text-slate-400 italic col-span-2">Không tìm thấy tài liệu phù hợp từ khóa "{materialSearchQuery}".</p>
               )}
             </div>
           )}
