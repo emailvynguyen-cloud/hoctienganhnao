@@ -8,11 +8,12 @@ interface MascotWidgetProps {
 }
 
 const QUOTES = [
-  'Cố gắng mỗi ngày, ước mơ vượt dải ngân hà! 🌟',
-  'Practice makes perfect! Hôm nay bạn đã luyện phát âm chưa?',
-  'Học tiếng Anh thật vui tại MS. VY ENGLISH! 🎀',
-  'Mỗi bài tập hoàn thành là 1 bước tiến tới tự tin giao tiếp! 🚀',
-  'Tự hào về bạn! Hãy giữ vững phong độ nhé! ❤️',
+  'Đừng sợ mắc lỗi. Hãy sợ rằng mình chưa từng thử.',
+  'Mỗi ngày tiến bộ một chút, rồi bạn sẽ tạo nên những kết quả lớn.',
+  'Phiên bản tương lai của bạn sẽ cảm ơn bạn vì đã bắt đầu từ hôm nay.',
+  'Bạn không cần nói tiếng Anh hoàn hảo. Bạn chỉ cần tiếp tục nói.',
+  'Bạn không dở tiếng Anh. Bạn chỉ đang trên hành trình học mà thôi.',
+  'Không bao giờ là quá muộn để học một ngôn ngữ mới.',
 ];
 
 export const MascotWidget: React.FC<MascotWidgetProps> = ({
@@ -42,7 +43,7 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
           className={`relative cursor-pointer focus:outline-none transition-transform duration-300 ${
             isBouncing ? 'scale-125 rotate-6' : 'hover:scale-110'
           }`}
-          title="Bấm vào linh vật Ms. Vy để nhận năng lượng tích cực!"
+          title="Bấm vào linh vật Ms. Vy để đổi câu truyền cảm hứng!"
         >
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 overflow-hidden">
             <img src="/logo.jpg" alt="Ms. Vy Mascot" className="w-full h-full object-cover" />
@@ -59,11 +60,11 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center">
-              <Sparkles className="w-3.5 h-3.5 mr-1" /> Linh Vật Ms. Vy English
+              <Sparkles className="w-3.5 h-3.5 mr-1" /> Thông Điệp Truyền Cảm Hứng Ms. Vy
             </span>
             <span className="text-xs text-slate-400">• Chào {studentName}!</span>
           </div>
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">
+          <p className="text-sm font-semibold text-purple-950 dark:text-slate-100 mt-0.5 italic">
             "{QUOTES[quoteIndex]}"
           </p>
         </div>
