@@ -22,6 +22,10 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronUp,
+  Camera,
+  Upload,
+  X,
+  Smile,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -36,6 +40,16 @@ interface StudentPortalProps {
   onRefreshData: () => void;
 }
 
+// KakaoTalk Friends Cute Generated Avatars
+const KAKAOTALK_AVATARS = [
+  { id: 'ryan', name: 'Sư Tử Ryan 🦁', url: '/ryan.jpg' },
+  { id: 'apeach', name: 'Quả Đào Apeach 🍑', url: '/apeach.jpg' },
+  { id: 'muzi', name: 'Thỏ Vàng Muzi 🐰', url: '/muzi.jpg' },
+  { id: 'frodo', name: 'Chú Chó Frodo 🐶', url: '/frodo.jpg' },
+  { id: 'neo', name: 'Mèo Chảnh Neo 🐱', url: '/neo.jpg' },
+  { id: 'tube', name: 'Vịt Cute Tube 🦆', url: '/tube.jpg' },
+];
+
 export const StudentPortal: React.FC<StudentPortalProps> = ({
   currentStudent,
   classes,
@@ -48,6 +62,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   if (!currentStudent) {
     return (
@@ -96,17 +111,56 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     onRefreshData();
   };
 
+  // Change Student Avatar
+  const handleSelectKakaoAvatar = (avatarUrl: string) => {
+    const updatedStudent = { ...currentStudent, avatar: avatarUrl };
+    StorageEngine.updateStudent(updatedStudent);
+    setIsAvatarModalOpen(false);
+    confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+    onRefreshData();
+  };
+
+  // Custom File Upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        const updatedStudent = { ...currentStudent, avatar: base64Url };
+        StorageEngine.updateStudent(updatedStudent);
+        setIsAvatarModalOpen(false);
+        confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+        onRefreshData();
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* 1. GENERAL INFO CARD (Logo, Teacher, Course, Schedule, Remaining Sessions) */}
+      {/* 1. GENERAL INFO CARD WITH AVATAR PICKER */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
-          <img
-            src={currentStudent.avatar || '/logo.jpg'}
-            alt={currentStudent.name}
-            className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-100 shadow-md shrink-0"
-          />
+          
+          {/* Avatar with Camera Overlay */}
+          <div className="relative group shrink-0">
+            <img
+              src={currentStudent.avatar || '/ryan.jpg'}
+              alt={currentStudent.name}
+              className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-100 shadow-md transition group-hover:scale-105"
+            />
+            <button
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-purple-600 text-white shadow-md hover:bg-purple-700 transition flex items-center justify-center border-2 border-white"
+              title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <div className="flex-1 text-center sm:text-left space-y-1">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
@@ -116,6 +170,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 inline-block">
                 {currentStudent.honorNickname || '⭐ Chiến Thần Chăm Học'}
               </span>
+
+              <button
+                onClick={() => setIsAvatarModalOpen(true)}
+                className="text-xs text-purple-700 font-bold underline hover:text-purple-900 transition ml-2"
+              >
+                [ 📷 Đổi Avatar KakaoTalk ]
+              </button>
             </div>
 
             <div className="text-xs text-slate-600 dark:text-slate-400 font-medium space-y-0.5">
@@ -144,10 +205,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       {/* Mascot Widget with 6 Custom Quotes */}
       <MascotWidget studentName={currentStudent.name} starsCount={currentStudent.stars} />
 
-      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH (2 PHẦN: GOOGLE DRIVE CHÍNH & TÀI LIỆU CÁC BUỔI CÓ THỂ ĐÓNG/MỞ) */}
+      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
         
-        {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH XUYÊN SUỐT KHÓA HỌC */}
+        {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <FolderOpen className="w-5 h-5 text-purple-600 animate-pulse" />
@@ -273,7 +334,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </p>
       </div>
 
-      {/* 4. SESSION LIST (PER-SESSION INFORMATION) */}
+      {/* 4. SESSION LIST */}
       <div className="space-y-4">
         <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
           <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
@@ -434,6 +495,75 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         )}
       </div>
+
+      {/* AVATAR PICKER MODAL (KAKAOTALK FRIENDS & UPLOAD PHOTO) */}
+      {isAvatarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-5 relative">
+            <button
+              onClick={() => setIsAvatarModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-1">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mx-auto font-black text-xl">
+                🎀
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Đổi Ảnh Đại Diện Học Viên
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Tải ảnh riêng từ thiết bị hoặc chọn 1 nhân vật KakaoTalk Friends siêu cute!
+              </p>
+            </div>
+
+            {/* OPTION 1: CUSTOM FILE UPLOAD */}
+            <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-center space-y-2">
+              <span className="font-extrabold text-xs text-purple-900 uppercase block">
+                Cách 1: Tải Ảnh Đại Diện Từ Máy Tính / Điện Thoại
+              </span>
+              <label className="cursor-pointer inline-flex items-center px-4 py-2.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm">
+                <Upload className="w-4 h-4 mr-2" /> Chọn File Ảnh Từ Máy
+                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              </label>
+            </div>
+
+            {/* OPTION 2: KAKAOTALK FRIENDS AVATARS GRID */}
+            <div className="space-y-2">
+              <span className="font-extrabold text-xs text-slate-700 dark:text-purple-300 uppercase block">
+                Cách 2: Chọn Linh Vật KakaoTalk Friends Cute:
+              </span>
+
+              <div className="grid grid-cols-3 gap-3">
+                {KAKAOTALK_AVATARS.map((k) => (
+                  <button
+                    key={k.id}
+                    onClick={() => handleSelectKakaoAvatar(k.url)}
+                    className="p-2 rounded-2xl border border-purple-100 hover:border-purple-400 bg-purple-50/40 hover:bg-purple-100/50 transition flex flex-col items-center space-y-1.5 group cursor-pointer"
+                  >
+                    <img src={k.url} alt={k.name} className="w-14 h-14 rounded-2xl object-cover border-2 border-white group-hover:scale-110 transition shadow-sm" />
+                    <span className="text-[10px] font-bold text-purple-900 text-center leading-tight">
+                      {k.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-right pt-2">
+              <button
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+              >
+                Hủy Bỏ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
