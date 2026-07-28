@@ -159,6 +159,9 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 <img
                   src={item.student.avatar || '/ryan.jpg'}
                   alt={item.student.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/ryan.jpg';
+                  }}
                   className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shadow-md shrink-0"
                 />
 
