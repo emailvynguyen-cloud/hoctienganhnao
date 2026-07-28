@@ -17,6 +17,7 @@ import {
   Users,
   MessageSquare,
   Search,
+  Share2,
 } from 'lucide-react';
 
 interface ClassDetailsViewProps {
@@ -124,44 +125,44 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         </div>
       </div>
 
-      {/* 2. ENROLLED STUDENTS SUMMARY GRID */}
+      {/* 2. ENROLLED STUDENTS SUMMARY GRID (CLICK ANY STUDENT TO OPEN INDIVIDUAL LEARNING PORTAL) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center uppercase tracking-wider">
             <Users className="w-5 h-5 mr-2 text-purple-600" /> Danh Sách Học Viên Trực Thuộc Lớp ({classStudents.length} Học Viên)
           </h3>
+          <span className="text-xs text-purple-600 font-bold bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+            Bấm vào học viên để mở trang học tập cá nhân
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {classStudents.map((std) => (
             <div
               key={std.id}
-              className="p-3.5 rounded-2xl border border-purple-100 bg-purple-50/40 flex items-center justify-between hover:border-purple-300 transition"
+              onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
+              className="p-4 rounded-3xl border border-purple-100 bg-purple-50/40 hover:bg-purple-100/60 hover:border-purple-400 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
             >
               <div className="flex items-center space-x-3">
-                <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-10 h-10 rounded-2xl object-cover border border-purple-200" />
+                <img src={std.avatar || '/logo.jpg'} alt={std.name} className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0 group-hover:scale-105 transition" />
                 <div>
-                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">{std.name}</h4>
-                  <p className="text-[10px] text-purple-600 font-bold">{std.honorNickname || 'Học viên active'}</p>
+                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-700 transition underline decoration-purple-300">
+                    {std.name}
+                  </h4>
+                  <p className="text-[10px] text-pink-600 font-bold">{std.honorNickname || 'Học viên active'}</p>
                   <p className="text-[10px] text-slate-500">SĐT: {std.phone}</p>
                 </div>
               </div>
 
-              {onOpenPublicStudentLink && (
-                <button
-                  onClick={() => onOpenPublicStudentLink(std.publicHash)}
-                  className="p-2 rounded-xl bg-pink-100 text-pink-800 hover:bg-pink-200 transition text-[11px] font-bold"
-                  title="Xem trang học tập cá nhân của học viên"
-                >
-                  Xem Link →
-                </button>
-              )}
+              <div className="p-2 rounded-xl bg-pink-100 text-pink-800 group-hover:bg-pink-600 group-hover:text-white transition text-xs font-bold shrink-0">
+                <Share2 className="w-4 h-4" />
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC (2 PHẦN + Ô TÌM KIẾM TÀI LIỆU) */}
+      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
         
         {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH */}
@@ -210,7 +211,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
           </div>
         </div>
 
-        {/* PHẦN 2: TÀI LIỆU CÁC BUỔI (THU GỌN / MỞ RỘNG + Ô TÌM KIẾM TÀI LIỆU) */}
+        {/* PHẦN 2: TÀI LIỆU CÁC BUỔI */}
         <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
@@ -218,7 +219,6 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
             </span>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
-              {/* LIVE SEARCH BAR FOR SESSION MATERIALS */}
               <div className="relative flex-1 sm:w-56">
                 <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-2.5" />
                 <input
@@ -284,7 +284,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
       </div>
 
-      {/* 4. SESSIONS LIST (FORMATTED EXACTLY LIKE STUDENT VIEW WITH ALTERNATING PASTEL BACKGROUNDS) */}
+      {/* 4. SESSIONS LIST */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
