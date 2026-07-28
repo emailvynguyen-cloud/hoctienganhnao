@@ -168,7 +168,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveRoleView('student')}
-                className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
+                className={`px-3.5 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'student'
                     ? 'bg-white text-pink-900 shadow-md'
                     : 'bg-black/20 hover:bg-black/30 text-white'
@@ -233,7 +233,7 @@ export default function App() {
             </div>
           </div>
         ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN VIEW (WITH REAL-TIME EFFECTIVE ROLE PROP PASSED) */
+          /* ADMIN & SUPER ADMIN VIEW */
           <AdminDashboard
             currentUser={currentUser}
             effectiveRole={effectiveRole}
@@ -250,7 +250,7 @@ export default function App() {
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
           />
         ) : effectiveRole === 'teacher' ? (
-          /* TEACHER VIEW */
+          /* TEACHER VIEW (CAN CLICK ANY STUDENT TO OPEN INDIVIDUAL LEARNING PORTAL) */
           <TeacherPortal
             currentUser={currentUser}
             classes={classes}
@@ -258,6 +258,7 @@ export default function App() {
             sessions={sessions}
             onRefreshData={loadData}
             onOpenAddSession={handleOpenAddSession}
+            onOpenPublicStudentLink={(hash) => setActivePublicHash(hash)}
           />
         ) : (
           /* STUDENT VIEW */
@@ -310,7 +311,7 @@ export default function App() {
       {isLeaderboardOpen && (
         <LeaderboardWidget
           isOpen={isLeaderboardOpen}
-          onClose={() => setIsLeaderboardOpen(false)}
+        onClose={() => setIsLeaderboardOpen(false)}
           students={students}
           sessions={sessions}
         />
