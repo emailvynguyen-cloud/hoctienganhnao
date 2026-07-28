@@ -30,6 +30,7 @@ import {
   AlertCircle,
   History,
   Search,
+  BarChart2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -172,6 +173,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     const myFeedback = session.studentFeedbacks ? session.studentFeedbacks[currentStudent.id] : null;
     const itemsList = session.homeworkItems || [];
     const bgStyle = getSessionBgStyle(session.sessionNumber);
+
+    const completedItems = itemsList.filter((item) =>
+      currentStudent.completedHomeworkTaskIds?.includes(item.id)
+    ).length;
+    const totalItems = itemsList.length;
+    const sessionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 100;
 
     return (
       <div
@@ -328,6 +335,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           )}
         </div>
 
+        {/* CONCISE SESSION HOMEWORK PROGRESS PILL FOR THIS STUDENT */}
+        <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between text-xs">
+          <span className="text-purple-900 font-extrabold flex items-center">
+            <BarChart2 className="w-4 h-4 mr-1.5 text-pink-500" /> Tiến độ bài tập buổi #{session.sessionNumber}:
+          </span>
+
+          <span className={`px-3 py-1 rounded-full text-xs font-black shadow-2xs ${
+            sessionPercent === 100
+              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+              : sessionPercent > 0
+              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+              : 'bg-rose-100 text-rose-900 border border-rose-300'
+          }`}>
+            Đã làm {completedItems} / {totalItems} bài ({sessionPercent}%) {sessionPercent === 100 ? '✓' : sessionPercent > 0 ? '⏳' : '⚠️'}
+          </span>
+        </div>
+
       </div>
     );
   };
@@ -450,7 +474,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         </div>
 
-        {/* PHẦN 2: TÀI LIỆU & BÀI TẬP ĐÍNH KÈM THEO BUỔI HỌC (CÓ Ô TÌM KIẾM TÀI LIỆU) */}
+        {/* PHẦN 2: TÀI LIỆU & BÀI TẬP ĐÍNH KÈM THEO BUỔI HỌC */}
         <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
@@ -458,7 +482,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </span>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
-              {/* LIVE SEARCH BAR FOR SESSION MATERIALS */}
               <div className="relative flex-1 sm:w-56">
                 <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-2.5" />
                 <input
