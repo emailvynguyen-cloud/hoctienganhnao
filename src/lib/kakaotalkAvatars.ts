@@ -18,3 +18,35 @@ export const KAKAOTALK_AVATARS_LIST = [
   { id: 'neo', name: 'Mèo Chảnh Neo 🐱', url: KAKAOTALK_SVG_AVATARS.neo },
   { id: 'tube', name: 'Vịt Cute Tube 🦆', url: KAKAOTALK_SVG_AVATARS.tube },
 ];
+
+/**
+ * Universal Avatar Resolver Function
+ * Resolves local image paths or broken URLs to 100% working embedded KakaoTalk SVG Data URIs
+ */
+export const resolveAvatarUrl = (avatarStr?: string): string => {
+  if (!avatarStr || avatarStr === '/ryan.jpg' || avatarStr.includes('ryan.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.ryan;
+  }
+  if (avatarStr === '/apeach.jpg' || avatarStr.includes('apeach.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.apeach;
+  }
+  if (avatarStr === '/muzi.jpg' || avatarStr.includes('muzi.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.muzi;
+  }
+  if (avatarStr === '/frodo.jpg' || avatarStr.includes('frodo.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.frodo;
+  }
+  if (avatarStr === '/neo.jpg' || avatarStr.includes('neo.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.neo;
+  }
+  if (avatarStr === '/tube.jpg' || avatarStr.includes('tube.jpg')) {
+    return KAKAOTALK_SVG_AVATARS.tube;
+  }
+
+  // If it's a valid Data URI (custom upload base64 or SVG) or external http(s) URL, use as is
+  if (avatarStr.startsWith('data:') || avatarStr.startsWith('http://') || avatarStr.startsWith('https://')) {
+    return avatarStr;
+  }
+
+  return KAKAOTALK_SVG_AVATARS.ryan;
+};
