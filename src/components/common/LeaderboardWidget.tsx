@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Student, Session, HomeworkSubmission } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { Trophy, Star, Award, Sparkles, CheckCircle2, Flame, Medal, X, ArrowLeft } from 'lucide-react';
-import { KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -137,9 +137,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           // TOP 5 HAVE TITLES, BEYOND TOP 5 DO NOT HAVE TITLES
           const honorTitle = index < 5 ? titlesList[index] : null;
 
-          const avatarSrc = item.student.avatar && item.student.avatar.length > 20
-            ? item.student.avatar
-            : KAKAOTALK_SVG_AVATARS.ryan;
+          const avatarSrc = resolveAvatarUrl(item.student.avatar);
 
           return (
             <div
