@@ -18,10 +18,11 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
   const [feedbackText, setFeedbackText] = useState('');
   const [stars, setStars] = useState(3);
 
-  const allSubmissions = StorageEngine.getHomeworkSubmissions();
+  const allSubmissions = StorageEngine.getHomeworkSubmissions() || [];
+  const safeStudents = students || [];
   
-  const pendingSubs = allSubmissions.filter((s) => s.isStudentChecked && !s.isTeacherFeedbackChecked);
-  const completedSubs = allSubmissions.filter((s) => s.isTeacherFeedbackChecked);
+  const pendingSubs = allSubmissions.filter((s) => s && s.isStudentChecked && !s.isTeacherFeedbackChecked);
+  const completedSubs = allSubmissions.filter((s) => s && s.isTeacherFeedbackChecked);
 
   const displayList = filter === 'pending' ? pendingSubs : completedSubs;
 
@@ -95,7 +96,7 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
       <div className="space-y-4">
         {displayList.length > 0 ? (
           displayList.map((sub) => {
-            const student = students.find((s) => s.id === sub.studentId);
+            const student = safeStudents.find((s) => s && s.id === sub.studentId);
             const isGradingThis = selectedSubId === sub.id;
 
             return (
