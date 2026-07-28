@@ -12,7 +12,7 @@ interface LeaderboardWidgetProps {
 }
 
 const WEEKLY_TITLES = [
-  '🥇 Bậc Thầy Chăm Chỉ 👑',
+  '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑',
   '🥈 Ngôi Sao Nỗ Lực ⭐',
   '🥉 Chiến Binh Kiên Trì 💪',
   '🏅 Nhà Chinh Phục 🚀',
@@ -52,7 +52,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
     const totalSubmitted = Math.max(1, filteredSubs.length);
     const feedbackCount = filteredSubs.filter((sub) => sub.isTeacherFeedbackChecked).length;
 
-    // Calculate feedback rate in week/month
+    // Calculate completion rate in week/month
     const rate = Math.min(100, Math.round((feedbackCount / totalSubmitted) * 100));
 
     return {
@@ -197,7 +197,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                    Đã được Feedback <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
+                    Đã hoàn thành <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập về nhà ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
                   </p>
                 </div>
               </div>
@@ -205,7 +205,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               <div className="sm:w-48 space-y-1.5 shrink-0">
                 <div className="flex justify-between items-center text-xs font-black">
                   <span className="text-purple-700 flex items-center">
-                    <Flame className="w-3.5 h-3.5 mr-1 text-pink-500" /> Tỷ lệ Feedback:
+                    <Flame className="w-3.5 h-3.5 mr-1 text-pink-500" /> Tỷ lệ hoàn thành bài tập:
                   </span>
                   <span className="text-amber-600 font-extrabold">{item.rate}%</span>
                 </div>
