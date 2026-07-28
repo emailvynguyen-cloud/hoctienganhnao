@@ -3,6 +3,7 @@ import { Student, Class, Invoice, BankConfig, Session, User } from '../../types'
 import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
+import { ClassDetailsView } from './ClassDetailsView';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
 import {
@@ -57,6 +58,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
+
+  // Dedicated Class Details Inspection View
+  const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
 
   // Search Queries
   const [classSearchQuery, setClassSearchQuery] = useState('');
@@ -151,6 +155,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setIsAddStudentOpen(false);
     onUpdateStudents();
   };
+
+  // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
+  if (inspectedClass) {
+    return (
+      <ClassDetailsView
+        selectedClass={inspectedClass}
+        students={safeStudents}
+        sessions={sessions}
+        homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+        onBack={() => setInspectedClass(null)}
+        onOpenAddSession={onOpenAddSession}
+        onOpenPublicStudentLink={onOpenPublicLink}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -334,14 +353,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <MonthlyRevenueWidget />
       )}
 
-      {/* TAB 5: CLASSES LIST (With Search Bar) */}
+      {/* TAB 5: CLASSES LIST (Clicking Any Class Opens Full Dedicated Class Details Page) */}
       {activeTab === 'classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-              <BookOpen className="w-5 h-5 mr-2 text-purple-600" /> Quản Lý Tất Cả Lớp Học
-            </h3>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+                <BookOpen className="w-5 h-5 mr-2 text-purple-600" /> Quản Lý Tất Cả Lớp Học
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Bấm vào bất kỳ lớp học nào bên dưới để mở trang thông tin lớp & danh sách buổi học
+              </p>
+            </div>
 
             {/* SEARCH BAR FOR CLASSES */}
             <div className="relative w-full sm:w-72">
@@ -434,12 +458,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </form>
           )}
 
-          {/* Classes Grid */}
+          {/* Classes Grid - CLICKING ANY CLASS OPENS DEDICATED CLASS PAGE */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredClasses.map((cls) => (
-              <div key={cls.id} className="p-5 rounded-3xl border border-purple-100 bg-purple-50/40 space-y-3">
+              <div
+                key={cls.id}
+                onClick={() => setInspectedClass(cls)}
+                className="p-5 rounded-3xl border border-purple-100 bg-purple-50/40 space-y-3 hover:border-purple-400 hover:shadow-md transition cursor-pointer group"
+              >
                 <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-purple-600 transition underline decoration-purple-300">
                     {cls.className}
                   </h4>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800">
@@ -451,17 +479,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <p className="text-xs text-slate-600"><strong>Giáo trình:</strong> {cls.courseName}</p>
 
                 {cls.zoomLink && (
-                  <a href={cls.zoomLink} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 font-bold underline block truncate">
+                  <a href={cls.zoomLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-indigo-600 font-bold underline block truncate">
                     🔗 Link Zoom: {cls.zoomLink}
                   </a>
                 )}
 
                 <div className="pt-2 border-t border-purple-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
+                    Mở Xem Chi Tiết Lớp Học & Bài Học →
+                  </span>
                   <button
-                    onClick={() => onOpenAddSession(cls.id)}
-                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition flex items-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenAddSession(cls.id);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition flex items-center"
                   >
-                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi Học
+                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
                   </button>
                 </div>
               </div>
