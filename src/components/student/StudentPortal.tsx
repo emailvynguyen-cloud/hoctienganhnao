@@ -3,6 +3,7 @@ import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, Ban
 import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
+import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import {
   Calendar,
   CheckCircle2,
@@ -39,16 +40,6 @@ interface StudentPortalProps {
   bankConfig: BankConfig;
   onRefreshData: () => void;
 }
-
-// KakaoTalk Friends Cute Generated Avatars
-const KAKAOTALK_AVATARS = [
-  { id: 'ryan', name: 'Sư Tử Ryan 🦁', url: '/ryan.jpg' },
-  { id: 'apeach', name: 'Quả Đào Apeach 🍑', url: '/apeach.jpg' },
-  { id: 'muzi', name: 'Thỏ Vàng Muzi 🐰', url: '/muzi.jpg' },
-  { id: 'frodo', name: 'Chú Chó Frodo 🐶', url: '/frodo.jpg' },
-  { id: 'neo', name: 'Mèo Chảnh Neo 🐱', url: '/neo.jpg' },
-  { id: 'tube', name: 'Vịt Cute Tube 🦆', url: '/tube.jpg' },
-];
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({
   currentStudent,
@@ -139,6 +130,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const studentAvatarSrc = currentStudent.avatar && currentStudent.avatar.length > 20
+    ? currentStudent.avatar
+    : KAKAOTALK_SVG_AVATARS.ryan;
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
@@ -149,10 +144,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           {/* Avatar with Camera Overlay */}
           <div className="relative group shrink-0">
             <img
-              src={currentStudent.avatar || '/ryan.jpg'}
+              src={studentAvatarSrc}
               alt={currentStudent.name}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/ryan.jpg';
+                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
               }}
               className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-100 shadow-md transition group-hover:scale-105"
             />
@@ -171,7 +166,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {currentStudent.name}
               </h2>
               <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 inline-block">
-                {currentStudent.honorNickname || '⭐ Vua/ Nữ Hoàng Chăm Chỉ 👑'}
+                {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
               </span>
 
               <button
@@ -540,7 +535,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </span>
 
               <div className="grid grid-cols-3 gap-3">
-                {KAKAOTALK_AVATARS.map((k) => (
+                {KAKAOTALK_AVATARS_LIST.map((k) => (
                   <button
                     key={k.id}
                     onClick={() => handleSelectKakaoAvatar(k.url)}
@@ -550,7 +545,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       src={k.url}
                       alt={k.name}
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/ryan.jpg';
+                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
                       }}
                       className="w-14 h-14 rounded-2xl object-cover border-2 border-white group-hover:scale-110 transition shadow-sm"
                     />
