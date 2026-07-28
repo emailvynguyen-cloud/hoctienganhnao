@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, User, Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig } from './types';
 import { StorageEngine } from './lib/storage';
+import { INITIAL_USERS } from './data/mockData';
 import { Header } from './components/common/Header';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { TeacherPortal } from './components/teacher/TeacherPortal';
@@ -21,7 +22,8 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
 };
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser());
+  // Always default to Super Admin if no user logged in, so site opens DIRECTLY into dashboard
+  const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser() || INITIAL_USERS[0]);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
 
@@ -50,8 +52,9 @@ export default function App() {
     setHomeworkTasks(StorageEngine.getHomeworkTasks());
     setHomeworkSubmissions(StorageEngine.getHomeworkSubmissions());
     setInvoices(StorageEngine.getInvoices());
-    setBankConfig(StorageEngine.getBankConfig());
-    setCurrentUser(StorageEngine.getCurrentUser());
+    setBankConfig(StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
+    const user = StorageEngine.getCurrentUser() || INITIAL_USERS[0];
+    setCurrentUser(user);
   };
 
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function App() {
   };
 
   const currentRole: UserRole = currentUser?.role || 'super_admin';
-  const currentStudent = students.find((s) => s.status === 'active') || students[0];
+  const currentStudent = students.find((s) => s && s.status === 'active') || students[0];
 
   return (
     <div className={`min-h-screen bg-purple-50/40 dark:bg-slate-950 text-slate-800 dark:text-purple-100 transition-colors duration-200 flex flex-col font-sans`}>
@@ -134,39 +137,8 @@ export default function App() {
               window.history.pushState({}, '', window.location.pathname);
             }}
           />
-        ) : !currentUser ? (
-          /* NOT LOGGED IN DEFAULT VIEW */
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-3xl border-2 border-purple-100 dark:border-purple-800 text-center max-w-2xl mx-auto shadow-xl space-y-6">
-              <img src="/logo.jpg" alt="Ms. Vy English Logo" className="w-24 h-24 rounded-3xl object-cover border-4 border-purple-200 mx-auto shadow-md" />
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                  Hệ Thống Theo Dõi Học Tập Online - MS. VY ENGLISH
-                </h2>
-                <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
-                  Vui lòng đăng nhập với tài khoản Quản lý / Giáo viên hoặc sử dụng đường link học viên cá nhân được cung cấp.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs hover:from-purple-700 hover:to-pink-700 transition shadow-lg shadow-purple-500/20 w-full sm:w-auto"
-                >
-                  Đăng Nhập Quản Lý / Giáo Viên
-                </button>
-
-                <button
-                  onClick={() => setIsLeaderboardOpen(true)}
-                  className="px-6 py-3 rounded-2xl bg-amber-100 text-amber-900 font-extrabold text-xs hover:bg-amber-200 transition border border-amber-200 w-full sm:w-auto"
-                >
-                  🏆 Xem Bảng Thành Tích Thi Đua
-                </button>
-              </div>
-            </div>
-          </div>
         ) : currentRole === 'super_admin' || currentRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN VIEW */
+          /* ADMIN & SUPER ADMIN VIEW (DEFAULT DIRECT VIEW) */
           <AdminDashboard
             currentUser={currentUser}
             students={students}
