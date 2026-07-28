@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Student, Session } from '../../types';
 import { Trophy, Star, Award, Sparkles, CheckCircle2, Flame, Medal, X, ArrowLeft } from 'lucide-react';
+import { KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -124,6 +125,10 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           const isTop3 = index === 2;
           const honorTitle = titlesList[index] || '⭐ Học Viên Tích Cực';
 
+          const avatarSrc = item.student.avatar && item.student.avatar.length > 20
+            ? item.student.avatar
+            : KAKAOTALK_SVG_AVATARS.ryan;
+
           return (
             <div
               key={item.student.id}
@@ -157,10 +162,10 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 </div>
 
                 <img
-                  src={item.student.avatar || '/ryan.jpg'}
+                  src={avatarSrc}
                   alt={item.student.name}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/ryan.jpg';
+                    (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
                   }}
                   className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shadow-md shrink-0"
                 />
