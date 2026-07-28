@@ -27,6 +27,7 @@ import {
   Calendar,
   AlertCircle,
   Clock,
+  ChevronRight,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -109,7 +110,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     (s.email || '').toLowerCase().includes((studentSearchQuery || '').toLowerCase())
   );
 
-  // TUITION COUNTDOWN LIST (SORTED ASCENDING BY REMAINING SESSIONS: ÍT DẦN TỪ TRÊN XUỐNG)
+  // TUITION COUNTDOWN LIST (SORTED ASCENDING BY REMAINING SESSIONS)
   const tuitionCountdownStudents = [...safeStudents]
     .filter((s) => s && s.status !== 'soft_deleted')
     .sort((a, b) => (a.remainingSessions || 0) - (b.remainingSessions || 0));
@@ -198,7 +199,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <span>
             {isSuperAdmin
               ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Toàn quyền quản lý lớp, giáo viên, học viên, học phí & xem Doanh thu tháng.'
-              : 'Bạn đang ở phân hệ QUẢN TRỊ VIÊN (Admin): Theo dõi lớp/học viên, Thêm buổi học & Chấm bài tập về nhà.'}
+              : 'Bạn đang ở phân hệ QUẢN TRỊ VIÊN (Admin): Theo dõi lịch học, danh sách lớp học, học viên & Chấm bài tập về nhà.'}
           </span>
         </div>
       </div>
@@ -227,19 +228,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <MessageSquare className="w-3.5 h-3.5 mr-1" /> Chấm Bài Tập Về Nhà
         </button>
 
-        {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab('teachers')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
-              activeTab === 'teachers'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-indigo-50'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('teachers')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'teachers'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-indigo-50'
+          }`}
+        >
+          <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
+        </button>
 
+        {/* REVENUE TAB - SUPER ADMIN ONLY */}
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('revenue')}
@@ -275,6 +275,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           Danh Sách Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length})
         </button>
 
+        {/* INVOICE & TUITION MANAGEMENT TAB - SUPER ADMIN ONLY */}
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('invoices')}
@@ -299,7 +300,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 2: HOMEWORK GRADING QUEUE (Admin & Super Admin) */}
+      {/* TAB 2: HOMEWORK GRADING QUEUE */}
       {activeTab === 'grading' && (
         <HomeworkGradingWidget
           students={safeStudents}
@@ -307,25 +308,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 3: TEACHERS MANAGEMENT (Super Admin Only) */}
-      {activeTab === 'teachers' && isSuperAdmin && (
+      {/* TAB 3: TEACHERS MANAGEMENT (CLICK TEACHER TO VIEW ASSIGNED CLASSES & ACCESS THEM) */}
+      {activeTab === 'teachers' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                <UserCheck className="w-5 h-5 mr-2 text-indigo-600" /> Quản Lý Đội Ngũ Giáo Viên & Lịch Dạy
+                <UserCheck className="w-5 h-5 mr-2 text-indigo-600" /> Quản Lý Đội Ngũ Giáo Viên & Lớp Học Phụ Trách
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Tạo tài khoản giáo viên mới, gán lớp phụ trách và theo dõi tiến độ thời khóa biểu
+                Bấm vào từng lớp học của giáo viên bên dưới để truy cập trực tiếp trang thông tin & buổi học
               </p>
             </div>
 
-            <button
-              onClick={onOpenAccountManagement}
-              className="px-4 py-2.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-xs hover:bg-indigo-700 transition shadow-sm flex items-center"
-            >
-              + Cấp Tài Khoản Giáo Viên Mới
-            </button>
+            {/* ADD TEACHER BUTTON - SUPER ADMIN ONLY */}
+            {isSuperAdmin && (
+              <button
+                onClick={onOpenAccountManagement}
+                className="px-4 py-2.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-xs hover:bg-indigo-700 transition shadow-sm flex items-center shrink-0"
+              >
+                + Cấp Tài Khoản Giáo Viên Mới
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,23 +337,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               const assignedClasses = safeClasses.filter((c) => c && (c.teacherName === t.displayName || c.teacherId === t.uid));
 
               return (
-                <div key={t.uid} className="p-5 rounded-3xl border border-indigo-100 bg-indigo-50/40 space-y-3">
+                <div
+                  key={t.uid}
+                  className="p-5 rounded-3xl border border-indigo-100 bg-indigo-50/40 space-y-4 shadow-xs"
+                >
                   <div className="flex items-center space-x-3">
-                    <img src={t.avatarUrl || '/logo.jpg'} alt={t.displayName} className="w-12 h-12 rounded-2xl object-cover border border-indigo-200" />
+                    <img src={t.avatarUrl || '/logo.jpg'} alt={t.displayName} className="w-12 h-12 rounded-2xl object-cover border border-indigo-200 shrink-0" />
                     <div>
                       <h4 className="font-black text-sm text-slate-900 dark:text-white">{t.displayName}</h4>
                       <p className="text-xs text-slate-500 font-mono">Email: {t.email} • SĐT: {t.phoneNumber || '0912345678'}</p>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-indigo-100 text-xs text-slate-600 space-y-1">
-                    <span className="font-extrabold text-indigo-900 uppercase block">Lớp Được Phụ Trách ({assignedClasses.length} lớp):</span>
+                  {/* ASSIGNED CLASSES LIST WITH DIRECT ACCESS LINKS */}
+                  <div className="pt-2 border-t border-indigo-100/80 space-y-2 text-xs">
+                    <span className="font-extrabold text-indigo-950 uppercase tracking-wider block">
+                      📚 Danh Sách Lớp Giáo Viên Đang Đảm Nhận ({assignedClasses.length} Lớp):
+                    </span>
+
                     {assignedClasses.length > 0 ? (
-                      assignedClasses.map((cls) => (
-                        <p key={cls.id} className="font-medium flex items-center">
-                          • {cls.className} ({cls.schedule})
-                        </p>
-                      ))
+                      <div className="space-y-2">
+                        {assignedClasses.map((cls) => (
+                          <div
+                            key={cls.id}
+                            onClick={() => setInspectedClass(cls)}
+                            className="p-3 rounded-2xl bg-white border border-indigo-200 hover:border-indigo-500 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
+                          >
+                            <div className="space-y-0.5">
+                              <h5 className="font-extrabold text-xs text-slate-900 group-hover:text-indigo-600 transition">
+                                📖 {cls.className} ({cls.code})
+                              </h5>
+                              <p className="text-[11px] text-slate-500">Lịch học: {cls.schedule}</p>
+                            </div>
+
+                            <span className="text-[11px] font-black text-indigo-600 group-hover:translate-x-1 transition flex items-center shrink-0">
+                              Truy Cập Lớp <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <p className="italic text-slate-400">Chưa được gán lớp nào</p>
                     )}
@@ -361,12 +387,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 4: MONTHLY REVENUE (Super Admin Only) */}
+      {/* TAB 4: MONTHLY REVENUE (SUPER ADMIN ONLY) */}
       {activeTab === 'revenue' && isSuperAdmin && (
         <MonthlyRevenueWidget />
       )}
 
-      {/* TAB 5: CLASSES LIST (Clicking Any Class Opens Full Dedicated Class Details Page) */}
+      {/* TAB 5: CLASSES LIST */}
       {activeTab === 'classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
           
@@ -402,7 +428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
 
-          {/* Add Class Form (INCLUDES START SESSION NUMBER OPTION) */}
+          {/* Add Class Form */}
           {isAddClassOpen && isSuperAdmin && (
             <form onSubmit={handleCreateClass} className="p-5 rounded-3xl bg-purple-50/90 border border-purple-200 space-y-4 animate-fadeIn text-xs shadow-sm">
               <div className="flex items-center justify-between border-b border-purple-200 pb-2">
@@ -437,7 +463,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                {/* OPTION BẮT ĐẦU TỪ BUỔI SỐ MẤY */}
                 <div className="sm:col-span-2 p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
                   <label className="block font-extrabold text-amber-900 text-xs uppercase">
                     ⭐ Buổi Học Bắt Đầu Của Lớp (Tùy chọn cho lớp chuyển nền tảng):
@@ -520,7 +545,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </form>
           )}
 
-          {/* Classes Grid - CLICKING ANY CLASS OPENS DEDICATED CLASS PAGE */}
+          {/* Classes Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredClasses.map((cls) => (
               <div
@@ -566,7 +591,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 6: STUDENTS LIST (With Search Bar) */}
+      {/* TAB 6: STUDENTS LIST */}
       {activeTab === 'students' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
           
@@ -696,7 +721,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* TAB 7: TUITION COUNTDOWN & VIETQR RECEIPT GENERATOR (BẢNG ĐẾM NGƯỢC SỐ BUỔI CÒN LẠI ÍT DẦN TỪ TRÊN XUỐNG) */}
+      {/* TAB 7: TUITION COUNTDOWN & VIETQR RECEIPT GENERATOR (SUPER ADMIN ONLY) */}
       {activeTab === 'invoices' && isSuperAdmin && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-5">
           <div>
@@ -740,7 +765,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-3 shrink-0">
-                    {/* COUNTDOWN PILL */}
                     {remCount === 0 ? (
                       <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse flex items-center shadow-sm">
                         <AlertCircle className="w-4 h-4 mr-1" /> 0 BUỔI - ĐÃ HẾT HỌC PHÍ!
@@ -773,7 +797,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* RECEIPT GENERATOR MODAL */}
-      {selectedStudentForReceipt && (
+      {selectedStudentForReceipt && isSuperAdmin && (
         <ReceiptGeneratorModal
           isOpen={Boolean(selectedStudentForReceipt)}
           onClose={() => setSelectedStudentForReceipt(null)}
