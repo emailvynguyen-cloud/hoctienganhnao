@@ -27,6 +27,7 @@ import {
   Upload,
   X,
   Smile,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -70,17 +71,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // Student's sessions
   const studentSessions = (sessions || []).filter((s) => s && s.classId === primaryClass?.id);
 
+  // LATEST SESSION FOR PROGRESS CALCULATION (Buổi học gần nhất)
+  const latestSession = studentSessions[studentSessions.length - 1] || studentSessions[0];
+  const latestSessionItems = latestSession?.homeworkItems || [];
+  const completedLatestItemsCount = latestSessionItems.filter((item) =>
+    currentStudent.completedHomeworkTaskIds?.includes(item.id)
+  ).length;
+
+  const progressPercent = latestSessionItems.length > 0
+    ? Math.min(100, Math.round((completedLatestItemsCount / latestSessionItems.length) * 100))
+    : 100;
+
   // Extract all session-attached materials
   const allSessionMaterials = studentSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
     ...m,
     sessionNum: s.sessionNumber,
     date: s.date,
   })));
-
-  // Progress Bar Calculation
-  const totalCount = Math.max(1, studentSessions.length);
-  const completedCount = currentStudent.completedHomeworkTaskIds ? currentStudent.completedHomeworkTaskIds.length : 0;
-  const progressPercent = Math.min(100, Math.round((completedCount / totalCount) * 100));
 
   // Toggle Homework Item Checkbox
   const handleToggleHomeworkItem = (sessionId: string, homeworkItemId: string, homeworkTitle: string) => {
@@ -309,13 +316,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       </div>
 
-      {/* 3. OVERALL PROGRESS BAR */}
+      {/* 3. OVERALL PROGRESS BAR (DỰA VÀO BUỔI HỌC GẦN NHẤT) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Flame className="w-5 h-5 text-pink-500 animate-bounce" />
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider">
-              Thanh Tổng Tiến Độ Hoàn Thành Bài Tập Về Nhà
+              Thanh Tiến Độ Bài Tập Buổi Gần Nhất (Buổi #{latestSession?.sessionNumber || 1})
             </h3>
           </div>
           <span className="text-sm font-black text-purple-700">{progressPercent}% Hoàn Thành</span>
@@ -328,7 +335,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           />
         </div>
         <p className="text-xs text-slate-500 font-medium">
-          Đã tích chọn {completedCount} bài tập về nhà. Tích cực làm bài để vinh danh trên Bảng Thành Tích Thi Đua!
+          Đã tick hoàn thành <strong>{completedLatestItemsCount} / {latestSessionItems.length}</strong> bài tập về nhà của buổi gần nhất. Tích cực làm bài để vinh danh trên Bảng Thành Tích!
         </p>
       </div>
 
@@ -407,7 +414,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </div>
                 )}
 
-                {/* PER-ITEM HOMEWORK TASKS & CHECKBOX */}
+                {/* PER-ITEM HOMEWORK TASKS & CHECKBOX (RED IF UNCHECKED FOR HIGH VISIBILITY) */}
                 <div className="space-y-2">
                   <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
                     📝 Bài Tập Về Nhà Cần Làm ({itemsList.length} bài):
@@ -424,14 +431,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                           className={`p-4 rounded-2xl border transition space-y-2 ${
                             isItemChecked
                               ? 'bg-emerald-50/50 border-emerald-200'
-                              : 'bg-slate-50 border-purple-100'
+                              : 'bg-rose-50/70 border-rose-300'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
-                              <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                                {hwItem.title}
-                              </h5>
+                              <div className="flex items-center space-x-2">
+                                <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                                  {hwItem.title}
+                                </h5>
+                                {!isItemChecked && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white animate-pulse">
+                                    ⚠️ CHƯA NỘP BÀI
+                                  </span>
+                                )}
+                              </div>
                               {hwItem.content && (
                                 <p className="text-xs text-slate-600 font-medium">{hwItem.content}</p>
                               )}
@@ -447,17 +461,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                               )}
                             </div>
 
-                            {/* PER-ITEM CHECKBOX */}
+                            {/* PER-ITEM CHECKBOX (MÀU ĐỎ NỔI BẬT LÚC CHƯA TICK) */}
                             <button
                               onClick={() => handleToggleHomeworkItem(session.id, hwItem.id, hwItem.title)}
-                              className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center shrink-0 ${
+                              className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center shrink-0 shadow-md ${
                                 isItemChecked
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+                                  ? 'bg-emerald-600 text-white border-2 border-emerald-700 shadow-sm'
+                                  : 'bg-rose-600 hover:bg-rose-700 text-white border-2 border-rose-700 animate-pulse ring-2 ring-rose-300'
                               }`}
                             >
-                              <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                              {isItemChecked ? '✓ Đã Làm Bài' : 'Check Đã Làm'}
+                              {isItemChecked ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                  ✓ Đã Làm Bài
+                                </>
+                              ) : (
+                                <>
+                                  <AlertCircle className="w-4 h-4 mr-1.5 animate-bounce" />
+                                  ⚡ CHƯA LÀM BÀI (TICK NGAY)
+                                </>
+                              )}
                             </button>
                           </div>
 
