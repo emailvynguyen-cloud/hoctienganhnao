@@ -32,8 +32,8 @@ export const PublicStudentPortal: React.FC<PublicStudentPortalProps> = ({
 
   if (!matchedStudent) {
     return (
-      <div className="min-h-screen bg-purple-50/50 dark:bg-slate-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-purple-200 text-center max-w-md space-y-4 shadow-xl">
+      <div className="min-h-screen bg-pink-50/30 dark:bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-pink-200 text-center max-w-md space-y-4 shadow-sm">
           <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
             <Lock className="w-6 h-6" />
           </div>
@@ -41,7 +41,7 @@ export const PublicStudentPortal: React.FC<PublicStudentPortalProps> = ({
             Đường Dẫn Học Viên Không Hợp Lệ
           </h2>
           <p className="text-xs text-slate-500">
-            Mã băm bảo mật <code className="font-mono text-purple-600">{publicHash}</code> không tồn tại trong hệ thống.
+            Mã băm bảo mật <code className="font-mono text-pink-600">{publicHash}</code> không tồn tại trong hệ thống.
           </p>
         </div>
       </div>
