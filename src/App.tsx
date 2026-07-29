@@ -22,14 +22,27 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
   centerLogoUrl: '/logo.jpg',
 };
 
+// Synchronously parse initial URL parameters to detect student hash before initial render
+const getInitialPublicHash = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('hash') || urlParams.get('student');
+};
+
 export default function App() {
+  const [activePublicHash, setActivePublicHash] = useState<string | null>(getInitialPublicHash);
   const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser());
   const [activeRoleView, setActiveRoleView] = useState<UserRole>('super_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [activePublicHash, setActivePublicHash] = useState<string | null>(null);
 
-  // ALWAYS FORCE LOGIN MODAL TO OPEN ON INITIAL PAGE LOAD
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(true);
+  // SYNCHRONOUS INITIALIZATION: DO NOT OPEN LOGIN MODAL IF ACCESSED VIA PUBLIC STUDENT LINK (?hash=...)
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
+    const hash = getInitialPublicHash();
+    if (hash) return false;
+    const user = StorageEngine.getCurrentUser();
+    return !user;
+  });
+
   const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
@@ -62,14 +75,10 @@ export default function App() {
     loadData();
 
     // Check URL parameters for Obfuscated Student Public Hash ?hash=... or ?student=...
-    const urlParams = new URLSearchParams(window.location.search);
-    const hash = urlParams.get('hash') || urlParams.get('student');
+    const hash = getInitialPublicHash();
     if (hash) {
       setActivePublicHash(hash);
       setIsLoginOpen(false);
-    } else {
-      // If visiting main site, ALWAYS FORCE POPUP LOGIN MODAL
-      setIsLoginOpen(true);
     }
   }, []);
 
@@ -311,7 +320,7 @@ export default function App() {
       {isLeaderboardOpen && (
         <LeaderboardWidget
           isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
+          onClose={() => setIsLeaderboardOpen(false)}
           students={students}
           sessions={sessions}
         />
