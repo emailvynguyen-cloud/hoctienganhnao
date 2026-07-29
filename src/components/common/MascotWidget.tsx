@@ -34,7 +34,7 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
   };
 
   return (
-    <div className="relative group bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-pink-950/40 dark:to-indigo-950/40 p-4 rounded-3xl border border-purple-200/50 dark:border-purple-800/50 flex items-center justify-between shadow-sm">
+    <div className="relative group bg-gradient-to-r from-pink-100/70 via-amber-50/70 to-sky-100/70 dark:from-slate-800 dark:to-slate-800 p-4 rounded-3xl border border-pink-200/80 dark:border-slate-700 flex items-center justify-between shadow-xs">
       <div className="flex items-center space-x-4">
         {/* Animated Mascot Icon */}
         <button
@@ -44,7 +44,7 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
           }`}
           title="Bấm vào linh vật Ms. Vy để đổi câu truyền cảm hứng!"
         >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 overflow-hidden">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-300 to-sky-300 flex items-center justify-center text-white shadow-xs overflow-hidden border-2 border-white">
             <img src="/logo.jpg" alt="Ms. Vy Mascot" className="w-full h-full object-cover" />
           </div>
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
@@ -58,12 +58,12 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
         {/* Speech Bubble / Quote */}
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-pink-700 dark:text-pink-400 flex items-center">
               <Sparkles className="w-3.5 h-3.5 mr-1" /> Thông Điệp Truyền Cảm Hứng Ms. Vy
             </span>
             <span className="text-xs text-slate-400">• Chào {studentName}!</span>
           </div>
-          <p className="text-sm font-semibold text-purple-950 dark:text-slate-100 mt-0.5 italic">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-0.5 italic">
             "{QUOTES[quoteIndex]}"
           </p>
         </div>
