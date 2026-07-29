@@ -33,8 +33,6 @@ import {
   BarChart2,
   Trophy,
   Zap,
-  Share2,
-  Link,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -59,7 +57,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   bankConfig,
   onRefreshData,
 }) => {
-  const [copiedLink, setCopiedLink] = useState(false);
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -76,9 +73,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // Student's classes
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
-
-  // Direct Student Personal Learning Portal Link
-  const studentPublicUrl = `${window.location.origin}/?hash=${currentStudent.publicHash}`;
 
   // Student's sessions sorted chronologically descending (newest first)
   const studentSessions = (sessions || [])
@@ -100,108 +94,92 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     ? Math.min(100, Math.round((completedLatestItemsCount / latestSessionItems.length) * 100))
     : 100;
 
-  // Extract all session-attached materials
+  // Extract all session materials
   const allSessionMaterials = studentSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
     ...m,
     sessionNum: s.sessionNumber,
     date: s.date,
   })));
 
-  // Filter materials search query
   const filteredSessionMaterials = allSessionMaterials.filter((mat) =>
     (mat.title || '').toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
     `buoi ${mat.sessionNum}`.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
     `${mat.sessionNum}`.includes(materialSearchQuery)
   );
 
-  // Toggle Homework Item Checkbox
-  const handleToggleHomeworkItem = (sessionId: string, homeworkItemId: string, homeworkTitle: string) => {
-    const isNowChecked = StorageEngine.toggleHomeworkTaskItemCheck(
-      currentStudent.id,
-      sessionId,
-      homeworkItemId,
-      homeworkTitle
-    );
-
-    if (isNowChecked) {
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.7 },
-      });
-    }
-
-    onRefreshData();
-  };
-
-  // Change Student Avatar
-  const handleSelectKakaoAvatar = (avatarUrl: string) => {
-    const updatedStudent = { ...currentStudent, avatar: avatarUrl };
-    StorageEngine.updateStudent(updatedStudent);
-    setIsAvatarModalOpen(false);
-    confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
-    onRefreshData();
-  };
-
-  // Custom File Upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      if (base64Url) {
-        const updatedStudent = { ...currentStudent, avatar: base64Url };
-        StorageEngine.updateStudent(updatedStudent);
-        setIsAvatarModalOpen(false);
-        confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
-        onRefreshData();
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   const studentAvatarSrc = resolveAvatarUrl(currentStudent.avatar);
 
-  // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION
-  const getSessionBgStyle = (sessionNumber: number) => {
-    const mod = Math.abs(sessionNumber) % 4;
-    if (mod === 1) return 'bg-gradient-to-r from-pink-50/90 via-purple-50/70 to-pink-50/90 border-pink-200 dark:bg-slate-900';
-    if (mod === 2) return 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200 dark:bg-slate-900';
-    if (mod === 3) return 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200 dark:bg-slate-900';
-    return 'bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-indigo-50/90 border-indigo-200 dark:bg-slate-900';
+  const handleToggleTaskCheck = (taskId: string) => {
+    StorageEngine.toggleStudentHomeworkTaskCheck(currentStudent.id, taskId);
+    onRefreshData();
   };
 
-  // Helper render single session card
-  const renderSessionCard = (session: Session) => {
-    const myFeedback = session.studentFeedbacks ? session.studentFeedbacks[currentStudent.id] : null;
-    const itemsList = session.homeworkItems || [];
-    const bgStyle = getSessionBgStyle(session.sessionNumber);
+  const handleSelectKakaoAvatar = (avatarSvgStr: string) => {
+    StorageEngine.updateStudentAvatar(currentStudent.id, avatarSvgStr);
+    setIsAvatarModalOpen(false);
+    onRefreshData();
+  };
 
+  const handleFileUploadAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Vui lòng chọn ảnh dung lượng dưới 2MB!');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Str = event.target?.result as string;
+        if (base64Str) {
+          StorageEngine.updateStudentAvatar(currentStudent.id, base64Str);
+          setIsAvatarModalOpen(false);
+          onRefreshData();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // HELPER: RENDER SINGLE SESSION CARD WITH MOTIVATING MINI PROGRESS BAR STRIP
+  const renderSessionCard = (session: Session, isRecent: boolean = true) => {
+    const itemsList = session.homeworkItems || [];
     const completedItems = itemsList.filter((item) =>
       currentStudent.completedHomeworkTaskIds?.includes(item.id)
     ).length;
     const totalItems = itemsList.length;
     const sessionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 100;
 
+    // ALTERNATING PASTEL STYLES
+    const mod = Math.abs(session.sessionNumber) % 4;
+    let cardBgStyle = 'bg-gradient-to-r from-pink-50/90 via-purple-50/70 to-pink-50/90 border-pink-200';
+    if (mod === 2) cardBgStyle = 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200';
+    if (mod === 3) cardBgStyle = 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200';
+    if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-indigo-50/90 border-indigo-200';
+
     return (
       <div
         key={session.id}
-        className={`rounded-3xl border p-6 shadow-sm space-y-4 hover:shadow-md transition duration-200 ${bgStyle}`}
+        className={`rounded-3xl border p-6 shadow-sm space-y-4 hover:shadow-md transition duration-200 dark:bg-slate-900 ${cardBgStyle}`}
       >
-        {/* Session Header: Number & Date */}
+        {/* Session Header: Number, Date, Record Video */}
         <div className="flex items-center justify-between border-b border-purple-200/60 pb-3">
           <div className="flex items-center space-x-3">
             <span className="w-10 h-10 rounded-2xl bg-purple-600 text-white font-black text-sm flex items-center justify-center shadow-md">
               #{session.sessionNumber}
             </span>
             <div>
-              <h4 className="font-black text-sm text-slate-900 dark:text-white">
-                Buổi Học Số {session.sessionNumber}
-              </h4>
+              <div className="flex items-center space-x-2">
+                <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                  Buổi Học Số {session.sessionNumber}
+                </h4>
+                {isRecent && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-500 text-white uppercase animate-pulse">
+                    Mới Nhất
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                Ngày học: {session.date} • GV: {session.teacherName || 'Ms. Vy'}
+                Ngày học: {session.date} • GV: {session.teacherName || primaryClass?.teacherName}
               </span>
             </div>
           </div>
@@ -221,122 +199,88 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {/* Lesson Content */}
         <div className="space-y-1">
           <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
-            📘 Nội Dung Học Trong Buổi:
+            📘 Nội Dung Bài Học:
           </span>
           <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-purple-100/80 backdrop-blur-xs">
             {session.lessonContent}
           </p>
         </div>
 
-        {/* INDIVIDUAL TEACHER COMMENT FOR THIS STUDENT */}
-        {myFeedback && (myFeedback.strengths || myFeedback.improvements) && (
-          <div className="p-4 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-pink-200 space-y-2 text-xs backdrop-blur-xs">
-            <span className="font-black text-pink-900 uppercase block">
-              💬 Nhận Xét Của Giáo Viên Dành Cho {currentStudent.name}:
+        {/* Teacher Comment for THIS specific student in THIS session */}
+        {session.studentFeedbacks?.[currentStudent.id] && (
+          <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
+            <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
+              💬 Nhận Xét Riêng Từ Cô Vy Cho Em:
             </span>
-
-            {myFeedback.strengths && (
-              <p className="text-emerald-800 font-medium">
-                💪 <strong>Điểm mạnh:</strong> {myFeedback.strengths}
+            {session.studentFeedbacks[currentStudent.id].strengths && (
+              <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
+                💪 <strong>Điểm mạnh:</strong> {session.studentFeedbacks[currentStudent.id].strengths}
               </p>
             )}
-
-            {myFeedback.improvements && (
-              <p className="text-amber-800 font-medium">
-                🎯 <strong>Điểm cần cải thiện:</strong> {myFeedback.improvements}
+            {session.studentFeedbacks[currentStudent.id].improvements && (
+              <p className="text-amber-800 dark:text-amber-300 font-semibold">
+                🎯 <strong>Cần phát huy:</strong> {session.studentFeedbacks[currentStudent.id].improvements}
               </p>
             )}
           </div>
         )}
 
-        {/* PER-ITEM HOMEWORK TASKS & CHECKBOX */}
+        {/* Homework Items Checklist */}
         <div className="space-y-2">
           <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
-            📝 Bài Tập Về Nhà Cần Làm ({itemsList.length} bài):
+            📝 Bài Tập Về Nhà Nền Nổi ({itemsList.length} bài):
           </span>
 
           {itemsList.length > 0 ? (
             itemsList.map((hwItem) => {
-              const isItemChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id) || false;
-              const subRecord = (homeworkSubmissions || []).find((s) => s && s.studentId === currentStudent.id && s.homeworkTaskId === hwItem.id);
+              const isChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id);
 
               return (
                 <div
                   key={hwItem.id}
-                  className={`p-4 rounded-2xl border transition space-y-2 ${
-                    isItemChecked
-                      ? 'bg-emerald-50/80 border-emerald-300'
-                      : 'bg-rose-50/90 border-rose-400 shadow-xs'
+                  className={`p-3.5 rounded-2xl border transition flex items-center justify-between text-xs ${
+                    isChecked
+                      ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950'
+                      : 'bg-white/90 dark:bg-slate-800/90 border-purple-100 text-slate-800'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                          {hwItem.title}
-                        </h5>
-                        {!isItemChecked && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white animate-pulse">
-                            ⚠️ CHƯA NỘP BÀI
-                          </span>
-                        )}
-                      </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleToggleTaskCheck(hwItem.id)}
+                      className={`w-6 h-6 rounded-xl flex items-center justify-center transition border-2 ${
+                        isChecked
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                          : 'border-purple-300 hover:border-purple-500 bg-white'
+                      }`}
+                      title={isChecked ? 'Bấm để hủy tích' : 'Bấm để tích đã làm bài này'}
+                    >
+                      {isChecked && <CheckCircle2 className="w-4 h-4" />}
+                    </button>
+                    <div>
+                      <h5 className={`font-extrabold ${isChecked ? 'line-through opacity-70' : ''}`}>
+                        {hwItem.title}
+                      </h5>
                       {hwItem.content && (
-                        <p className="text-xs text-slate-600 font-medium">{hwItem.content}</p>
-                      )}
-                      {hwItem.attachmentUrl && (
-                        <a
-                          href={hwItem.attachmentUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-purple-700 font-bold underline inline-block"
-                        >
-                          🔗 Xem File / Ảnh bài tập đính kèm
-                        </a>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{hwItem.content}</p>
                       )}
                     </div>
-
-                    <button
-                      onClick={() => handleToggleHomeworkItem(session.id, hwItem.id, hwItem.title)}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center shrink-0 shadow-md ${
-                        isItemChecked
-                          ? 'bg-emerald-600 text-white border-2 border-emerald-700 shadow-sm'
-                          : 'bg-rose-600 hover:bg-rose-700 text-white border-2 border-rose-700 animate-pulse ring-2 ring-rose-300'
-                      }`}
-                    >
-                      {isItemChecked ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                          ✓ Đã Làm Bài
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-4 h-4 mr-1.5 animate-bounce" />
-                          ⚡ CHƯA LÀM BÀI (TICK NGAY)
-                        </>
-                      )}
-                    </button>
                   </div>
 
-                  {subRecord && (
-                    <div className="pt-2 border-t border-purple-100/60 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium">Trạng thái chấm bài của GV:</span>
-                      {subRecord.isTeacherFeedbackChecked ? (
-                        <span className="font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                          ✓ Đã Feedback ({subRecord.ratingStars || 3} ⭐): {subRecord.feedbackText}
-                        </span>
-                      ) : (
-                        <span className="font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
-                          ⏳ Đã nộp bài - Đang chờ Giáo viên / Admin feedback
-                        </span>
-                      )}
-                    </div>
+                  {hwItem.attachmentUrl && (
+                    <a
+                      href={hwItem.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1 rounded-xl bg-purple-100 text-purple-800 text-[11px] font-bold hover:bg-purple-200 transition shrink-0"
+                    >
+                      🔗 Xem Link Đính Kèm
+                    </a>
                   )}
                 </div>
               );
             })
           ) : (
-            <p className="text-xs text-slate-400 italic">Không có bài tập về nhà cho buổi này.</p>
+            <p className="text-xs text-slate-400 italic">Không có bài tập đính kèm cho buổi này.</p>
           )}
         </div>
 
@@ -390,7 +334,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND & COPY STUDENT LINK BUTTON */}
+      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND */}
       <div className="bg-gradient-to-r from-pink-100/90 via-purple-100/90 to-indigo-100/90 dark:from-purple-950 dark:to-slate-900 rounded-3xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-md relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
           
@@ -436,30 +380,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <p><strong>Giáo trình:</strong> {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}</p>
               <p><strong>Lịch học:</strong> {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}</p>
             </div>
-
-            {/* BUTTON TO COPY DIRECT PERSONAL LEARNING LINK FOR STUDENT / PARENTS */}
-            <div className="pt-1">
-              <button
-                onClick={() => {
-                  copyToClipboard(studentPublicUrl);
-                  setCopiedLink(true);
-                  confetti({ particleCount: 35, spread: 55, origin: { y: 0.6 } });
-                  setTimeout(() => setCopiedLink(false), 2500);
-                }}
-                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-xs transition-all shadow-md hover:shadow-lg flex items-center space-x-1.5 border border-purple-300/40"
-              >
-                {copiedLink ? (
-                  <Check className="w-4 h-4 text-emerald-300" />
-                ) : (
-                  <Share2 className="w-4 h-4 text-pink-200 animate-pulse" />
-                )}
-                <span>
-                  {copiedLink
-                    ? `✓ Đã Copy Link Trang Học Tập Của Em ${currentStudent.name}!`
-                    : `🔗 Copy Link Trang Học Tập Cá Nhân Để Gửi Phụ Huynh / Học Viên`}
-                </span>
-              </button>
-            </div>
           </div>
 
           {/* Remaining Sessions Highlight Pill */}
@@ -474,16 +394,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
           </div>
+
         </div>
       </div>
 
-      {/* Mascot Widget with 6 Custom Quotes */}
-      <MascotWidget studentName={currentStudent.name} starsCount={currentStudent.stars} />
+      {/* 2. MOTIVATIONAL MASCOT QUOTE WIDGET */}
+      <MascotWidget
+        studentName={currentStudent.name}
+        starsCount={currentStudent.stars}
+      />
 
-      {/* 2. KHO TÀI LIỆU & GIÁO TRÌNH */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
+      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH XUYÊN SUỐT KHÓA HỌC */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 p-6 shadow-sm space-y-5">
         
-        {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH */}
+        {/* PHẦN 1: GOOGLE DRIVE KHÓA HỌC CHÍNH */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <FolderOpen className="w-5 h-5 text-purple-600 animate-pulse" />
@@ -492,15 +416,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </h3>
           </div>
 
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500 via-indigo-600 to-pink-500 text-white shadow-md space-y-2">
-            <h4 className="font-black text-sm">
-              📁 Thư Mục Google Drive Giáo Trình Xuyên Suốt Khóa: {primaryClass?.courseName || 'Tiếng Anh Ms. Vy'}
-            </h4>
-            <p className="text-xs text-purple-100 font-medium">
-              Chứa đầy đủ Sách Ebook, File Audio Nghe, Từ vựng Academic & Đề thi luyện tập toàn khóa.
-            </p>
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 text-white shadow-lg space-y-3">
+            <div>
+              <h4 className="font-black text-sm sm:text-base">
+                📁 Thư Mục Google Drive Giáo Trình Xuyên Suốt Khóa: {primaryClass?.courseName}
+              </h4>
+              <p className="text-xs text-purple-100 font-medium mt-0.5">
+                Chứa đầy đủ Sách Ebook, File Audio Nghe, Từ vựng Academic & Đề thi luyện tập toàn khóa
+              </p>
+            </div>
 
-            <div className="pt-2 flex flex-wrap gap-2">
+            <div className="pt-1 flex flex-wrap gap-2">
               {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
                 primaryClass.resourceLinks.map((res) => (
                   <a
@@ -508,9 +434,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     href={res.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center shrink-0"
+                    className="px-4 py-2.5 rounded-2xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-md flex items-center shrink-0"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                    <ExternalLink className="w-4 h-4 mr-2 text-purple-600" />
                     {res.title}
                   </a>
                 ))
@@ -519,9 +445,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   href="https://drive.google.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center"
+                  className="px-4 py-2.5 rounded-2xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-md flex items-center"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                  <ExternalLink className="w-4 h-4 mr-2 text-purple-600" />
                   Mở Thư Mục Google Drive Giáo Trình Chính
                 </a>
               )}
@@ -529,11 +455,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         </div>
 
-        {/* PHẦN 2: TÀI LIỆU & BÀI TẬP ĐÍNH KÈM THEO BUỔI HỌC */}
+        {/* PHẦN 2: SEARCHABLE / COLLAPSIBLE SESSION MATERIALS */}
         <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
-              📎 Tài Liệu & Bài Tập Kèm Theo Ở Các Buổi Học ({allSessionMaterials.length} file)
+              📎 Tài Liệu Theo Từng Buổi Học ({allSessionMaterials.length} File)
             </span>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
@@ -541,7 +467,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Tra cứu tên bài tập, số buổi..."
+                  placeholder="Tìm tài liệu buổi học..."
                   value={materialSearchQuery}
                   onChange={(e) => {
                     setMaterialSearchQuery(e.target.value);
@@ -557,18 +483,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               >
                 {isExtraMaterialsOpen ? (
                   <>
-                    <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn Kho
+                    <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Rộng Tất Cả
+                    <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Xem
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Collapsible & Search-Filtered Materials Container */}
+          {/* Search-Filtered Materials List */}
           {isExtraMaterialsOpen && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fadeIn">
               {filteredSessionMaterials.length > 0 ? (
@@ -594,7 +520,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </a>
                 ))
               ) : (
-                <p className="text-xs text-slate-400 italic col-span-2">Không tìm thấy tài liệu phù hợp từ khóa "{materialSearchQuery}".</p>
+                <p className="text-xs text-slate-400 italic col-span-2">Không tìm thấy tài liệu phù hợp từ khóa.</p>
               )}
             </div>
           )}
@@ -602,81 +528,61 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       </div>
 
-      {/* 3. OVERALL PROGRESS BAR (DỰ A VÀO BUỔI HỌC GẦN NHẤT) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Flame className="w-5 h-5 text-pink-500 animate-bounce" />
-            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider">
-              Thanh Tiến Độ Bài Tập Buổi Gần Nhất (Buổi #{latestSession?.sessionNumber || 1})
-            </h3>
-          </div>
-          <span className="text-sm font-black text-purple-700">{progressPercent}% Hoàn Thành</span>
-        </div>
-
-        <div className="w-full bg-purple-100 h-4 rounded-full overflow-hidden p-0.5 border border-purple-200">
-          <div
-            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 rounded-full transition-all duration-700"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <p className="text-xs text-slate-500 font-medium">
-          Đã tick hoàn thành <strong>{completedLatestItemsCount} / {latestSessionItems.length}</strong> bài tập về nhà của buổi gần nhất. Tích cực làm bài để vinh danh trên Bảng Thành Tích!
-        </p>
-      </div>
-
-      {/* 4. SESSION LIST */}
+      {/* 4. RECENT 2 SESSIONS (MOST IMPORTANT) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-            <Calendar className="w-5 h-5 mr-2 text-purple-600" /> Bảng Theo Dõi Học Tập Theo Buổi
+            <Flame className="w-5 h-5 mr-2 text-pink-500 animate-pulse" /> 2 Buổi Học Mới Nhất (Cập Nhật Liên Tục)
           </h3>
+          <span className="text-xs text-purple-700 font-black bg-purple-100 px-3 py-1 rounded-full">
+            Tất cả bài tập đều có tích chọn tự động
+          </span>
         </div>
 
-        {/* 2 MOST RECENT SESSIONS FULLY OPEN */}
         {recent2Sessions.length > 0 ? (
-          recent2Sessions.map((session) => renderSessionCard(session))
+          recent2Sessions.map((s) => renderSessionCard(s, true))
         ) : (
           <div className="p-8 text-center bg-white rounded-3xl border border-purple-100 text-xs text-slate-500 italic">
-            Chưa có thông tin buổi học nào được cập nhật.
+            Chưa có thông tin buổi học nào được ghi nhận.
           </div>
         )}
-
-        {/* OLDER SESSIONS COLLAPSIBLE ACCORDION */}
-        {olderSessions.length > 0 && (
-          <div className="pt-2 space-y-4">
-            <button
-              onClick={() => setIsOlderSessionsOpen(!isOlderSessionsOpen)}
-              className="w-full py-3.5 px-6 rounded-3xl bg-gradient-to-r from-purple-100 via-pink-100 to-indigo-100 hover:from-purple-200 hover:to-pink-200 text-purple-950 font-black text-xs transition shadow-sm flex items-center justify-center space-x-2 border border-purple-200"
-            >
-              {isOlderSessionsOpen ? (
-                <>
-                  <ChevronUp className="w-4 h-4 text-purple-600" />
-                  <span>Thu Gọn Lịch Sử {olderSessions.length} Buổi Học Trước Đó</span>
-                </>
-              ) : (
-                <>
-                  <History className="w-4 h-4 text-purple-600 animate-spin" />
-                  <span>📂 Mở Xem Lịch Sử {olderSessions.length} Buổi Học Trước Đó</span>
-                  <ChevronDown className="w-4 h-4 text-purple-600" />
-                </>
-              )}
-            </button>
-
-            {isOlderSessionsOpen && (
-              <div className="space-y-4 animate-fadeIn">
-                {olderSessions.map((session) => renderSessionCard(session))}
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
 
-      {/* AVATAR PICKER MODAL */}
+      {/* 5. OLDER SESSIONS COLLAPSIBLE SECTION */}
+      {olderSessions.length > 0 && (
+        <div className="space-y-4 pt-2">
+          <button
+            onClick={() => setIsOlderSessionsOpen(!isOlderSessionsOpen)}
+            className="w-full p-4 rounded-3xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 hover:border-purple-400 transition flex items-center justify-between text-xs font-black text-purple-950 dark:text-purple-200 shadow-sm"
+          >
+            <span className="flex items-center">
+              <History className="w-4 h-4 mr-2 text-purple-600" />
+              Xem Lại Các Buổi Học Cũ Hơn ({olderSessions.length} buổi)
+            </span>
+            {isOlderSessionsOpen ? (
+              <span className="text-purple-600 flex items-center">
+                Thu gọn danh sách <ChevronUp className="w-4 h-4 ml-1" />
+              </span>
+            ) : (
+              <span className="text-purple-600 flex items-center">
+                Mở rộng tất cả {olderSessions.length} buổi <ChevronDown className="w-4 h-4 ml-1" />
+              </span>
+            )}
+          </button>
+
+          {isOlderSessionsOpen && (
+            <div className="space-y-4 animate-fadeIn">
+              {olderSessions.map((s) => renderSessionCard(s, false))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AVATAR KAKAOTALK SELECTOR / UPLOAD MODAL */}
       {isAvatarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-5 relative">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-6 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
+            
             <button
               onClick={() => setIsAvatarModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
@@ -685,63 +591,51 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </button>
 
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mx-auto font-black text-xl">
-                🎀
-              </div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Đổi Ảnh Đại Diện Học Viên
+                Chọn Ảnh Đại Diện Hoặc Avatar KakaoTalk
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Tải ảnh riêng từ thiết bị hoặc chọn 1 nhân vật KakaoTalk Friends siêu cute!
+                Chọn 1 trong các linh vật KakaoTalk siêu dễ thương hoặc tải ảnh tùy chọn của em lên nhé!
               </p>
             </div>
 
-            {/* OPTION 1: CUSTOM FILE UPLOAD */}
-            <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-center space-y-2">
-              <span className="font-extrabold text-xs text-purple-900 uppercase block">
-                Cách 1: Tải Ảnh Đại Diện Từ Máy Tính / Điện Thoại
-              </span>
-              <label className="cursor-pointer inline-flex items-center px-4 py-2.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm">
-                <Upload className="w-4 h-4 mr-2" /> Chọn File Ảnh Từ Máy
-                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-              </label>
-            </div>
-
-            {/* OPTION 2: KAKAOTALK FRIENDS AVATARS GRID */}
+            {/* KAKAOTALK FRIENDS AVATAR GRID */}
             <div className="space-y-2">
-              <span className="font-extrabold text-xs text-slate-700 dark:text-purple-300 uppercase block">
-                Cách 2: Chọn Linh Vật KakaoTalk Friends Cute:
+              <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+                ✨ Bộ Cặp Đôi KakaoTalk Friends Nổi Tiếng:
               </span>
-
-              <div className="grid grid-cols-3 gap-3">
-                {KAKAOTALK_AVATARS_LIST.map((k) => (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                {KAKAOTALK_AVATARS_LIST.map((kt) => (
                   <button
-                    key={k.id}
-                    onClick={() => handleSelectKakaoAvatar(k.url)}
-                    className="p-2 rounded-2xl border border-purple-100 hover:border-purple-400 bg-purple-50/40 hover:bg-purple-100/50 transition flex flex-col items-center space-y-1.5 group cursor-pointer"
+                    key={kt.id}
+                    onClick={() => handleSelectKakaoAvatar(kt.svgDataUrl)}
+                    className="p-2 rounded-2xl border-2 border-purple-100 hover:border-purple-500 hover:bg-purple-50 transition flex flex-col items-center space-y-1 group"
                   >
-                    <img
-                      src={k.url}
-                      alt={k.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                      }}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white group-hover:scale-110 transition shadow-sm"
-                    />
-                    <span className="text-[10px] font-bold text-purple-900 text-center leading-tight">
-                      {k.name}
-                    </span>
+                    <img src={kt.svgDataUrl} alt={kt.name} className="w-12 h-12 rounded-xl object-cover group-hover:scale-110 transition" />
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{kt.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="text-right pt-2">
+            {/* CUSTOM UPLOAD IMAGE SECTION */}
+            <div className="pt-3 border-t border-purple-100 space-y-2">
+              <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+                📤 Hoặc Tải Ảnh Tự Chọn Từ Máy Tính / Điện Thoại:
+              </span>
+              <label className="p-4 rounded-2xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-xs text-purple-900 font-bold">
+                <Upload className="w-6 h-6 text-purple-600" />
+                <span>Bấm vào đây để chọn file ảnh từ máy (Max 2MB)</span>
+                <input type="file" accept="image/*" onChange={handleFileUploadAvatar} className="hidden" />
+              </label>
+            </div>
+
+            <div className="text-center pt-2">
               <button
                 onClick={() => setIsAvatarModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                className="px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-extrabold text-xs hover:bg-slate-200 transition"
               >
-                Hủy Bỏ
+                Đóng
               </button>
             </div>
 
