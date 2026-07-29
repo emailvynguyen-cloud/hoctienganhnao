@@ -88,17 +88,6 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Controls Right */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
-            {/* ONLY SUPER ADMIN SEES "QUAY VỀ TRANG QUẢN LÝ" BUTTON WHEN PREVIEWING PUBLIC LINK */}
-            {activePublicHash && currentUser?.role === 'super_admin' && (
-              <button
-                onClick={onExitPublicView}
-                className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md hover:from-purple-700 hover:to-indigo-700 transition flex items-center shrink-0 border border-purple-300/40"
-                title="Dành riêng cho Super Admin quay về bảng điều khiển"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1 text-pink-300" /> Quay Về Trang Quản Lý
-              </button>
-            )}
-
             {/* PWA INSTALL / ADD TO HOME SCREEN BUTTON */}
             <button
               onClick={() => setIsPwaModalOpen(true)}
