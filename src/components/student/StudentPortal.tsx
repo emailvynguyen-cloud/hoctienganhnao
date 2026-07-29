@@ -33,6 +33,8 @@ import {
   BarChart2,
   Trophy,
   Zap,
+  Share2,
+  Link,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -57,7 +59,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   bankConfig,
   onRefreshData,
 }) => {
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -74,6 +76,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // Student's classes
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
+
+  // Direct Student Personal Learning Portal Link
+  const studentPublicUrl = `${window.location.origin}/?hash=${currentStudent.publicHash}`;
 
   // Student's sessions sorted chronologically descending (newest first)
   const studentSessions = (sessions || [])
@@ -385,7 +390,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND & AVATAR PICKER */}
+      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND & COPY STUDENT LINK BUTTON */}
       <div className="bg-gradient-to-r from-pink-100/90 via-purple-100/90 to-indigo-100/90 dark:from-purple-950 dark:to-slate-900 rounded-3xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-md relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
           
@@ -408,8 +413,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </button>
           </div>
 
-          <div className="flex-1 text-center sm:text-left space-y-1">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+          <div className="flex-1 text-center sm:text-left space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-wrap">
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
                 {currentStudent.name}
               </h2>
@@ -425,11 +430,35 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </button>
             </div>
 
-            <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5 pt-1">
+            <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5">
               <p><strong>Lớp học:</strong> {primaryClass?.className || 'Lớp Ms. Vy English'}</p>
               <p><strong>Giáo viên phụ trách:</strong> {primaryClass?.teacherName || 'Ms. Vy'}</p>
               <p><strong>Giáo trình:</strong> {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}</p>
               <p><strong>Lịch học:</strong> {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}</p>
+            </div>
+
+            {/* BUTTON TO COPY DIRECT PERSONAL LEARNING LINK FOR STUDENT / PARENTS */}
+            <div className="pt-1">
+              <button
+                onClick={() => {
+                  copyToClipboard(studentPublicUrl);
+                  setCopiedLink(true);
+                  confetti({ particleCount: 35, spread: 55, origin: { y: 0.6 } });
+                  setTimeout(() => setCopiedLink(false), 2500);
+                }}
+                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-xs transition-all shadow-md hover:shadow-lg flex items-center space-x-1.5 border border-purple-300/40"
+              >
+                {copiedLink ? (
+                  <Check className="w-4 h-4 text-emerald-300" />
+                ) : (
+                  <Share2 className="w-4 h-4 text-pink-200 animate-pulse" />
+                )}
+                <span>
+                  {copiedLink
+                    ? `✓ Đã Copy Link Trang Học Tập Của Em ${currentStudent.name}!`
+                    : `🔗 Copy Link Trang Học Tập Cá Nhân Để Gửi Phụ Huynh / Học Viên`}
+                </span>
+              </button>
             </div>
           </div>
 
