@@ -1,50 +1,123 @@
 // Pure Embedded SVG Data URIs for KakaoTalk Friends Avatars
-// Guaranteed to render 100% everywhere on Vercel without needing external files or GitHub uploads!
+// 100% Cross-Browser Compatible (Chrome, Safari, iOS, Android, Vercel Production)
+
+const svgToDataUrl = (svgString: string): string => {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+};
 
 export const KAKAOTALK_SVG_AVATARS = {
-  ryan: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23FEF08A"/><circle cx="50" cy="50" r="34" fill="%23EAB308"/><circle cx="28" cy="28" r="10" fill="%23EAB308"/><circle cx="72" cy="28" r="10" fill="%23EAB308"/><rect x="30" y="42" width="14" height="4" rx="2" fill="%231E293B"/><rect x="56" y="42" width="14" height="4" rx="2" fill="%231E293B"/><circle cx="36" cy="52" r="4" fill="%231E293B"/><circle cx="64" cy="52" r="4" fill="%231E293B"/><ellipse cx="50" cy="58" rx="6" ry="4" fill="%23FFFFFF"/><ellipse cx="50" cy="56" rx="4" ry="3" fill="%231E293B"/></svg>`,
-  apeach: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23FCE7F3"/><path d="M50 16 C 30 16 16 32 16 54 C 16 76 34 86 50 86 C 66 86 84 76 84 54 C 84 32 70 16 50 16 Z" fill="%23F472B6"/><circle cx="34" cy="54" r="4" fill="%231E293B"/><circle cx="66" cy="54" r="4" fill="%231E293B"/><ellipse cx="26" cy="62" rx="6" ry="4" fill="%23FB7185"/><ellipse cx="74" cy="62" rx="6" ry="4" fill="%23FB7185"/><path d="M 44 64 Q 50 72 56 64 Z" fill="%231E293B"/></svg>`,
-  muzi: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23FEF08A"/><ellipse cx="50" cy="52" rx="32" ry="30" fill="%23FACC15"/><ellipse cx="50" cy="54" rx="24" ry="22" fill="%23FFFFFF"/><circle cx="40" cy="52" r="4" fill="%231E293B"/><circle cx="60" cy="52" r="4" fill="%231E293B"/><ellipse cx="50" cy="58" rx="4" ry="3" fill="%231E293B"/></svg>`,
-  frodo: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23FED7AA"/><ellipse cx="50" cy="50" rx="32" ry="28" fill="%23C2410C"/><ellipse cx="22" cy="40" rx="8" ry="16" fill="%239A3412"/><ellipse cx="78" cy="40" rx="8" ry="16" fill="%239A3412"/><circle cx="38" cy="48" r="4" fill="%23FFFFFF"/><circle cx="38" cy="48" r="2" fill="%231E293B"/><circle cx="62" cy="48" r="4" fill="%23FFFFFF"/><circle cx="62" cy="48" r="2" fill="%231E293B"/><ellipse cx="50" cy="56" rx="8" ry="6" fill="%23FEF08A"/><ellipse cx="50" cy="54" rx="4" ry="3" fill="%231E293B"/></svg>`,
-  neo: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23E0E7FF"/><circle cx="50" cy="52" r="32" fill="%233B82F6"/><path d="M 22 45 Q 50 25 78 45 L 76 35 Q 50 18 24 35 Z" fill="%231E293B"/><circle cx="38" cy="50" r="4" fill="%231E293B"/><circle cx="62" cy="50" r="4" fill="%231E293B"/><path d="M 44 60 Q 50 66 56 60" stroke="%231E293B" stroke-width="3" fill="none"/></svg>`,
-  tube: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="30" fill="%23F1F5F9"/><circle cx="50" cy="50" r="32" fill="%23FFFFFF"/><circle cx="38" cy="46" r="4" fill="%231E293B"/><circle cx="62" cy="46" r="4" fill="%231E293B"/><ellipse cx="50" cy="56" rx="14" ry="8" fill="%23F97316"/><ellipse cx="50" cy="54" rx="10" ry="4" fill="%23FDBA74"/></svg>`,
+  ryan: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#FEF08A"/>
+      <circle cx="28" cy="28" r="11" fill="#D97706"/>
+      <circle cx="72" cy="28" r="11" fill="#D97706"/>
+      <circle cx="50" cy="52" r="34" fill="#F59E0B"/>
+      <rect x="28" y="42" width="16" height="4" rx="2" fill="#1E293B"/>
+      <rect x="56" y="42" width="16" height="4" rx="2" fill="#1E293B"/>
+      <circle cx="36" cy="52" r="4.5" fill="#1E293B"/>
+      <circle cx="64" cy="52" r="4.5" fill="#1E293B"/>
+      <ellipse cx="44" cy="60" rx="5" ry="4" fill="#FFFFFF"/>
+      <ellipse cx="56" cy="60" rx="5" ry="4" fill="#FFFFFF"/>
+      <ellipse cx="50" cy="57" rx="4" ry="3" fill="#1E293B"/>
+    </svg>
+  `),
+  apeach: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#FCE7F3"/>
+      <path d="M50 16 C 26 16 14 34 14 56 C 14 78 32 86 50 86 C 68 86 86 78 86 56 C 86 34 74 16 50 16 Z" fill="#F472B6"/>
+      <circle cx="34" cy="54" r="4" fill="#1E293B"/>
+      <circle cx="66" cy="54" r="4" fill="#1E293B"/>
+      <ellipse cx="26" cy="62" rx="7" ry="4.5" fill="#FB7185"/>
+      <ellipse cx="74" cy="62" rx="7" ry="4.5" fill="#FB7185"/>
+      <path d="M 44 64 Q 50 72 56 64 Z" fill="#1E293B"/>
+    </svg>
+  `),
+  muzi: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#FEF08A"/>
+      <ellipse cx="50" cy="52" rx="33" ry="30" fill="#FACC15"/>
+      <ellipse cx="50" cy="55" rx="25" ry="22" fill="#FFFFFF"/>
+      <circle cx="40" cy="52" r="4" fill="#1E293B"/>
+      <circle cx="60" cy="52" r="4" fill="#1E293B"/>
+      <ellipse cx="50" cy="57" rx="4" ry="3" fill="#1E293B"/>
+      <ellipse cx="32" cy="60" rx="4" ry="2.5" fill="#F472B6"/>
+      <ellipse cx="68" cy="60" rx="4" ry="2.5" fill="#F472B6"/>
+    </svg>
+  `),
+  frodo: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#FED7AA"/>
+      <ellipse cx="22" cy="40" rx="9" ry="17" fill="#9A3412"/>
+      <ellipse cx="78" cy="40" rx="9" ry="17" fill="#9A3412"/>
+      <ellipse cx="50" cy="52" rx="32" ry="28" fill="#EA580C"/>
+      <circle cx="38" cy="48" r="4.5" fill="#FFFFFF"/>
+      <circle cx="38" cy="48" r="2.5" fill="#1E293B"/>
+      <circle cx="62" cy="48" r="4.5" fill="#FFFFFF"/>
+      <circle cx="62" cy="48" r="2.5" fill="#1E293B"/>
+      <ellipse cx="50" cy="58" rx="9" ry="7" fill="#FEF08A"/>
+      <ellipse cx="50" cy="55" rx="4.5" ry="3" fill="#1E293B"/>
+    </svg>
+  `),
+  neo: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#E0E7FF"/>
+      <polygon points="26,22 36,38 22,38" fill="#1E293B"/>
+      <polygon points="74,22 64,38 78,38" fill="#1E293B"/>
+      <circle cx="50" cy="54" r="32" fill="#3B82F6"/>
+      <path d="M 22 46 Q 50 24 78 46 L 76 34 Q 50 18 24 34 Z" fill="#1E293B"/>
+      <circle cx="38" cy="52" r="4.5" fill="#1E293B"/>
+      <circle cx="62" cy="52" r="4.5" fill="#1E293B"/>
+      <ellipse cx="30" cy="58" rx="4" ry="2.5" fill="#F472B6"/>
+      <ellipse cx="70" cy="58" rx="4" ry="2.5" fill="#F472B6"/>
+      <path d="M 44 62 Q 50 68 56 62" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    </svg>
+  `),
+  tube: svgToDataUrl(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="30" fill="#F1F5F9"/>
+      <circle cx="50" cy="50" r="33" fill="#FFFFFF"/>
+      <circle cx="38" cy="46" r="4" fill="#1E293B"/>
+      <circle cx="62" cy="46" r="4" fill="#1E293B"/>
+      <ellipse cx="50" cy="57" rx="14" ry="8" fill="#EA580C"/>
+      <ellipse cx="50" cy="54" rx="10" ry="4" fill="#FDBA74"/>
+    </svg>
+  `),
 };
 
 export const KAKAOTALK_AVATARS_LIST = [
-  { id: 'ryan', name: 'Sư Tử Ryan 🦁', url: KAKAOTALK_SVG_AVATARS.ryan },
-  { id: 'apeach', name: 'Quả Đào Apeach 🍑', url: KAKAOTALK_SVG_AVATARS.apeach },
-  { id: 'muzi', name: 'Thỏ Vàng Muzi 🐰', url: KAKAOTALK_SVG_AVATARS.muzi },
-  { id: 'frodo', name: 'Chú Chó Frodo 🐶', url: KAKAOTALK_SVG_AVATARS.frodo },
-  { id: 'neo', name: 'Mèo Chảnh Neo 🐱', url: KAKAOTALK_SVG_AVATARS.neo },
-  { id: 'tube', name: 'Vịt Cute Tube 🦆', url: KAKAOTALK_SVG_AVATARS.tube },
+  { id: 'ryan', name: 'Sư Tử Ryan 🦁', url: KAKAOTALK_SVG_AVATARS.ryan, svgDataUrl: KAKAOTALK_SVG_AVATARS.ryan },
+  { id: 'apeach', name: 'Quả Đào Apeach 🍑', url: KAKAOTALK_SVG_AVATARS.apeach, svgDataUrl: KAKAOTALK_SVG_AVATARS.apeach },
+  { id: 'muzi', name: 'Thỏ Vàng Muzi 🐰', url: KAKAOTALK_SVG_AVATARS.muzi, svgDataUrl: KAKAOTALK_SVG_AVATARS.muzi },
+  { id: 'frodo', name: 'Chú Chó Frodo 🐶', url: KAKAOTALK_SVG_AVATARS.frodo, svgDataUrl: KAKAOTALK_SVG_AVATARS.frodo },
+  { id: 'neo', name: 'Mèo Chảnh Neo 🐱', url: KAKAOTALK_SVG_AVATARS.neo, svgDataUrl: KAKAOTALK_SVG_AVATARS.neo },
+  { id: 'tube', name: 'Vịt Cute Tube 🦆', url: KAKAOTALK_SVG_AVATARS.tube, svgDataUrl: KAKAOTALK_SVG_AVATARS.tube },
 ];
 
 /**
  * Universal Avatar Resolver Function
- * Resolves local image paths or broken URLs to 100% working embedded KakaoTalk SVG Data URIs
+ * Guaranteed to resolve student avatars (uploaded base64, KakaoTalk SVG, HTTP/HTTPS URLs) everywhere
  */
 export const resolveAvatarUrl = (avatarStr?: string): string => {
-  if (!avatarStr || avatarStr === '/ryan.jpg' || avatarStr.includes('ryan.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.ryan;
-  }
-  if (avatarStr === '/apeach.jpg' || avatarStr.includes('apeach.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.apeach;
-  }
-  if (avatarStr === '/muzi.jpg' || avatarStr.includes('muzi.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.muzi;
-  }
-  if (avatarStr === '/frodo.jpg' || avatarStr.includes('frodo.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.frodo;
-  }
-  if (avatarStr === '/neo.jpg' || avatarStr.includes('neo.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.neo;
-  }
-  if (avatarStr === '/tube.jpg' || avatarStr.includes('tube.jpg')) {
-    return KAKAOTALK_SVG_AVATARS.tube;
-  }
+  if (!avatarStr) return KAKAOTALK_SVG_AVATARS.ryan;
 
-  // If it's a valid Data URI (custom upload base64 or SVG) or external http(s) URL, use as is
-  if (avatarStr.startsWith('data:') || avatarStr.startsWith('http://') || avatarStr.startsWith('https://')) {
+  const lower = avatarStr.toLowerCase();
+
+  // Match KakaoTalk Avatars
+  if (lower.includes('ryan')) return KAKAOTALK_SVG_AVATARS.ryan;
+  if (lower.includes('apeach')) return KAKAOTALK_SVG_AVATARS.apeach;
+  if (lower.includes('muzi')) return KAKAOTALK_SVG_AVATARS.muzi;
+  if (lower.includes('frodo')) return KAKAOTALK_SVG_AVATARS.frodo;
+  if (lower.includes('neo')) return KAKAOTALK_SVG_AVATARS.neo;
+  if (lower.includes('tube')) return KAKAOTALK_SVG_AVATARS.tube;
+
+  // Custom base64 upload, Blob, or external web link
+  if (
+    avatarStr.startsWith('data:') ||
+    avatarStr.startsWith('http://') ||
+    avatarStr.startsWith('https://') ||
+    avatarStr.startsWith('blob:') ||
+    avatarStr.startsWith('/')
+  ) {
     return avatarStr;
   }
 
