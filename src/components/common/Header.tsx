@@ -21,6 +21,7 @@ import {
   Share,
   PlusSquare,
   CheckCircle2,
+  Flame,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -111,14 +112,24 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </button>
 
-            {/* Leaderboard Button */}
+            {/* HIGHLY DECORATED STUNNING LEADERBOARD BUTTON */}
             <button
               onClick={onOpenLeaderboard}
-              className="px-3 py-2 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-xs transition flex items-center shadow-sm border border-amber-200"
-              title="Xem Bảng Thành Tích Thi Đua"
+              className="relative group px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white font-black text-xs transition-all duration-300 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-pink-500/35 hover:scale-105 flex items-center space-x-1.5 border-2 border-amber-200 overflow-hidden"
+              title="Xem Bảng Thành Tích Thi Đua Vinh Danh"
             >
-              <Trophy className="w-4 h-4 mr-1.5 text-amber-600 animate-bounce" />
-              <span className="hidden md:inline">Thi Đua</span> Top
+              {/* Shimmer Light Effect Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              
+              <div className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+                <Trophy className="w-3.5 h-3.5 text-amber-200 animate-bounce" />
+              </div>
+              
+              <span className="tracking-wide uppercase text-[11px] drop-shadow-xs">
+                👑 THI ĐUA TOP 🏆
+              </span>
+
+              <Sparkles className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
             </button>
 
             {/* If in Public Student Link View */}
