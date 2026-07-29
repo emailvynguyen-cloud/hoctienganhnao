@@ -176,24 +176,17 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
       {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 shadow-sm space-y-5">
         
-        {/* PHẦN 1: LINK GOOGLE DRIVE TÀI LIỆU CHÍNH */}
+        {/* PHẦN 1: LINK TÀI LIỆU CHÍNH */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <FolderOpen className="w-5 h-5 text-purple-600 animate-pulse" />
             <h3 className="font-black text-base text-purple-950 dark:text-white uppercase tracking-wider">
-              Kho Tài Liệu & Giáo Trình Chính (Google Drive Khóa Học)
+              Kho Tài Liệu & Giáo Trình Chính
             </h3>
           </div>
 
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500 via-indigo-600 to-pink-500 text-white shadow-md space-y-2">
-            <h4 className="font-black text-sm">
-              📁 Thư Mục Google Drive Giáo Trình Xuyên Suốt Khóa: {selectedClass.courseName}
-            </h4>
-            <p className="text-xs text-purple-100 font-medium">
-              Chứa đầy đủ Sách Ebook, File Audio Nghe, Từ vựng Academic & Đề thi luyện tập toàn khóa.
-            </p>
-
-            <div className="pt-2 flex flex-wrap gap-2">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500 via-indigo-600 to-pink-500 text-white shadow-md">
+            <div className="flex flex-wrap gap-2.5">
               {selectedClass.resourceLinks && selectedClass.resourceLinks.length > 0 ? (
                 selectedClass.resourceLinks.map((res) => (
                   <a
@@ -201,7 +194,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     href={res.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center shrink-0"
+                    className="px-4 py-2 rounded-xl bg-white text-purple-950 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center shrink-0 border border-white/60"
                   >
                     <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
                     {res.title}
@@ -212,10 +205,10 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   href="https://drive.google.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-white text-purple-900 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center"
+                  className="px-4 py-2 rounded-xl bg-white text-purple-950 font-extrabold text-xs hover:bg-purple-50 transition shadow-sm flex items-center border border-white/60"
                 >
                   <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
-                  Mở Thư Mục Google Drive Giáo Trình Chính
+                  Mở Thư Mục Giáo Trình Chính
                 </a>
               )}
             </div>
@@ -397,7 +390,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     itemsList.map((hwItem) => (
                       <div
                         key={hwItem.id}
-                        className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-purple-100 flex items-center justify-between text-xs"
+                        className="p-3.5 rounded-2xl border border-purple-100 bg-white/90 dark:bg-slate-800/90 flex items-center justify-between text-xs"
                       >
                         <div>
                           <h5 className="font-extrabold text-slate-900 dark:text-white">
