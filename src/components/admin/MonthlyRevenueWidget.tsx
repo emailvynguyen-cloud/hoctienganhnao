@@ -1,12 +1,44 @@
 import React, { useState } from 'react';
 import { StorageEngine } from '../../lib/storage';
-import { DollarSign, Calendar } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
 
 export const MonthlyRevenueWidget: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('2025-07');
 
   const revenueReport = StorageEngine.calculateMonthlyRevenue(selectedMonth);
+
+  // CALCULATE DAILY REVENUE BREAKDOWN
+  const sessions = StorageEngine.getSessions() || [];
+  const students = StorageEngine.getStudents() || [];
+
+  const monthSessions = sessions.filter((s) => s && s.date && s.date.startsWith(selectedMonth));
+
+  const dailyMap: Record<string, { date: string; sessionCount: number; revenue: number; details: string[] }> = {};
+
+  monthSessions.forEach((sess) => {
+    const dateStr = sess.date;
+    if (!dailyMap[dateStr]) {
+      dailyMap[dateStr] = { date: dateStr, sessionCount: 0, revenue: 0, details: [] };
+    }
+
+    dailyMap[dateStr].sessionCount += 1;
+
+    const classStudents = students.filter((s) => s && s.status !== 'soft_deleted' && s.classIds?.includes(sess.classId));
+
+    let sessionRev = 0;
+    classStudents.forEach((std) => {
+      const pkgPrice = std.tuitionPackagePrice || 2000000;
+      const pkgSessions = std.packageSessionCount || 8;
+      const perSession = pkgPrice / pkgSessions;
+      sessionRev += perSession;
+    });
+
+    dailyMap[dateStr].revenue += sessionRev;
+    dailyMap[dateStr].details.push(`Buổi #${sess.sessionNumber} (${classStudents.length} học viên)`);
+  });
+
+  const dailyList = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-6">
@@ -42,7 +74,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* Revenue Result Display Box (2 Columns, Formula Removed) */}
+      {/* Revenue Result Display Box */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg space-y-2">
           <span className="text-xs font-extrabold uppercase text-emerald-100">
@@ -67,6 +99,56 @@ export const MonthlyRevenueWidget: React.FC = () => {
             Tham gia các lớp trực thuộc trung tâm
           </p>
         </div>
+      </div>
+
+      {/* MỤC MỚI: DOANH THU MỖI NGÀY TRONG THÁNG */}
+      <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-purple-50/50 border border-emerald-200 dark:bg-slate-900 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600 animate-pulse" />
+            <h4 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wider">
+              📆 Bảng Doanh Thu Chi Tiết Mỗi Ngày Trong Tháng {selectedMonth.split('-')[1]}
+            </h4>
+          </div>
+          <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
+            {dailyList.length} Ngày Có Ca Dạy
+          </span>
+        </div>
+
+        {dailyList.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {dailyList.map((dayItem) => (
+              <div
+                key={dayItem.date}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-100 shadow-xs space-y-1.5 hover:border-emerald-300 transition"
+              >
+                <div className="flex items-center justify-between border-b border-emerald-100 pb-1.5">
+                  <span className="text-xs font-black text-purple-950 dark:text-purple-200">
+                    🗓️ Ngày {dayItem.date.split('-').reverse().join('/')}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-500 bg-purple-50 px-2 py-0.5 rounded-md">
+                    {dayItem.sessionCount} Ca Dạy
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-slate-500 font-medium">Doanh thu ngày:</span>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                    +{formatVND(dayItem.revenue)}
+                  </span>
+                </div>
+
+                <div className="text-[10px] text-slate-400 font-medium truncate">
+                  {dayItem.details.join(' • ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 text-center bg-white/80 rounded-2xl text-xs text-slate-500 italic">
+            Chưa có thông tin ca dạy nào được ghi nhận trong tháng này.
+          </div>
+        )}
       </div>
 
       {/* Breakdown Table */}
