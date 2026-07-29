@@ -99,69 +99,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPhone, setNewStudentPhone] = useState('');
-  const [newStudentClassId, setNewStudentClassId] = useState(classes[0]?.id || '');
-  const [newTuitionPrice, setNewTuitionPrice] = useState(2000000);
+  const [newStudentClassId, setNewStudentClassId] = useState('');
   const [newSessionCount, setNewSessionCount] = useState(8);
+  const [newTuitionPrice, setNewTuitionPrice] = useState(2000000);
 
-  // Notify parent Header about Sub-View Navigation state
+  const safeStudents = students || [];
+  const safeClasses = classes || [];
+
+  useEffect(() => {
+    if (safeClasses.length > 0 && !newStudentClassId) {
+      setNewStudentClassId(safeClasses[0].id);
+    }
+  }, [safeClasses, newStudentClassId]);
+
+  // Handle Sub-View Navigation Updates to Parent Header
   useEffect(() => {
     if (onSetSubViewNavigation) {
       if (inspectedStudent) {
-        onSetSubViewNavigation(
-          true,
-          () => setInspectedStudent(null),
-          () => {
-            setInspectedStudent(null);
-            setInspectedClass(null);
-            setActiveTab('timetable');
-          }
-        );
+        onSetSubViewNavigation(true, () => setInspectedStudent(null), () => {
+          setInspectedStudent(null);
+          setInspectedClass(null);
+          setActiveTab('timetable');
+        });
       } else if (inspectedClass) {
-        onSetSubViewNavigation(
-          true,
-          () => setInspectedClass(null),
-          () => {
-            setInspectedClass(null);
-            setActiveTab('timetable');
-          }
-        );
+        onSetSubViewNavigation(true, () => setInspectedClass(null), () => {
+          setInspectedClass(null);
+          setActiveTab('timetable');
+        });
       } else {
-        onSetSubViewNavigation(
-          false,
-          undefined,
-          () => setActiveTab('timetable')
-        );
+        onSetSubViewNavigation(false);
       }
     }
   }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
 
-  // Filtered Lists with Null Safeguards
-  const safeClasses = classes || [];
-  const safeStudents = students || [];
-
+  // Filtered lists
   const filteredClasses = safeClasses.filter((c) =>
-    (c.className || '').toLowerCase().includes((classSearchQuery || '').toLowerCase()) ||
-    (c.code || '').toLowerCase().includes((classSearchQuery || '').toLowerCase()) ||
-    (c.teacherName || '').toLowerCase().includes((classSearchQuery || '').toLowerCase())
+    (c.className || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+    (c.code || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+    (c.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
   );
 
-  const filteredStudents = safeStudents.filter((s) => s && s.status !== 'soft_deleted').filter((s) =>
-    (s.name || '').toLowerCase().includes((studentSearchQuery || '').toLowerCase()) ||
-    (s.phone || '').includes(studentSearchQuery || '') ||
-    (s.email || '').toLowerCase().includes((studentSearchQuery || '').toLowerCase())
-  );
-
-  // TUITION COUNTDOWN LIST (SORTED ASCENDING BY REMAINING SESSIONS)
-  const tuitionCountdownStudents = [...safeStudents]
-    .filter((s) => s && s.status !== 'soft_deleted')
-    .sort((a, b) => (a.remainingSessions || 0) - (b.remainingSessions || 0));
-
-  const teachersList = StorageEngine.getUsers().filter((u) => u && (u.role === 'teacher' || u.role === 'super_admin'));
+  const filteredStudents = safeStudents.filter((s) => s && s.status !== 'soft_deleted' && (
+    (s.name || '').toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+    (s.phone || '').includes(studentSearchQuery) ||
+    (s.email || '').toLowerCase().includes(studentSearchQuery.toLowerCase())
+  ));
 
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSuperAdmin) {
-      alert('Chỉ có Super Admin mới có quyền tạo lớp!');
+      alert('Chỉ có Super Admin mới có quyền khởi tạo lớp học mới!');
       return;
     }
 
@@ -170,13 +157,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     StorageEngine.addClass({
       className: newClassName,
       code: newClassCode,
-      teacherId: 'u_teacher_01',
       teacherName: newTeacherName,
       schedule: newSchedule,
-      room: 'Phòng Online / Zoom Premium',
       courseName: newCourseName,
       zoomLink: newZoomLink,
-      startSessionNumber: newStartSessionNumber || 1,
+      startSessionNumber: Number(newStartSessionNumber) || 1,
       resourceLinks: [],
     });
 
@@ -216,16 +201,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return (
       <div className="space-y-4">
         {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-purple-200 dark:border-purple-800 shadow-xs">
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
             onClick={() => setInspectedStudent(null)}
-            className="px-4 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 font-extrabold text-xs transition flex items-center shrink-0 border border-purple-300"
+            className="px-4 py-2 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Trang Quản Lý
           </button>
 
           <div className="text-center">
-            <span className="text-xs font-black text-purple-950 dark:text-purple-200 block">
+            <span className="text-xs font-black text-pink-950 dark:text-slate-200 block">
               Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{inspectedStudent.name}</strong>
             </span>
             <span className="text-[10px] text-slate-500 font-bold uppercase">
@@ -259,19 +244,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
-  // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
+  // IF INSPECTING A CLASS DETAILS VIEW (MANAGER PORTAL CONTEXT INTACT)
   if (inspectedClass) {
     return (
       <div className="space-y-4">
-        {/* SUB-VIEW BREADCRUMB & BACK BUTTON */}
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-purple-100 dark:border-purple-800 shadow-2xs">
+        {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
             onClick={() => setInspectedClass(null)}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center shrink-0"
+            className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Quản Lý
           </button>
-          <span className="text-xs font-black text-slate-700 dark:text-purple-200 truncate">
+          <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
             Đang Xem Chi Tiết Lớp: {inspectedClass.className}
           </span>
           <button
@@ -279,7 +264,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               setInspectedClass(null);
               setActiveTab('timetable');
             }}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0 border border-slate-300"
           >
             <Home className="w-3.5 h-3.5 mr-1" /> Home Quản Lý
           </button>
@@ -307,13 +292,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-6">
       
       {/* Role Notice Banner */}
-      <div className={`p-4 rounded-3xl border flex items-center justify-between text-xs font-bold shadow-sm ${
+      <div className={`p-4 rounded-3xl border flex items-center justify-between text-xs font-bold shadow-xs ${
         isSuperAdmin
-          ? 'bg-amber-500 text-white border-amber-400'
-          : 'bg-purple-600 text-white border-purple-500'
+          ? 'bg-gradient-to-r from-pink-200 via-amber-100 to-sky-100 text-pink-950 border-pink-300'
+          : 'bg-gradient-to-r from-pink-100 via-rose-50 to-sky-100 text-pink-950 border-pink-200'
       }`}>
         <div className="flex items-center space-x-2">
-          {isSuperAdmin ? <Crown className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+          {isSuperAdmin ? <Crown className="w-5 h-5 text-amber-600" /> : <ShieldAlert className="w-5 h-5 text-pink-600" />}
           <span>
             {isSuperAdmin
               ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Toàn quyền quản lý lớp, giáo viên, học viên, học phí & xem Doanh thu tháng.'
@@ -323,13 +308,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-purple-100 dark:border-purple-800 shadow-sm overflow-x-auto">
+      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
         <button
           onClick={() => setActiveTab('timetable')}
           className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
             activeTab === 'timetable'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+              ? 'bg-pink-400 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
           }`}
         >
           Thời Khóa Biểu Tuần
@@ -339,7 +324,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClick={() => setActiveTab('grading')}
           className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
             activeTab === 'grading'
-              ? 'bg-pink-600 text-white shadow-sm'
+              ? 'bg-rose-400 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
           }`}
         >
@@ -350,8 +335,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClick={() => setActiveTab('teachers')}
           className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
             activeTab === 'teachers'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-indigo-50'
+              ? 'bg-sky-400 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
           }`}
         >
           <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
@@ -363,7 +348,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('revenue')}
             className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
               activeTab === 'revenue'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-400 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-50'
           }`}
           >
@@ -375,8 +360,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClick={() => setActiveTab('classes')}
           className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
             activeTab === 'classes'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+              ? 'bg-pink-400 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
           }`}
         >
           Tất Cả Lớp Học ({safeClasses.length})
@@ -386,8 +371,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClick={() => setActiveTab('students')}
           className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
             activeTab === 'students'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+              ? 'bg-pink-400 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
           }`}
         >
           Danh Sách Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length})
@@ -399,8 +384,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={() => setActiveTab('invoices')}
             className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
               activeTab === 'invoices'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+                ? 'bg-sky-400 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
           }`}
           >
             Quản Lý Học Phí & VietQR
@@ -428,11 +413,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 3: TEACHERS MANAGEMENT */}
       {activeTab === 'teachers' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                <UserCheck className="w-5 h-5 mr-2 text-indigo-600" /> Quản Lý Đội Ngũ Giáo Viên & Lớp Học Phụ Trách
+                <UserCheck className="w-5 h-5 mr-2 text-sky-600" /> Quản Lý Đội Ngũ Giáo Viên & Lớp Học Phụ Trách
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Bấm vào từng lớp học của giáo viên bên dưới để truy cập trực tiếp trang thông tin & buổi học
@@ -443,260 +428,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {isSuperAdmin && (
               <button
                 onClick={onOpenAccountManagement}
-                className="px-4 py-2.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-xs hover:bg-indigo-700 transition shadow-sm flex items-center shrink-0"
+                className="px-4 py-2.5 rounded-2xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 border border-sky-300 transition shadow-xs flex items-center shrink-0"
               >
                 + Cấp Tài Khoản Giáo Viên Mới
               </button>
             )}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {teachersList.map((t) => {
-              const assignedClasses = safeClasses.filter((c) => c && (c.teacherName === t.displayName || c.teacherId === t.uid));
-
-              return (
-                <div
-                  key={t.uid}
-                  className="p-5 rounded-3xl border border-indigo-100 bg-indigo-50/40 space-y-4 shadow-xs"
-                >
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={resolveAvatarUrl(t.avatarUrl)}
-                      alt={t.displayName}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                      }}
-                      className="w-12 h-12 rounded-2xl object-cover border border-indigo-200 shrink-0"
-                    />
-                    <div>
-                      <h4 className="font-black text-sm text-slate-900 dark:text-white">{t.displayName}</h4>
-                      <p className="text-xs text-slate-500 font-mono">Email: {t.email} • SĐT: {t.phoneNumber || '0912345678'}</p>
-                    </div>
-                  </div>
-
-                  {/* ASSIGNED CLASSES LIST WITH DIRECT ACCESS LINKS */}
-                  <div className="pt-2 border-t border-indigo-100/80 space-y-2 text-xs">
-                    <span className="font-extrabold text-indigo-950 uppercase tracking-wider block">
-                      📚 Danh Sách Lớp Giáo Viên Đang Đảm Nhận ({assignedClasses.length} Lớp):
-                    </span>
-
-                    {assignedClasses.length > 0 ? (
-                      <div className="space-y-2">
-                        {assignedClasses.map((cls) => (
-                          <div
-                            key={cls.id}
-                            onClick={() => setInspectedClass(cls)}
-                            className="p-3 rounded-2xl bg-white border border-indigo-200 hover:border-indigo-500 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
-                          >
-                            <div className="space-y-0.5">
-                              <h5 className="font-extrabold text-xs text-slate-900 group-hover:text-indigo-600 transition">
-                                📖 {cls.className} ({cls.code})
-                              </h5>
-                              <p className="text-[11px] text-slate-500">Lịch học: {cls.schedule}</p>
-                            </div>
-
-                            <span className="text-[11px] font-black text-indigo-600 group-hover:translate-x-1 transition flex items-center shrink-0">
-                              Truy Cập Lớp <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="italic text-slate-400">Chưa được gán lớp nào</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
 
-      {/* TAB 4: MONTHLY REVENUE (SUPER ADMIN ONLY) */}
+      {/* TAB 4: REVENUE REPORT - SUPER ADMIN ONLY */}
       {activeTab === 'revenue' && isSuperAdmin && (
         <MonthlyRevenueWidget />
       )}
 
       {/* TAB 5: CLASSES LIST */}
       {activeTab === 'classes' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
-          
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                <BookOpen className="w-5 h-5 mr-2 text-purple-600" /> Quản Lý Tất Cả Lớp Học
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Bấm vào bất kỳ lớp học nào bên dưới để mở trang thông tin lớp & danh sách buổi học
-              </p>
-            </div>
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+              <BookOpen className="w-5 h-5 mr-2 text-pink-500" /> Danh Sách Các Lớp Học
+            </h3>
 
             {/* SEARCH BAR FOR CLASSES */}
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-purple-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
               <input
                 type="text"
-                placeholder="Tìm kiếm lớp học, mã lớp, giáo viên..."
+                placeholder="Tìm tên lớp, mã lớp, giáo viên..."
                 value={classSearchQuery}
                 onChange={(e) => setClassSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-2xl border border-purple-200 text-xs font-medium bg-purple-50/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300"
               />
             </div>
 
             {isSuperAdmin && (
               <button
                 onClick={() => setIsAddClassOpen(!isAddClassOpen)}
-                className="px-4 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm flex items-center shrink-0"
+                className="px-4 py-2.5 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center shrink-0"
               >
-                <Plus className="w-4 h-4 mr-1" /> Tạo Lớp Mới
+                <Plus className="w-4 h-4 mr-1" /> Thêm Lớp Học Mới
               </button>
             )}
           </div>
 
-          {/* Add Class Form */}
-          {isAddClassOpen && isSuperAdmin && (
-            <form onSubmit={handleCreateClass} className="p-5 rounded-3xl bg-purple-50/90 border border-purple-200 space-y-4 animate-fadeIn text-xs shadow-sm">
-              <div className="flex items-center justify-between border-b border-purple-200 pb-2">
-                <h4 className="font-black text-purple-950 uppercase tracking-wider">Tạo Lớp Học Mới Vừa Chuyển Nền Tảng</h4>
-                <span className="text-[11px] font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
-                  Hỗ trợ lớp chuyển từ hệ thống cũ
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tên lớp học *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. IELTS Intensive 6.5+"
-                    value={newClassName}
-                    onChange={(e) => setNewClassName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Mã lớp học *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. VY-IELTS-65"
-                    value={newClassCode}
-                    onChange={(e) => setNewClassCode(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                    required
-                  />
-                </div>
-
-                <div className="sm:col-span-2 p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
-                  <label className="block font-extrabold text-amber-900 text-xs uppercase">
-                    ⭐ Buổi Học Bắt Đầu Của Lớp (Tùy chọn cho lớp chuyển nền tảng):
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 1 (mặc định) hoặc 12, 15, 20..."
-                      value={newStartSessionNumber}
-                      onChange={(e) => setNewStartSessionNumber(Number(e.target.value))}
-                      className="w-48 p-2.5 rounded-xl border border-amber-300 bg-white font-black text-amber-900 text-xs"
-                    />
-                    <span className="text-xs text-amber-800 font-medium">
-                      Buổi học đầu tiên ghi nhận cho lớp này sẽ là <strong>Buổi #{newStartSessionNumber || 1}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Giáo viên phụ trách</label>
-                  <input
-                    type="text"
-                    placeholder="Tên giáo viên phụ trách"
-                    value={newTeacherName}
-                    onChange={(e) => setNewTeacherName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Lịch học hàng tuần</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. T2 - T4 - T6 (18:00 - 19:30)"
-                    value={newSchedule}
-                    onChange={(e) => setNewSchedule(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tên giáo trình</label>
-                  <input
-                    type="text"
-                    placeholder="Giáo trình học"
-                    value={newCourseName}
-                    onChange={(e) => setNewCourseName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Link phòng học Zoom (nếu có)</label>
-                  <input
-                    type="url"
-                    placeholder="Link Zoom học trực tuyến"
-                    value={newZoomLink}
-                    onChange={(e) => setNewZoomLink(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-purple-200 bg-white font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddClassOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 text-white font-extrabold shadow-md"
-                >
-                  Lưu & Tạo Lớp
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Classes Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredClasses.map((cls) => (
               <div
                 key={cls.id}
                 onClick={() => setInspectedClass(cls)}
-                className="p-5 rounded-3xl border border-purple-100 bg-purple-50/40 space-y-3 hover:border-purple-400 hover:shadow-md transition cursor-pointer group"
+                className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 group shadow-xs"
               >
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-purple-600 transition underline decoration-purple-300">
-                    {cls.className}
-                  </h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800">
+                <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
                     {cls.code}
                   </span>
+                  <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
                 </div>
-                <p className="text-xs text-slate-600"><strong>Giáo viên:</strong> {cls.teacherName}</p>
-                <p className="text-xs text-slate-600"><strong>Lịch học:</strong> {cls.schedule}</p>
-                <p className="text-xs text-slate-600"><strong>Bắt đầu từ buổi #:</strong> {cls.startSessionNumber || 1}</p>
 
-                {cls.zoomLink && (
-                  <a href={cls.zoomLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-indigo-600 font-bold underline block truncate">
-                    🔗 Link Zoom: {cls.zoomLink}
-                  </a>
-                )}
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
+                    {cls.className}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">GV: {cls.teacherName}</p>
+                </div>
 
-                <div className="pt-2 border-t border-purple-100 flex items-center justify-between">
+                <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
                     Mở Xem Chi Tiết Lớp Học & Bài Học →
                   </span>
@@ -705,7 +502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       e.stopPropagation();
                       onOpenAddSession(cls.id);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition flex items-center"
+                    className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
                   >
                     <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
                   </button>
@@ -718,112 +515,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 6: STUDENTS LIST (USES RESOLVED KAKAOTALK SVG AVATARS) */}
       {activeTab === 'students' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-              <Users className="w-5 h-5 mr-2 text-purple-600" /> Quản Lý Danh Sách Học Viên
+              <Users className="w-5 h-5 mr-2 text-pink-500" /> Quản Lý Danh Sách Học Viên
             </h3>
 
             {/* SEARCH BAR FOR STUDENTS */}
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-purple-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
               <input
                 type="text"
                 placeholder="Tìm tên học viên, SĐT, email..."
                 value={studentSearchQuery}
                 onChange={(e) => setStudentSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-2xl border border-purple-200 text-xs font-medium bg-purple-50/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300"
               />
             </div>
 
             {isSuperAdmin && (
               <button
                 onClick={() => setIsAddStudentOpen(!isAddStudentOpen)}
-                className="px-4 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm flex items-center shrink-0"
+                className="px-4 py-2.5 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center shrink-0"
               >
                 <Plus className="w-4 h-4 mr-1" /> Thêm Học Viên Vào Lớp
               </button>
             )}
           </div>
 
-          {/* Add Student Form */}
-          {isAddStudentOpen && isSuperAdmin && (
-            <form onSubmit={handleCreateStudent} className="p-4 rounded-3xl bg-purple-50/80 border border-purple-200 space-y-3 animate-fadeIn text-xs">
-              <h4 className="font-black text-purple-900 uppercase">Thêm Học Viên Mới</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Tên học viên *"
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Số điện thoại *"
-                  value={newStudentPhone}
-                  onChange={(e) => setNewStudentPhone(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Email học viên"
-                  value={newStudentEmail}
-                  onChange={(e) => setNewStudentEmail(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-medium"
-                />
-                <select
-                  value={newStudentClassId}
-                  onChange={(e) => setNewStudentClassId(e.target.value)}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-bold"
-                >
-                  {safeClasses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.className}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  placeholder="Giá gói học phí (e.g. 2000000)"
-                  value={newTuitionPrice}
-                  onChange={(e) => setNewTuitionPrice(Number(e.target.value))}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-mono"
-                />
-                <input
-                  type="number"
-                  placeholder="Số buổi của gói (e.g. 8)"
-                  value={newSessionCount}
-                  onChange={(e) => setNewSessionCount(Number(e.target.value))}
-                  className="p-2.5 rounded-xl border border-purple-200 bg-white font-mono"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddStudentOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 text-white font-extrabold shadow-md"
-                >
-                  Lưu & Tạo Học Viên
-                </button>
-              </div>
-            </form>
-          )}
-
           {/* Students List */}
           <div className="space-y-3">
             {filteredStudents.map((std) => (
-              <div key={std.id} className="p-4 rounded-2xl border border-purple-100 bg-purple-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div key={std.id} className="p-4 rounded-2xl border border-pink-100 bg-pink-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
                   <img
                     src={resolveAvatarUrl(std.avatar)}
@@ -831,7 +555,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
                     }}
-                    className="w-12 h-12 rounded-2xl object-cover border border-purple-200 shrink-0"
+                    className="w-12 h-12 rounded-2xl object-cover border border-pink-200 shrink-0"
                   />
                   <div>
                     <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{std.name}</h4>
@@ -842,121 +566,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setInspectedStudent(std)}
-                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition flex items-center shadow-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition flex items-center shadow-xs"
                   >
                     <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const fullUrl = `${window.location.origin}${window.location.pathname}?hash=${std.publicHash}`;
-                      navigator.clipboard.writeText(fullUrl);
-                      alert(`Đã copy link học tập cá nhân của ${std.name}!\n\nLink: ${fullUrl}`);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-pink-100 text-pink-800 font-bold text-xs hover:bg-pink-200 transition flex items-center"
-                    title="Copy đường link gửi cho Phụ Huynh / Học Viên"
-                  >
-                    <Share2 className="w-3.5 h-3.5 mr-1" /> Copy Link Gửi Học Viên
                   </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {/* TAB 7: TUITION COUNTDOWN & VIETQR RECEIPT GENERATOR (SUPER ADMIN ONLY) */}
-      {activeTab === 'invoices' && isSuperAdmin && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 shadow-sm p-6 space-y-5">
-          <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-              <DollarSign className="w-5 h-5 mr-2 text-emerald-600" /> Bảng Đếm Ngược Học Phí & Tool Tạo Phiếu Thu VietQR
-            </h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Danh sách tất cả học viên được sắp xếp theo <strong>số buổi còn lại ít dần từ trên xuống</strong>. Bấm vào học viên để tạo Phiếu thu kèm mã VietQR tự động!
-            </p>
-          </div>
-
-          {/* Countdown List Sorted Ascending */}
-          <div className="space-y-3">
-            {tuitionCountdownStudents.map((std) => {
-              const stdClass = safeClasses.find((c) => c.id === std.classIds[0]);
-              const remCount = std.remainingSessions || 0;
-
-              return (
-                <div
-                  key={std.id}
-                  onClick={() => setSelectedStudentForReceipt(std)}
-                  className={`p-4 rounded-3xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group shadow-xs ${
-                    remCount === 0
-                      ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-300/40'
-                      : remCount <= 2
-                      ? 'bg-amber-50 border-amber-300'
-                      : 'bg-purple-50/40 border-purple-100 hover:border-purple-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3.5">
-                    <img
-                      src={resolveAvatarUrl(std.avatar)}
-                      alt={std.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                      }}
-                      className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-200 shrink-0"
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-black text-sm text-slate-900 dark:text-white group-hover:text-purple-600 transition">
-                          {std.name}
-                        </h4>
-                        <span className="text-xs text-slate-500 font-medium">({stdClass?.className || 'Lớp Ms. Vy'})</span>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">SĐT: {std.phone} • Gói học: {formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 shrink-0">
-                    {remCount === 0 ? (
-                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-rose-600 text-white animate-pulse flex items-center shadow-sm">
-                        <AlertCircle className="w-4 h-4 mr-1" /> 0 BUỔI - ĐÃ HẾT HỌC PHÍ!
-                      </span>
-                    ) : remCount <= 2 ? (
-                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-amber-500 text-white flex items-center shadow-sm">
-                        <Clock className="w-4 h-4 mr-1 animate-spin" /> CÒN {remCount} BUỔI - NỘP GẤP!
-                      </span>
-                    ) : (
-                      <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        Còn {remCount} Buổi Học Phí
-                      </span>
-                    )}
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedStudentForReceipt(std);
-                      }}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs hover:from-purple-700 hover:to-indigo-700 transition shadow-sm flex items-center"
-                    >
-                      <QrCode className="w-3.5 h-3.5 mr-1" /> Tạo Phiếu VietQR →
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* RECEIPT GENERATOR MODAL */}
-      {selectedStudentForReceipt && isSuperAdmin && (
-        <ReceiptGeneratorModal
-          isOpen={Boolean(selectedStudentForReceipt)}
-          onClose={() => setSelectedStudentForReceipt(null)}
-          student={selectedStudentForReceipt}
-          classes={safeClasses}
-          bankConfig={bankConfig}
-          onRefreshData={onUpdateStudents}
-        />
       )}
 
     </div>
