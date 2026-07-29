@@ -1,231 +1,486 @@
 import React, { useState } from 'react';
-import { HomeworkSubmission, Student } from '../../types';
-import { StorageEngine } from '../../lib/storage';
-import { CheckCircle2, Star, Sparkles, MessageSquare, Clock, AlertCircle } from 'lucide-react';
-import { GeminiEngine } from '../../lib/gemini';
+import { Class, Student, Session, HomeworkSubmission, BankConfig } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import {
+  ArrowLeft,
+  BookOpen,
+  Video,
+  User,
+  Clock,
+  PlusCircle,
+  Calendar,
+  FileText,
+  FolderOpen,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Users,
+  MessageSquare,
+  Search,
+  Share2,
+  Check,
+  AlertCircle,
+  BarChart2,
+} from 'lucide-react';
 
-interface HomeworkGradingWidgetProps {
+interface ClassDetailsViewProps {
+  selectedClass: Class;
   students: Student[];
-  onRefreshData: () => void;
+  sessions: Session[];
+  homeworkSubmissions: HomeworkSubmission[];
+  bankConfig?: BankConfig;
+  onBack: () => void;
+  onOpenAddSession: (classId: string) => void;
+  onOpenPublicStudentLink?: (hash: string) => void;
 }
 
-export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
+export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
+  selectedClass,
   students,
-  onRefreshData,
+  sessions,
+  homeworkSubmissions,
+  onBack,
+  onOpenAddSession,
+  onOpenPublicStudentLink,
 }) => {
-  const submissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
-  const pendingSubmissions = submissions.filter((s) => s && !s.isTeacherFeedbackChecked);
-  const reviewedSubmissions = submissions.filter((s) => s && s.isTeacherFeedbackChecked);
+  const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
+  const [materialSearchQuery, setMaterialSearchQuery] = useState('');
 
-  const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState<string>('');
-  const [stars, setStars] = useState<number>(5);
-  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
+  // Filter students in this class
+  const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
 
-  const handleOpenGrading = (sub: HomeworkSubmission) => {
-    setSelectedSubId(sub.id);
-    setFeedbackText(sub.feedbackText || 'Em làm bài tập rất xuất sắc! Giữ vững phong độ nhé. ✨');
-    setStars(sub.ratingStars || 5);
-  };
+  // Filter sessions in this class
+  const classSessions = (sessions || []).filter((s) => s && s.classId === selectedClass.id);
 
-  const handleAutoGenerateAI = async (sub: HomeworkSubmission) => {
-    setIsGeneratingAI(true);
-    try {
-      const studentObj = students.find((s) => s.id === sub.studentId);
-      const prompt = `Bạn là giáo viên Tiếng Anh Ms. Vy cực kỳ tâm huyết và dễ thương. Hãy viết 1 câu nhận xét ngắn gọn (khoảng 2 câu) động viên em học viên "${studentObj?.name || 'em'}" đã hoàn thành bài tập về nhà "${sub.homeworkTitle}". Nhận xét mang tính khuyến khích, khen ngợi và góp ý nhẹ nhàng.`;
-      
-      const res = await GeminiEngine.generateText(prompt);
-      setFeedbackText(res.text.trim());
-    } catch (err: any) {
-      setFeedbackText('Em làm bài tập rất đầy đủ và chăm chỉ! Tiếp tục phát huy nhé em! 🌟');
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
+  // Extract all session materials
+  const allSessionMaterials = classSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
+    ...m,
+    sessionNum: s.sessionNumber,
+    date: s.date,
+  })));
 
-  const handleSubmitFeedback = (sub: HomeworkSubmission) => {
-    StorageEngine.gradeHomeworkSubmission(sub.id, feedbackText, stars);
-    setSelectedSubId(null);
-    onRefreshData();
+  // Filter materials search query
+  const filteredSessionMaterials = allSessionMaterials.filter((mat) =>
+    (mat.title || '').toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+    `buoi ${mat.sessionNum}`.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+    `${mat.sessionNum}`.includes(materialSearchQuery)
+  );
+
+  // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION
+  const getSessionBgStyle = (sessionNumber: number) => {
+    const mod = Math.abs(sessionNumber) % 4;
+    if (mod === 1) return 'bg-gradient-to-r from-pink-50/90 via-rose-50/70 to-pink-50/90 border-pink-200 dark:bg-slate-900';
+    if (mod === 2) return 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200 dark:bg-slate-900';
+    if (mod === 3) return 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200 dark:bg-slate-900';
+    return 'bg-gradient-to-r from-sky-50/90 via-blue-50/70 to-sky-50/90 border-sky-200 dark:bg-slate-900';
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 space-y-6 shadow-sm">
-      <div className="flex items-center justify-between border-b border-pink-100 dark:border-slate-800 pb-4">
-        <div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center">
-            <CheckCircle2 className="w-5 h-5 mr-2 text-emerald-500 animate-pulse" />
-            Quản Lý Chấm Bài Tập Về Nhà & Nhận Xét
-          </h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Duyệt các bài làm của học viên và gửi phản hồi nhận xét trực tiếp
-          </p>
-        </div>
+    <div className="space-y-6 max-w-6xl mx-auto animate-fadeIn">
+      
+      {/* Top Back Navigation Bar */}
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs">
+        <button
+          onClick={onBack}
+          className="px-4 py-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center border border-pink-200"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Về Danh Sách Lớp Học
+        </button>
 
         <div className="flex items-center space-x-2">
-          <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
-            ⏳ {pendingSubmissions.length} Bài Chờ Chấm
-          </span>
-          <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            ✓ {reviewedSubmissions.length} Đã Phản Hồi
-          </span>
+          <button
+            onClick={() => onOpenAddSession(selectedClass.id)}
+            className="px-5 py-2 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center"
+          >
+            <PlusCircle className="w-4 h-4 mr-1.5 text-pink-700" /> + Thêm Buổi Học Mới Cho Lớp Này
+          </button>
         </div>
       </div>
 
-      {/* Submissions List */}
+      {/* 1. CLASS HEADER BANNER (REDESIGNED SOFT PASTEL CARD) */}
+      <div className="bg-gradient-to-r from-pink-200 via-rose-100 to-sky-100 text-pink-950 p-6 sm:p-8 rounded-3xl border-2 border-pink-300 shadow-xs relative overflow-hidden space-y-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1">
+            <span className="px-3 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase tracking-wider shadow-xs inline-block">
+              MÃ LỚP: {selectedClass.code}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-pink-950">
+              {selectedClass.className}
+            </h2>
+            <div className="text-xs text-pink-900 font-medium space-y-0.5 pt-1">
+              <p><strong>Giáo viên phụ trách:</strong> {selectedClass.teacherName}</p>
+              <p><strong>Lịch học:</strong> {selectedClass.schedule}</p>
+              <p><strong>Giáo trình:</strong> {selectedClass.courseName}</p>
+              <p><strong>Phòng học:</strong> {selectedClass.room}</p>
+            </div>
+          </div>
+
+          {selectedClass.zoomLink && (
+            <a
+              href={selectedClass.zoomLink}
+              target="_blank"
+              rel="noreferrer"
+              className="px-6 py-3.5 rounded-2xl bg-amber-300 text-slate-900 font-black text-xs hover:bg-amber-200 transition shadow-xs flex items-center justify-center shrink-0 border border-amber-400"
+            >
+              <Video className="w-4 h-4 mr-2 text-slate-800" /> VÀO PHÒNG HỌC (ZOOM)
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* 2. ENROLLED STUDENTS SUMMARY GRID */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center uppercase tracking-wider">
+            <Users className="w-5 h-5 mr-2 text-pink-500" /> Danh Sách Học Viên Trực Thuộc Lớp ({classStudents.length} Học Viên)
+          </h3>
+          <span className="text-xs text-pink-900 font-bold bg-pink-50 px-3 py-1 rounded-full border border-pink-100">
+            Bấm vào học viên để mở trang học tập cá nhân
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {classStudents.map((std) => (
+            <div
+              key={std.id}
+              onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
+              className="p-4 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer flex items-center justify-between group shadow-xs"
+            >
+              <div className="flex items-center space-x-3">
+                <img
+                  src={resolveAvatarUrl(std.avatar)}
+                  alt={std.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                  }}
+                  className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shrink-0 group-hover:scale-105 transition"
+                />
+                <div>
+                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
+                    {std.name}
+                  </h4>
+                  <p className="text-[10px] text-pink-600 font-bold">{std.honorNickname || 'Học viên active'}</p>
+                  <p className="text-[10px] text-slate-500">SĐT: {std.phone}</p>
+                </div>
+              </div>
+
+              <div className="p-2 rounded-xl bg-pink-100 text-pink-900 group-hover:bg-pink-400 group-hover:text-white transition text-xs font-bold shrink-0">
+                <Share2 className="w-4 h-4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH LỚP HỌC (REDESIGNED SOFT PASTEL CARD) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-xs space-y-5">
+        
+        {/* PHẦN 1: LINK TÀI LIỆU CHÍNH */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <FolderOpen className="w-5 h-5 text-sky-500 animate-pulse" />
+            <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
+              Kho Tài Liệu & Giáo Trình Chính
+            </h3>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-100 via-blue-50 to-emerald-100 text-sky-950 shadow-xs border border-sky-200">
+            <div className="flex flex-wrap gap-2.5">
+              {selectedClass.resourceLinks && selectedClass.resourceLinks.length > 0 ? (
+                selectedClass.resourceLinks.map((res) => (
+                  <a
+                    key={res.id}
+                    href={res.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center shrink-0 border border-sky-200"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-sky-600" />
+                    {res.title}
+                  </a>
+                ))
+              ) : (
+                <a
+                  href="https://drive.google.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center border border-sky-200"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-sky-600" />
+                  Mở Thư Mục Giáo Trình Chính
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* PHẦN 2: TÀI LIỆU CÁC BUỔI */}
+        <div className="pt-2 border-t border-pink-100 dark:border-slate-800 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              📎 Tài Liệu & Bài Tập Kèm Theo Ở Các Buổi Học ({allSessionMaterials.length} file)
+            </span>
+
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-56">
+                <Search className="w-3.5 h-3.5 text-pink-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Tra cứu tên bài tập, số buổi..."
+                  value={materialSearchQuery}
+                  onChange={(e) => {
+                    setMaterialSearchQuery(e.target.value);
+                    if (!isExtraMaterialsOpen) setIsExtraMaterialsOpen(true);
+                  }}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-pink-200 text-xs bg-pink-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              <button
+                onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
+                className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 text-xs font-extrabold transition flex items-center shrink-0 border border-pink-200"
+              >
+                {isExtraMaterialsOpen ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1 text-pink-600" /> Thu Gọn Kho
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1 text-pink-600" /> Mở Rộng Tất Cả
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Collapsible & Search-Filtered Materials Container */}
+          {isExtraMaterialsOpen && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fadeIn">
+              {filteredSessionMaterials.length > 0 ? (
+                filteredSessionMaterials.map((mat) => (
+                  <a
+                    key={mat.id}
+                    href={mat.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3.5 rounded-2xl border border-pink-100 bg-pink-50/40 hover:border-pink-300 transition flex items-center space-x-3 group"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h5 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition">
+                        Buổi {mat.sessionNum}: {mat.title}
+                      </h5>
+                      <span className="text-[10px] text-pink-600 font-bold underline">
+                        Bấm để xem / tải về →
+                      </span>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic col-span-2">Không tìm thấy tài liệu phù hợp từ khóa "{materialSearchQuery}".</p>
+              )}
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* 4. SESSIONS LIST (INCLUDES CONCISE STUDENT HOMEWORK PROGRESS STRIP) */}
       <div className="space-y-4">
-        {submissions.length > 0 ? (
-          submissions.map((sub) => {
-            const studentObj = students.find((s) => s && s.id === sub.studentId);
-            const avatarSrc = resolveAvatarUrl(studentObj?.avatar);
-            const isEditing = selectedSubId === sub.id;
+        <div className="flex items-center justify-between">
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+            <Calendar className="w-5 h-5 mr-2 text-pink-500" /> Bảng Nhật Ký Buổi Học Của Lớp ({classSessions.length} Buổi Dạy)
+          </h3>
+
+          <button
+            onClick={() => onOpenAddSession(selectedClass.id)}
+            className="px-4 py-2 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition flex items-center shadow-xs"
+          >
+            + Thêm Buổi Học Mới
+          </button>
+        </div>
+
+        {classSessions.length > 0 ? (
+          classSessions.map((session) => {
+            const itemsList = session.homeworkItems || [];
+            const bgStyle = getSessionBgStyle(session.sessionNumber);
 
             return (
               <div
-                key={sub.id}
-                className={`p-5 rounded-3xl border transition-all space-y-3 ${
-                  sub.isTeacherFeedbackChecked
-                    ? 'bg-emerald-50/40 border-emerald-200'
-                    : 'bg-pink-50/40 border-pink-200 shadow-xs'
-                }`}
+                key={session.id}
+                className={`rounded-3xl border p-6 shadow-xs space-y-4 hover:shadow-md transition duration-200 ${bgStyle}`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Session Header: Number & Date */}
+                <div className="flex items-center justify-between border-b border-pink-200/60 pb-3">
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={avatarSrc}
-                      alt={studentObj?.name || 'Học viên'}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                      }}
-                      className="w-11 h-11 rounded-2xl object-cover border-2 border-pink-200 shadow-xs shrink-0"
-                    />
+                    <span className="w-10 h-10 rounded-2xl bg-pink-400 text-white font-black text-sm flex items-center justify-center shadow-xs">
+                      #{session.sessionNumber}
+                    </span>
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                          {studentObj?.name || 'Học viên'}
-                        </h4>
-                        <span className="text-xs text-pink-900 font-bold bg-pink-100 px-2 py-0.5 rounded-md border border-pink-200">
-                          {sub.homeworkTitle}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Ngày nộp bài: {sub.submissionDate}
+                      <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                        Buổi Học Số {session.sessionNumber}
+                      </h4>
+                      <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        Ngày học: {session.date} • GV: {session.teacherName || selectedClass.teacherName}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 shrink-0">
-                    {sub.isTeacherFeedbackChecked ? (
-                      <button
-                        onClick={() => handleOpenGrading(sub)}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 border border-emerald-300 font-extrabold text-xs hover:bg-emerald-200 transition"
+                  {session.recordLink && (
+                    <a
+                      href={session.recordLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
+                    >
+                      <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
+                    </a>
+                  )}
+                </div>
+
+                {/* Lesson Content */}
+                <div className="space-y-1">
+                  <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
+                    📘 Nội Dung Bài Học:
+                  </span>
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs">
+                    {session.lessonContent}
+                  </p>
+                </div>
+
+                {/* PER-STUDENT COMMENTS LIST IN THIS SESSION */}
+                {session.studentFeedbacks && Object.keys(session.studentFeedbacks).length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
+                      💬 Nhận Xét Chi Tiết Cho Từng Học Viên Trong Buổi:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {Object.entries(session.studentFeedbacks).map(([stdId, fb]) => {
+                        const stdObj = classStudents.find((s) => s.id === stdId);
+                        if (!fb.strengths && !fb.improvements) return null;
+
+                        return (
+                          <div key={stdId} className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1 backdrop-blur-xs">
+                            <span className="font-black text-pink-900 block">
+                              👤 {stdObj?.name || 'Học viên'}:
+                            </span>
+                            {fb.strengths && (
+                              <p className="text-emerald-800 font-medium">💪 <strong>Mạnh:</strong> {fb.strengths}</p>
+                            )}
+                            {fb.improvements && (
+                              <p className="text-amber-800 font-medium">🎯 <strong>Cải thiện:</strong> {fb.improvements}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* HOMEWORK ITEMS LIST */}
+                <div className="space-y-2">
+                  <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
+                    📝 Bài Tập Về Nhà Của Buổi Học ({itemsList.length} bài):
+                  </span>
+
+                  {itemsList.length > 0 ? (
+                    itemsList.map((hwItem) => (
+                      <div
+                        key={hwItem.id}
+                        className="p-3.5 rounded-2xl border border-pink-100 bg-white/90 dark:bg-slate-800/90 flex items-center justify-between text-xs"
                       >
-                        ✓ Đã Phản Hồi (Sửa)
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleOpenGrading(sub)}
-                        className="px-4 py-2 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs"
-                      >
-                        ✍️ Chấm Bài & Viết Phản Hồi
-                      </button>
-                    )}
+                        <div>
+                          <h5 className="font-extrabold text-slate-900 dark:text-white">
+                            {hwItem.title}
+                          </h5>
+                          {hwItem.content && <p className="text-slate-600 mt-0.5">{hwItem.content}</p>}
+                        </div>
+
+                        {hwItem.attachmentUrl && (
+                          <a
+                            href={hwItem.attachmentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1 rounded-xl bg-pink-100 text-pink-900 text-[11px] font-bold hover:bg-pink-200 transition"
+                          >
+                            🔗 Xem Link Đính Kèm
+                          </a>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Không có bài tập về nhà đính kèm.</p>
+                  )}
+                </div>
+
+                {/* CONCISE STUDENT HOMEWORK PROGRESS STRIP IN THIS SESSION */}
+                <div className="pt-3 border-t border-pink-200/60 space-y-2">
+                  <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-1.5 text-pink-500" /> Tóm Tắt Tiến Độ Làm Bài Tập Buổi Này Của Các Học Viên:
+                  </span>
+
+                  <div className="flex flex-wrap gap-2.5">
+                    {classStudents.map((std) => {
+                      const completedCount = itemsList.filter((item) =>
+                        std.completedHomeworkTaskIds?.includes(item.id)
+                      ).length;
+                      const totalItems = itemsList.length;
+                      const percent = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 100;
+
+                      const isDone = totalItems > 0 && completedCount === totalItems;
+                      const isPartial = completedCount > 0 && completedCount < totalItems;
+
+                      return (
+                        <div
+                          key={std.id}
+                          onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
+                          className={`px-3 py-1.5 rounded-2xl border text-xs font-extrabold flex items-center space-x-2 transition cursor-pointer shadow-2xs hover:scale-102 ${
+                            isDone
+                              ? 'bg-emerald-100 text-emerald-950 border-emerald-300'
+                              : isPartial
+                              ? 'bg-amber-100 text-amber-950 border-amber-300'
+                              : 'bg-rose-100 text-rose-950 border-rose-300'
+                          }`}
+                          title={`Bấm để xem trang học tập cá nhân của em ${std.name}`}
+                        >
+                          <img
+                            src={resolveAvatarUrl(std.avatar)}
+                            alt={std.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                            }}
+                            className="w-5 h-5 rounded-full object-cover shrink-0 border border-white"
+                          />
+                          <span>{std.name}:</span>
+                          <span className="font-black">
+                            {completedCount}/{totalItems} Bài ({percent}%)
+                          </span>
+                          {isDone ? (
+                            <span className="text-emerald-700 font-black">✓</span>
+                          ) : isPartial ? (
+                            <span className="text-amber-700 font-black">⏳</span>
+                          ) : (
+                            <span className="text-rose-700 font-black">⚠️</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Content Submitted by Student */}
-                {sub.content && (
-                  <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 dark:border-slate-700 text-xs space-y-1">
-                    <span className="font-bold text-slate-500 block">Nội dung học viên nộp:</span>
-                    <p className="text-slate-800 dark:text-slate-200 font-medium">{sub.content}</p>
-                  </div>
-                )}
-
-                {/* Submitted Audio File or Attachment */}
-                {sub.fileUrl && (
-                  <div className="pt-1">
-                    <a
-                      href={sub.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-200"
-                    >
-                      🔗 Link File Ghi Âm / Đính Kèm Của Học Viên
-                    </a>
-                  </div>
-                )}
-
-                {/* Feedback Input Drawer */}
-                {isEditing && (
-                  <div className="pt-3 border-t border-pink-200 dark:border-slate-700 space-y-3 animate-fadeIn">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-pink-950 dark:text-pink-300 uppercase tracking-wider">
-                        📝 Viết Nhận Xét Khuyến Khích Cho Học Viên:
-                      </span>
-                      <button
-                        onClick={() => handleAutoGenerateAI(sub)}
-                        disabled={isGeneratingAI}
-                        className="px-3 py-1 rounded-xl bg-sky-100 text-sky-950 font-black text-xs hover:bg-sky-200 transition flex items-center border border-sky-300"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 mr-1 text-sky-600 animate-spin" />
-                        {isGeneratingAI ? 'AI Đang Gợi Ý...' : '✨ AI Gợi Ý Nhận Xét'}
-                      </button>
-                    </div>
-
-                    <textarea
-                      rows={3}
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      placeholder="Nhập lời khen ngợi và hướng dẫn cho em học viên..."
-                      className="w-full p-3 rounded-2xl border border-pink-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white dark:bg-slate-800"
-                    />
-
-                    {/* Star rating selector */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-xs">
-                        <span className="font-bold text-slate-700 dark:text-slate-300">Đánh Giá Số Sao:</span>
-                        <div className="flex items-center space-x-1">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <button
-                              key={s}
-                              onClick={() => setStars(s)}
-                              className={`p-1 rounded-lg transition ${
-                                s <= stars ? 'text-amber-400 scale-110' : 'text-slate-300'
-                              }`}
-                            >
-                              <Star className="w-5 h-5 fill-current" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => setSelectedSubId(null)}
-                          className="px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-slate-200"
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          onClick={() => handleSubmitFeedback(sub)}
-                          className="px-4 py-1.5 rounded-xl bg-pink-200 text-pink-950 font-extrabold text-xs hover:bg-pink-300 border border-pink-300 shadow-xs"
-                        >
-                          Gửi Phản Hồi Ngay
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })
         ) : (
-          <div className="p-8 text-center bg-pink-50/30 rounded-3xl border border-pink-100 text-xs text-slate-400 italic">
-            Chưa có bài tập nộp từ học viên.
+          <div className="p-8 text-center bg-white rounded-3xl border border-pink-100 text-xs text-slate-500 italic">
+            Chưa có thông tin buổi học nào được ghi nhận cho lớp này.
           </div>
         )}
       </div>
+
     </div>
   );
 };
