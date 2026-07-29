@@ -1,31 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Class, Student, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2 } from 'lucide-react';
 
 interface AddSessionModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   classes: Class[];
   students: Student[];
   initialClassId?: string;
+  defaultClassId?: string;
   onSessionAdded: () => void;
 }
 
 export const AddSessionModal: React.FC<AddSessionModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   classes,
   students,
   initialClassId,
+  defaultClassId,
   onSessionAdded,
 }) => {
-  const [selectedClassId, setSelectedClassId] = useState<string>(
-    initialClassId || (classes[0]?.id || '')
-  );
+  const targetClassId = initialClassId || defaultClassId || (classes[0]?.id || '');
+  const [selectedClassId, setSelectedClassId] = useState<string>(targetClassId);
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [lessonContent, setLessonContent] = useState<string>('');
   const [recordLink, setRecordLink] = useState<string>('');
+
+  useEffect(() => {
+    const cid = initialClassId || defaultClassId;
+    if (cid) {
+      setSelectedClassId(cid);
+    } else if (classes.length > 0) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [initialClassId, defaultClassId, classes]);
 
   // Multiple Homework Items List
   const [homeworkItems, setHomeworkItems] = useState<HomeworkTaskItem[]>([
@@ -33,7 +43,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   ]);
 
   // Per-Student Individual Feedbacks (studentId -> { strengths, improvements })
-  const classStudents = students.filter((s) => s.classIds.includes(selectedClassId));
+  const classStudents = students.filter((s) => s.classIds && s.classIds.includes(selectedClassId));
   const [studentFeedbacks, setStudentFeedbacks] = useState<Record<string, StudentFeedback>>({});
 
   // Attendance Map
@@ -81,17 +91,6 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     });
   };
 
-  // Material Handlers
-  const handleAddMaterial = () => {
-    if (!materialTitle || !materialUrl) return;
-    setMaterials([
-      ...materials,
-      { id: `mat_${Date.now()}`, title: materialTitle, url: materialUrl, addedDate: date },
-    ]);
-    setMaterialTitle('');
-    setMaterialUrl('');
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -121,14 +120,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       attendanceList,
     });
 
-    alert('Đã cập nhật buổi học thành công!');
+    alert('Đã cập nhật buổi học mới thành công!');
     onSessionAdded();
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-purple-100 dark:border-purple-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative">
         
         <button
           onClick={onClose}
@@ -137,9 +136,9 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center space-x-3 border-b border-purple-100 dark:border-purple-800 pb-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 flex items-center justify-center font-black">
-            <PlusCircle className="w-6 h-6" />
+        <div className="flex items-center space-x-3 border-b border-pink-100 dark:border-slate-800 pb-4">
+          <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-700 flex items-center justify-center font-black">
+            <PlusCircle className="w-6 h-6 text-pink-600" />
           </div>
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
@@ -155,13 +154,13 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-black text-slate-700 dark:text-purple-200 uppercase mb-1">
+              <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
                 Chọn Lớp Học *
               </label>
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="w-full p-3 rounded-xl border border-purple-200 bg-purple-50/50 font-extrabold text-xs"
+                className="w-full p-3 rounded-xl border border-pink-200 bg-pink-50/50 font-extrabold text-xs"
               >
                 {classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
@@ -172,14 +171,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-black text-slate-700 dark:text-purple-200 uppercase mb-1">
+              <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
                 Ngày Học *
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full p-3 rounded-xl border border-purple-200 bg-purple-50/50 font-extrabold text-xs"
+                className="w-full p-3 rounded-xl border border-pink-200 bg-pink-50/50 font-extrabold text-xs"
                 required
               />
             </div>
@@ -187,7 +186,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
 
           {/* Lesson Content */}
           <div>
-            <label className="block font-black text-slate-700 dark:text-purple-200 uppercase mb-1">
+            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
               Nội Dung Học Trong Buổi *
             </label>
             <textarea
@@ -195,23 +194,23 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
               value={lessonContent}
               onChange={(e) => setLessonContent(e.target.value)}
-              className="w-full p-3 rounded-xl border border-purple-200 bg-white text-xs font-medium"
+              className="w-full p-3 rounded-xl border border-pink-200 bg-white text-xs font-medium"
               required
             />
           </div>
 
           {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
-          <div className="p-4 rounded-3xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 space-y-4">
-            <h4 className="font-black text-xs text-purple-900 dark:text-purple-200 uppercase tracking-wider">
-              💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp
+          <div className="p-4 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 space-y-4">
+            <h4 className="font-black text-xs text-pink-900 dark:text-pink-300 uppercase tracking-wider">
+              💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp ({classStudents.length} em)
             </h4>
 
             {classStudents.map((std) => {
               const fb = studentFeedbacks[std.id] || {};
 
               return (
-                <div key={std.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-purple-100 space-y-3">
-                  <div className="flex items-center space-x-2 border-b border-purple-100 pb-2">
+                <div key={std.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 space-y-3">
+                  <div className="flex items-center space-x-2 border-b border-pink-100 pb-2">
                     <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
                     <span className="font-black text-xs text-slate-900 dark:text-white">
                       Học viên: {std.name}
@@ -251,26 +250,26 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
           </div>
 
           {/* MULTIPLE HOMEWORK ITEMS */}
-          <div className="p-4 rounded-3xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 space-y-4">
+          <div className="p-4 rounded-3xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200 space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-black text-xs text-indigo-900 dark:text-indigo-200 uppercase tracking-wider">
+              <h4 className="font-black text-xs text-sky-950 dark:text-sky-300 uppercase tracking-wider">
                 📝 Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
               </h4>
 
               <button
                 type="button"
                 onClick={handleAddHomeworkItem}
-                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-extrabold text-xs hover:bg-indigo-700 transition flex items-center shadow-sm"
+                className="px-3.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 border border-sky-300 font-extrabold text-xs hover:bg-sky-300 transition flex items-center shadow-xs"
               >
-                <Plus className="w-4 h-4 mr-1" /> + Thêm Bài Tập
+                <Plus className="w-4 h-4 mr-1 text-sky-700" /> + Thêm Bài Tập
               </button>
             </div>
 
             <div className="space-y-3">
               {homeworkItems.map((item, idx) => (
-                <div key={item.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-indigo-100 space-y-2 relative">
+                <div key={item.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-sky-100 space-y-2 relative">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-indigo-800 text-[11px]">Bài tập #{idx + 1}</span>
+                    <span className="font-bold text-sky-800 text-[11px]">Bài tập #{idx + 1}</span>
                     {homeworkItems.length > 1 && (
                       <button
                         type="button"
@@ -287,7 +286,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     placeholder="Tiêu đề bài tập (e.g. Bài 1: Ghi âm 2 phút speaking...)"
                     value={item.title}
                     onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-indigo-200 text-xs font-bold"
+                    className="w-full p-2.5 rounded-xl border border-sky-200 text-xs font-bold"
                   />
 
                   <textarea
@@ -295,7 +294,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     placeholder="Mô tả chi tiết yêu cầu làm bài tập..."
                     value={item.content || ''}
                     onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-indigo-200 text-xs font-medium"
+                    className="w-full p-2.5 rounded-xl border border-sky-200 text-xs font-medium"
                   />
 
                   <input
@@ -303,7 +302,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     placeholder="Link/Ảnh đính kèm bài tập (Drive/PDF/Image link)"
                     value={item.attachmentUrl || ''}
                     onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
-                    className="w-full p-2 rounded-xl border border-indigo-200 text-xs font-mono"
+                    className="w-full p-2 rounded-xl border border-sky-200 text-xs font-mono"
                   />
                 </div>
               ))}
@@ -312,7 +311,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
 
           {/* Record Link */}
           <div>
-            <label className="block font-black text-slate-700 dark:text-purple-200 uppercase mb-1">
+            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
               🎬 Link Record Video Buổi Học (Zoom / Drive / Youtube)
             </label>
             <input
@@ -320,13 +319,13 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               placeholder="https://zoom.us/rec/play/..."
               value={recordLink}
               onChange={(e) => setRecordLink(e.target.value)}
-              className="w-full p-3 rounded-xl border border-purple-200 text-xs font-mono"
+              className="w-full p-3 rounded-xl border border-pink-200 text-xs font-mono"
             />
           </div>
 
           {/* Attendance Checklist */}
           <div>
-            <label className="block font-black text-slate-700 dark:text-purple-200 uppercase mb-2">
+            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-2">
               Điểm Danh Học Viên Buổi Học:
             </label>
             <div className="space-y-2">
@@ -334,7 +333,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                 const currentAtt = attendanceMap[std.id] || 'present';
 
                 return (
-                  <div key={std.id} className="p-3 rounded-2xl border border-purple-100 bg-purple-50/40 flex items-center justify-between">
+                  <div key={std.id} className="p-3 rounded-2xl border border-pink-100 bg-pink-50/40 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
                       <span className="font-extrabold text-xs text-slate-800">{std.name}</span>
@@ -366,7 +365,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4 border-t border-purple-100">
+          <div className="flex justify-end space-x-2 pt-4 border-t border-pink-100">
             <button
               type="button"
               onClick={onClose}
@@ -376,7 +375,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 shadow-md"
+              className="px-6 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs"
             >
               Lưu Buổi Học Này
             </button>
