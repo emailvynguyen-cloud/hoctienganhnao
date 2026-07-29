@@ -51,11 +51,11 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 p-6 space-y-6 shadow-sm">
-      <div className="flex items-center justify-between border-b border-purple-100 pb-4">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 space-y-6 shadow-sm">
+      <div className="flex items-center justify-between border-b border-pink-100 dark:border-slate-800 pb-4">
         <div>
           <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center">
-            <CheckCircle2 className="w-5 h-5 mr-2 text-emerald-600 animate-pulse" />
+            <CheckCircle2 className="w-5 h-5 mr-2 text-emerald-500 animate-pulse" />
             Quản Lý Chấm Bài Tập Về Nhà & Nhận Xét
           </h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -87,7 +87,7 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
                 className={`p-5 rounded-3xl border transition-all space-y-3 ${
                   sub.isTeacherFeedbackChecked
                     ? 'bg-emerald-50/40 border-emerald-200'
-                    : 'bg-purple-50/60 border-purple-200 shadow-xs'
+                    : 'bg-pink-50/40 border-pink-200 shadow-xs'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -98,14 +98,14 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
                       }}
-                      className="w-11 h-11 rounded-2xl object-cover border-2 border-purple-200 shadow-sm shrink-0"
+                      className="w-11 h-11 rounded-2xl object-cover border-2 border-pink-200 shadow-xs shrink-0"
                     />
                     <div>
                       <div className="flex items-center space-x-2">
                         <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
                           {studentObj?.name || 'Học viên'}
                         </h4>
-                        <span className="text-xs text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded-md">
+                        <span className="text-xs text-pink-900 font-bold bg-pink-100 px-2 py-0.5 rounded-md border border-pink-200">
                           {sub.homeworkTitle}
                         </span>
                       </div>
@@ -119,79 +119,101 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
                     {sub.isTeacherFeedbackChecked ? (
                       <button
                         onClick={() => handleOpenGrading(sub)}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-extrabold transition flex items-center border border-emerald-300"
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 border border-emerald-300 font-extrabold text-xs hover:bg-emerald-200 transition"
                       >
-                        ✓ Đã Duyệt ({sub.ratingStars || 5} ⭐) - Sửa Lại
+                        ✓ Đã Phản Hồi (Sửa)
                       </button>
                     ) : (
                       <button
                         onClick={() => handleOpenGrading(sub)}
-                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition shadow-sm flex items-center animate-pulse"
+                        className="px-4 py-2 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Chấm Bài & Phản Hồi
+                        ✍️ Chấm Bài & Viết Phản Hồi
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* Grading Area Expandable */}
+                {/* Content Submitted by Student */}
+                {sub.content && (
+                  <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 dark:border-slate-700 text-xs space-y-1">
+                    <span className="font-bold text-slate-500 block">Nội dung học viên nộp:</span>
+                    <p className="text-slate-800 dark:text-slate-200 font-medium">{sub.content}</p>
+                  </div>
+                )}
+
+                {/* Submitted Audio File or Attachment */}
+                {sub.fileUrl && (
+                  <div className="pt-1">
+                    <a
+                      href={sub.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-200"
+                    >
+                      🔗 Link File Ghi Âm / Đính Kèm Của Học Viên
+                    </a>
+                  </div>
+                )}
+
+                {/* Feedback Input Drawer */}
                 {isEditing && (
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-purple-200 space-y-3 animate-fadeIn text-xs">
+                  <div className="pt-3 border-t border-pink-200 dark:border-slate-700 space-y-3 animate-fadeIn">
                     <div className="flex items-center justify-between">
-                      <h5 className="font-black text-purple-900 dark:text-purple-200 uppercase">
-                        Nhập Nhận Xét & Đánh Giá Bài Làm
-                      </h5>
-                      
+                      <span className="text-xs font-black text-pink-950 dark:text-pink-300 uppercase tracking-wider">
+                        📝 Viết Nhận Xét Khuyến Khích Cho Học Viên:
+                      </span>
                       <button
                         onClick={() => handleAutoGenerateAI(sub)}
                         disabled={isGeneratingAI}
-                        className="px-3 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-[11px] transition flex items-center border border-purple-300"
+                        className="px-3 py-1 rounded-xl bg-sky-100 text-sky-950 font-black text-xs hover:bg-sky-200 transition flex items-center border border-sky-300"
                       >
-                        <Sparkles className="w-3 h-3 mr-1 text-purple-600 animate-spin" />
-                        {isGeneratingAI ? 'AI Đang Viết...' : '🪄 Gợi Ý Nhận Xét AI'}
+                        <Sparkles className="w-3.5 h-3.5 mr-1 text-sky-600 animate-spin" />
+                        {isGeneratingAI ? 'AI Đang Gợi Ý...' : '✨ AI Gợi Ý Nhận Xét'}
                       </button>
                     </div>
 
                     <textarea
                       rows={3}
-                      placeholder="Nhập nhận xét chi tiết bài tập cho học viên (e.g. Làm bài rất tốt, chú ý từ vựng...)"
                       value={feedbackText}
                       onChange={(e) => setFeedbackText(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-purple-200 bg-purple-50/40 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      placeholder="Nhập lời khen ngợi và hướng dẫn cho em học viên..."
+                      className="w-full p-3 rounded-2xl border border-pink-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white dark:bg-slate-800"
                     />
 
-                    <div className="flex items-center space-x-3">
-                      <span className="font-bold text-slate-700">Đánh Giá Số Sao:</span>
-                      <div className="flex items-center space-x-1">
-                        {[1, 2, 3, 4, 5].map((starNum) => (
-                          <button
-                            key={starNum}
-                            type="button"
-                            onClick={() => setStars(starNum)}
-                            className={`p-1.5 rounded-xl transition ${
-                              stars >= starNum ? 'text-amber-500 scale-110' : 'text-slate-300'
-                            }`}
-                          >
-                            <Star className="w-5 h-5 fill-current" />
-                          </button>
-                        ))}
+                    {/* Star rating selector */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Đánh Giá Số Sao:</span>
+                        <div className="flex items-center space-x-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => setStars(s)}
+                              className={`p-1 rounded-lg transition ${
+                                s <= stars ? 'text-amber-400 scale-110' : 'text-slate-300'
+                              }`}
+                            >
+                              <Star className="w-5 h-5 fill-current" />
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <span className="font-black text-amber-600">({stars} ⭐)</span>
-                    </div>
 
-                    <div className="flex justify-end space-x-2 pt-1">
-                      <button
-                        onClick={() => setSelectedSubId(null)}
-                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
-                      >
-                        Hủy Bỏ
-                      </button>
-                      <button
-                        onClick={() => handleSubmitFeedback(sub)}
-                        className="px-5 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 transition shadow-sm"
-                      >
-                        Lưu Phản Hồi
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setSelectedSubId(null)}
+                          className="px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-slate-200"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          onClick={() => handleSubmitFeedback(sub)}
+                          className="px-4 py-1.5 rounded-xl bg-pink-200 text-pink-950 font-extrabold text-xs hover:bg-pink-300 border border-pink-300 shadow-xs"
+                        >
+                          Gửi Phản Hồi Ngay
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -199,8 +221,8 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
             );
           })
         ) : (
-          <div className="p-8 text-center bg-purple-50/50 rounded-2xl text-xs text-slate-500 italic border border-purple-100">
-            Chưa có bài nộp nào từ học viên.
+          <div className="p-8 text-center bg-pink-50/30 rounded-3xl border border-pink-100 text-xs text-slate-400 italic">
+            Chưa có bài tập nộp từ học viên.
           </div>
         )}
       </div>
