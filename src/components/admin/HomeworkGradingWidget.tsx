@@ -213,7 +213,7 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
                 {isFeedbackDone && sub.feedbackText && !isEditing && (
                   <div className="p-3.5 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 text-xs space-y-1">
                     <span className="font-bold text-sky-950 dark:text-sky-300 flex items-center">
-                      💬 Nhận xét từ {sub.feedbackByUserName || 'Cô Vy'} ({sub.feedbackDate} {sub.feedbackTime || ''}):
+                      💬 Nhận xét từ {sub.feedbackByUserName || 'Giáo Viên'} ({sub.feedbackDate} {sub.feedbackTime || ''}):
                     </span>
                     <p className="text-slate-800 dark:text-slate-200 font-semibold">{sub.feedbackText}</p>
                     {sub.ratingStars && (
