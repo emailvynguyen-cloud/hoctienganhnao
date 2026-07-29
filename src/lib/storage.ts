@@ -29,17 +29,17 @@ import { db } from './firebase';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
 
 const STORAGE_KEYS = {
-  STUDENTS: 'vy_students_v3',
-  CLASSES: 'vy_classes_v3',
-  SESSIONS: 'vy_sessions_v3',
-  HOMEWORK_TASKS: 'vy_hw_tasks_v3',
-  HOMEWORK_SUBMISSIONS: 'vy_hw_submissions_v3',
-  NOTIFICATIONS: 'vy_notifications_v3',
-  INVOICES: 'vy_invoices_v3',
-  USERS: 'vy_users_v3',
-  BANK_CONFIG: 'vy_bank_config_v3',
-  CURRENT_USER: 'vy_current_user_v3',
-  CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v3',
+  STUDENTS: 'vy_students_v4',
+  CLASSES: 'vy_classes_v4',
+  SESSIONS: 'vy_sessions_v4',
+  HOMEWORK_TASKS: 'vy_hw_tasks_v4',
+  HOMEWORK_SUBMISSIONS: 'vy_hw_submissions_v4',
+  NOTIFICATIONS: 'vy_notifications_v4',
+  INVOICES: 'vy_invoices_v4',
+  USERS: 'vy_users_v4',
+  BANK_CONFIG: 'vy_bank_config_v4',
+  CURRENT_USER: 'vy_current_user_v4',
+  CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
 };
 
 function getItem<T>(key: string, defaultValue: T): T {
