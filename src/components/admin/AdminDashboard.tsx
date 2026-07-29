@@ -49,6 +49,7 @@ interface AdminDashboardProps {
   onOpenAddSession: (classId?: string) => void;
   onOpenAccountManagement: () => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
+  targetSubmissionId?: string | null;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -65,11 +66,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenAddSession,
   onOpenAccountManagement,
   onSetSubViewNavigation,
+  targetSubmissionId,
 }) => {
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
+
+  useEffect(() => {
+    if (targetSubmissionId) {
+      setActiveTab('grading');
+    }
+  }, [targetSubmissionId]);
 
   // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact)
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
@@ -406,8 +414,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* TAB 2: HOMEWORK GRADING QUEUE */}
       {activeTab === 'grading' && (
         <HomeworkGradingWidget
+          currentUser={currentUser}
           students={safeStudents}
+          classes={safeClasses}
           onRefreshData={onUpdateStudents}
+          targetSubmissionId={targetSubmissionId}
         />
       )}
 
