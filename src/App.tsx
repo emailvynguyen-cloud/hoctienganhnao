@@ -98,30 +98,18 @@ export default function App() {
   }, [isDarkMode]);
 
   const handleResetData = () => {
-    if (window.confirm('Khôi phục dữ liệu mẫu ban đầu cho toàn bộ hệ thống MS. VY ENGLISH?')) {
-      StorageEngine.resetDatabase();
+    if (window.confirm('Bạn có chắc chắn muốn khôi phục lại dữ liệu mẫu ban đầu của Ms. Vy English?')) {
+      StorageEngine.clearAll();
       loadData();
+      alert('Đã khôi phục dữ liệu ban đầu thành công!');
     }
-  };
-
-  const handleOpenAddSession = (classId?: string) => {
-    setAddSessionClassId(classId);
-    setIsAddSessionOpen(true);
-  };
-
-  // Sub-View Navigation Callbacks (Passed down to Header)
-  const handleSetSubViewNavigation = (canBack: boolean, onBack?: () => void, onHome?: () => void) => {
-    setCanNavigateBack(canBack);
-    setSubViewBackHandler(() => onBack);
-    setSubViewHomeHandler(() => onHome);
   };
 
   const handleNavigateHome = () => {
     if (subViewHomeHandler) {
       subViewHomeHandler();
-    }
-    if (currentUser) {
-      setActivePublicHash(null);
+    } else {
+      setCanNavigateBack(false);
     }
   };
 
@@ -131,16 +119,13 @@ export default function App() {
     }
   };
 
-  const effectiveRole: UserRole = currentUser?.role === 'super_admin' ? activeRoleView : currentUser?.role || 'super_admin';
-  const currentStudent = students.find((s) => s && s.status === 'active') || students[0];
-
   return (
-    <div className={`min-h-screen bg-purple-50/40 dark:bg-slate-950 text-slate-800 dark:text-purple-100 transition-colors duration-200 flex flex-col font-sans`}>
+    <div className="min-h-screen bg-[#FFFAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
-      {/* Header Bar */}
+      {/* Header */}
       <Header
         currentUser={currentUser}
-        currentRole={effectiveRole}
+        currentRole={currentUser?.role === 'super_admin' ? activeRoleView : (currentUser?.role || 'student')}
         onOpenLogin={() => setIsLoginOpen(true)}
         onLogout={() => {
           StorageEngine.setCurrentUser(null);
@@ -165,10 +150,10 @@ export default function App() {
 
       {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}
       {currentUser?.role === 'super_admin' && !activePublicHash && (
-        <div className="bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 text-white py-2 px-4 shadow-sm">
+        <div className="bg-gradient-to-r from-pink-200 via-rose-100 to-sky-100 text-pink-950 py-2 px-4 shadow-xs border-b border-pink-200">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
             <div className="flex items-center space-x-2 font-black">
-              <Eye className="w-4 h-4 text-amber-300 animate-pulse" />
+              <Eye className="w-4 h-4 text-pink-600 animate-pulse" />
               <span>SUPER ADMIN ROLE SWITCHER (Chuyển Nhanh Giao Diện):</span>
             </div>
 
@@ -180,11 +165,11 @@ export default function App() {
                 }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'super_admin'
-                    ? 'bg-white text-amber-900 shadow-md'
-                    : 'bg-black/20 hover:bg-black/30 text-white'
+                    ? 'bg-white text-pink-950 shadow-xs border border-pink-300'
+                    : 'bg-white/60 hover:bg-white/90 text-slate-700'
                 }`}
               >
-                <Crown className="w-3.5 h-3.5 mr-1 text-amber-400" /> Super Admin
+                <Crown className="w-3.5 h-3.5 mr-1 text-amber-500" /> Super Admin
               </button>
 
               <button
@@ -194,11 +179,11 @@ export default function App() {
                 }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'admin'
-                    ? 'bg-white text-purple-900 shadow-md'
-                    : 'bg-black/20 hover:bg-black/30 text-white'
+                    ? 'bg-white text-pink-950 shadow-xs border border-pink-300'
+                    : 'bg-white/60 hover:bg-white/90 text-slate-700'
                 }`}
               >
-                <Shield className="w-3.5 h-3.5 mr-1 text-purple-400" /> Admin
+                <Shield className="w-3.5 h-3.5 mr-1 text-pink-500" /> Admin
               </button>
 
               <button
@@ -208,11 +193,11 @@ export default function App() {
                 }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'teacher'
-                    ? 'bg-white text-indigo-900 shadow-md'
-                    : 'bg-black/20 hover:bg-black/30 text-white'
+                    ? 'bg-white text-sky-950 shadow-xs border border-sky-300'
+                    : 'bg-white/60 hover:bg-white/90 text-slate-700'
                 }`}
               >
-                <UserCheck className="w-3.5 h-3.5 mr-1 text-indigo-400" /> Giáo Viên
+                <UserCheck className="w-3.5 h-3.5 mr-1 text-sky-600" /> Giáo Viên
               </button>
 
               <button
@@ -222,11 +207,11 @@ export default function App() {
                 }}
                 className={`px-3.5 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'student'
-                    ? 'bg-white text-pink-900 shadow-md'
-                    : 'bg-black/20 hover:bg-black/30 text-white'
+                    ? 'bg-white text-emerald-950 shadow-xs border border-emerald-300'
+                    : 'bg-white/60 hover:bg-white/90 text-slate-700'
                 }`}
               >
-                <GraduationCap className="w-3.5 h-3.5 mr-1 text-pink-400" /> Học Viên
+                <GraduationCap className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Học Viên
               </button>
             </div>
           </div>
@@ -256,39 +241,90 @@ export default function App() {
         ) : !currentUser ? (
           /* NOT LOGGED IN LANDING CARD VIEW WITH LOGIN PROMPT */
           <div className="space-y-6 my-8 animate-fadeIn">
-            <div className="bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-3xl border-2 border-purple-100 dark:border-purple-800 text-center max-w-2xl mx-auto shadow-xl space-y-6">
-              <img src="/logo.jpg" alt="Ms. Vy English Logo" style={{ width: '96px', height: '96px' }} className="w-24 h-24 rounded-3xl object-cover border-4 border-purple-200 mx-auto shadow-md" />
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                  Hệ Thống Theo Dõi Học Tập Online - MS. VY ENGLISH
-                </h2>
-                <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
-                  Vui lòng đăng nhập với tài khoản Quản lý / Giáo viên để truy cập hệ thống quản lý.
+            <div className="bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-3xl border-2 border-pink-100 dark:border-slate-800 text-center max-w-2xl mx-auto shadow-sm space-y-6">
+              <img src="/logo.jpg" alt="Ms. Vy English Logo" style={{ width: '96px', height: '96px' }} className="w-24 h-24 rounded-3xl object-cover border-4 border-pink-200 mx-auto shadow-md" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-pink-500 to-sky-500 bg-clip-text text-transparent">
+                  MS. VY ENGLISH
+                </h1>
+                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                  Hệ Thống Theo Dõi Học Tập & Quản Lý Lớp Học Online
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="p-4 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-200 text-xs text-pink-950 font-medium space-y-1.5">
+                <p>💡 Vui lòng bấm <strong>"Đăng Nhập Hệ Thống"</strong> bên dưới để chọn vai trò đăng nhập (Super Admin, Admin, Giáo Viên).</p>
+                <p>Học viên / Phụ huynh vui lòng sử dụng đường link cá nhân dạng: <code className="font-mono text-pink-600">/?hash=student_hash</code></p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <button
                   onClick={() => setIsLoginOpen(true)}
-                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs hover:from-purple-700 hover:to-pink-700 transition shadow-lg shadow-purple-500/20 w-full sm:w-auto flex items-center justify-center"
+                  className="px-8 py-3.5 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-sm hover:bg-pink-300 transition shadow-xs flex items-center justify-center"
                 >
-                  <LogIn className="w-4 h-4 mr-2" /> Đăng Nhập Quản Lý / Giáo Viên
-                </button>
-
-                <button
-                  onClick={() => setIsLeaderboardOpen(true)}
-                  className="px-6 py-3.5 rounded-2xl bg-amber-100 text-amber-900 font-extrabold text-xs hover:bg-amber-200 transition border border-amber-200 w-full sm:w-auto flex items-center justify-center"
-                >
-                  <Trophy className="w-4 h-4 mr-2 text-amber-600" /> Xem Bảng Thành Tích Thi Đua
+                  <LogIn className="w-4 h-4 mr-2 text-pink-700" /> Đăng Nhập Quản Trị / Giáo Viên
                 </button>
               </div>
             </div>
           </div>
-        ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN MANAGEMENT PORTAL */
+        ) : currentUser.role === 'super_admin' ? (
+          /* SUPER ADMIN MODE (Supports Quick Role Switcher) */
+          activeRoleView === 'super_admin' || activeRoleView === 'admin' ? (
+            <AdminDashboard
+              currentUser={currentUser}
+              effectiveRole={activeRoleView}
+              students={students}
+              classes={classes}
+              invoices={invoices}
+              sessions={sessions}
+              bankConfig={bankConfig}
+              onUpdateStudents={loadData}
+              onUpdateClasses={loadData}
+              onUpdateInvoices={loadData}
+              onOpenAddSession={(classId) => {
+                setAddSessionClassId(classId);
+                setIsAddSessionOpen(true);
+              }}
+              onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
+              onSetSubViewNavigation={(canBack, onBack, onHome) => {
+                setCanNavigateBack(canBack);
+                setSubViewBackHandler(() => onBack);
+                setSubViewHomeHandler(() => onHome);
+              }}
+            />
+          ) : activeRoleView === 'teacher' ? (
+            <TeacherPortal
+              currentUser={currentUser}
+              classes={classes}
+              students={students}
+              sessions={sessions}
+              onRefreshData={loadData}
+              onOpenAddSession={(classId) => {
+                setAddSessionClassId(classId);
+                setIsAddSessionOpen(true);
+              }}
+              onSetSubViewNavigation={(canBack, onBack, onHome) => {
+                setCanNavigateBack(canBack);
+                setSubViewBackHandler(() => onBack);
+                setSubViewHomeHandler(() => onHome);
+              }}
+            />
+          ) : (
+            <StudentPortal
+              currentStudent={students[0]}
+              classes={classes}
+              sessions={sessions}
+              homeworkTasks={homeworkTasks}
+              homeworkSubmissions={homeworkSubmissions}
+              invoices={invoices}
+              bankConfig={bankConfig}
+              onRefreshData={loadData}
+            />
+          )
+        ) : currentUser.role === 'admin' ? (
           <AdminDashboard
             currentUser={currentUser}
-            effectiveRole={effectiveRole}
+            effectiveRole="admin"
             students={students}
             classes={classes}
             invoices={invoices}
@@ -297,25 +333,37 @@ export default function App() {
             onUpdateStudents={loadData}
             onUpdateClasses={loadData}
             onUpdateInvoices={loadData}
-            onOpenAddSession={handleOpenAddSession}
+            onOpenAddSession={(classId) => {
+              setAddSessionClassId(classId);
+              setIsAddSessionOpen(true);
+            }}
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
-            onSetSubViewNavigation={handleSetSubViewNavigation}
+            onSetSubViewNavigation={(canBack, onBack, onHome) => {
+              setCanNavigateBack(canBack);
+              setSubViewBackHandler(() => onBack);
+              setSubViewHomeHandler(() => onHome);
+            }}
           />
-        ) : effectiveRole === 'teacher' ? (
-          /* TEACHER MANAGEMENT PORTAL */
+        ) : currentUser.role === 'teacher' ? (
           <TeacherPortal
             currentUser={currentUser}
             classes={classes}
             students={students}
             sessions={sessions}
             onRefreshData={loadData}
-            onOpenAddSession={handleOpenAddSession}
-            onSetSubViewNavigation={handleSetSubViewNavigation}
+            onOpenAddSession={(classId) => {
+              setAddSessionClassId(classId);
+              setIsAddSessionOpen(true);
+            }}
+            onSetSubViewNavigation={(canBack, onBack, onHome) => {
+              setCanNavigateBack(canBack);
+              setSubViewBackHandler(() => onBack);
+              setSubViewHomeHandler(() => onHome);
+            }}
           />
         ) : (
-          /* LOGGED IN STUDENT PORTAL VIEW */
           <StudentPortal
-            currentStudent={currentStudent}
+            currentStudent={students[0]}
             classes={classes}
             sessions={sessions}
             homeworkTasks={homeworkTasks}
@@ -325,64 +373,55 @@ export default function App() {
             onRefreshData={loadData}
           />
         )}
+
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-purple-100 dark:border-purple-900 bg-white dark:bg-purple-950/40 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 font-medium">
-          <p className="flex items-center">
-            © 2025 - 2026 MS. VY ENGLISH. Hiểu Từ Bản Chất - Nói Được Tự Tin.
-          </p>
-          <p className="text-purple-600 dark:text-purple-300 font-bold">
-            EduSystem Cute Pastel Edition • Custom Obfuscated Student Links
-          </p>
-        </div>
-      </footer>
-
       {/* MODALS */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => {
-          if (currentUser || activePublicHash) {
+      {isLoginOpen && (
+        <LoginModal
+          users={INITIAL_USERS}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
             setIsLoginOpen(false);
-          }
-        }}
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          setActiveRoleView(user.role);
-          loadData();
-        }}
-      />
-
-      <AccountManagementModal
-        isOpen={isAccountManagementOpen}
-        onClose={() => setIsAccountManagementOpen(false)}
-        onRefreshUsers={loadData}
-      />
-
-      {isLeaderboardOpen && (
-        <LeaderboardWidget
-          isOpen={isLeaderboardOpen}
-          onClose={() => setIsLeaderboardOpen(false)}
-          students={students}
-          sessions={sessions}
+            if (user.role === 'super_admin') setActiveRoleView('super_admin');
+            if (user.role === 'admin') setActiveRoleView('admin');
+            if (user.role === 'teacher') setActiveRoleView('teacher');
+            if (user.role === 'student') setActiveRoleView('student');
+          }}
+          onClose={() => setIsLoginOpen(false)}
         />
       )}
 
-      <AddSessionModal
-        isOpen={isAddSessionOpen}
-        onClose={() => setIsAddSessionOpen(false)}
-        classes={classes}
-        students={students}
-        initialClassId={addSessionClassId}
-        onSessionAdded={loadData}
-      />
+      {isAccountManagementOpen && (
+        <AccountManagementModal
+          currentUser={currentUser}
+          onClose={() => setIsAccountManagementOpen(false)}
+        />
+      )}
 
-      <GeminiSettingsModal
-        isOpen={isGeminiSettingsOpen}
-        onClose={() => setIsGeminiSettingsOpen(false)}
-        onSaved={loadData}
-      />
+      {isLeaderboardOpen && (
+        <LeaderboardWidget
+          students={students}
+          classes={classes}
+          onClose={() => setIsLeaderboardOpen(false)}
+        />
+      )}
+
+      {isGeminiSettingsOpen && (
+        <GeminiSettingsModal
+          onClose={() => setIsGeminiSettingsOpen(false)}
+        />
+      )}
+
+      {isAddSessionOpen && (
+        <AddSessionModal
+          classes={classes}
+          students={students}
+          defaultClassId={addSessionClassId}
+          onClose={() => setIsAddSessionOpen(false)}
+          onSessionAdded={loadData}
+        />
+      )}
 
     </div>
   );
