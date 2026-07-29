@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Sparkles, Heart, Smile } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface MascotWidgetProps {
   studentName?: string;
@@ -18,7 +18,6 @@ const QUOTES = [
 
 export const MascotWidget: React.FC<MascotWidgetProps> = ({
   studentName = 'Học viên',
-  starsCount = 0,
 }) => {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [isBouncing, setIsBouncing] = useState(false);
@@ -69,14 +68,6 @@ export const MascotWidget: React.FC<MascotWidgetProps> = ({
           </p>
         </div>
       </div>
-
-      {/* Star Counter Pill */}
-      {starsCount > 0 && (
-        <div className="hidden sm:flex items-center space-x-1.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-full border border-amber-300/60 dark:border-amber-700/60 font-bold text-xs shadow-sm">
-          <span className="text-base">⭐</span>
-          <span>{starsCount} Sao Thưởng</span>
-        </div>
-      )}
     </div>
   );
 };
