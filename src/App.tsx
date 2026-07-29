@@ -35,6 +35,11 @@ export default function App() {
   const [activeRoleView, setActiveRoleView] = useState<UserRole>('super_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
+  // Sub-View Navigation Handlers (Back / Home)
+  const [canNavigateBack, setCanNavigateBack] = useState<boolean>(false);
+  const [subViewBackHandler, setSubViewBackHandler] = useState<(() => void) | undefined>(undefined);
+  const [subViewHomeHandler, setSubViewHomeHandler] = useState<(() => void) | undefined>(undefined);
+
   // SYNCHRONOUS INITIALIZATION: DO NOT OPEN LOGIN MODAL IF ACCESSED VIA PUBLIC STUDENT LINK (?hash=...)
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
     const hash = getInitialPublicHash();
@@ -103,6 +108,28 @@ export default function App() {
     setIsAddSessionOpen(true);
   };
 
+  // Sub-View Navigation Callbacks
+  const handleSetSubViewNavigation = (canBack: boolean, onBack?: () => void, onHome?: () => void) => {
+    setCanNavigateBack(canBack);
+    setSubViewBackHandler(() => onBack);
+    setSubViewHomeHandler(() => onHome);
+  };
+
+  const handleNavigateHome = () => {
+    if (subViewHomeHandler) {
+      subViewHomeHandler();
+    }
+    if (currentUser) {
+      setActivePublicHash(null);
+    }
+  };
+
+  const handleNavigateBack = () => {
+    if (subViewBackHandler) {
+      subViewBackHandler();
+    }
+  };
+
   const effectiveRole: UserRole = currentUser?.role === 'super_admin' ? activeRoleView : currentUser?.role || 'super_admin';
   const currentStudent = students.find((s) => s && s.status === 'active') || students[0];
 
@@ -130,6 +157,9 @@ export default function App() {
           setActivePublicHash(null);
           window.history.pushState({}, '', window.location.pathname);
         }}
+        onNavigateHome={handleNavigateHome}
+        onNavigateBack={handleNavigateBack}
+        canNavigateBack={canNavigateBack}
       />
 
       {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}
@@ -143,7 +173,10 @@ export default function App() {
 
             <div className="flex items-center space-x-1.5 overflow-x-auto">
               <button
-                onClick={() => setActiveRoleView('super_admin')}
+                onClick={() => {
+                  setActiveRoleView('super_admin');
+                  setCanNavigateBack(false);
+                }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'super_admin'
                     ? 'bg-white text-amber-900 shadow-md'
@@ -154,7 +187,10 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveRoleView('admin')}
+                onClick={() => {
+                  setActiveRoleView('admin');
+                  setCanNavigateBack(false);
+                }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'admin'
                     ? 'bg-white text-purple-900 shadow-md'
@@ -165,7 +201,10 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveRoleView('teacher')}
+                onClick={() => {
+                  setActiveRoleView('teacher');
+                  setCanNavigateBack(false);
+                }}
                 className={`px-3 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'teacher'
                     ? 'bg-white text-indigo-900 shadow-md'
@@ -176,7 +215,10 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveRoleView('student')}
+                onClick={() => {
+                  setActiveRoleView('student');
+                  setCanNavigateBack(false);
+                }}
                 className={`px-3.5 py-1 rounded-xl font-extrabold text-[11px] transition flex items-center ${
                   activeRoleView === 'student'
                     ? 'bg-white text-pink-900 shadow-md'
@@ -193,7 +235,7 @@ export default function App() {
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        {/* PUBLIC STUDENT VIEW (Accessed via Link) */}
+        {/* PUBLIC STUDENT VIEW (Accessed via Secret Hash Link) */}
         {activePublicHash ? (
           <PublicStudentPortal
             publicHash={activePublicHash}
@@ -257,9 +299,10 @@ export default function App() {
             onOpenPublicLink={(hash) => setActivePublicHash(hash)}
             onOpenAddSession={handleOpenAddSession}
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
+            onSetSubViewNavigation={handleSetSubViewNavigation}
           />
         ) : effectiveRole === 'teacher' ? (
-          /* TEACHER VIEW (CAN CLICK ANY STUDENT TO OPEN INDIVIDUAL LEARNING PORTAL) */
+          /* TEACHER VIEW (CAN CLICK ASSIGNED STUDENTS/CLASSES) */
           <TeacherPortal
             currentUser={currentUser}
             classes={classes}
@@ -268,6 +311,7 @@ export default function App() {
             onRefreshData={loadData}
             onOpenAddSession={handleOpenAddSession}
             onOpenPublicStudentLink={(hash) => setActivePublicHash(hash)}
+            onSetSubViewNavigation={handleSetSubViewNavigation}
           />
         ) : (
           /* STUDENT VIEW */
