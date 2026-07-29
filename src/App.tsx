@@ -41,6 +41,9 @@ export default function App() {
   const [subViewBackHandler, setSubViewBackHandler] = useState<(() => void) | undefined>(undefined);
   const [subViewHomeHandler, setSubViewHomeHandler] = useState<(() => void) | undefined>(undefined);
 
+  // Targeted submission ID from Notification click
+  const [selectedNotificationSubmissionId, setSelectedNotificationSubmissionId] = useState<string | null>(null);
+
   // Login Modal state: Open if no logged-in user AND not in genuine public student link mode
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
     const hash = getInitialPublicHash();
@@ -119,6 +122,17 @@ export default function App() {
     }
   };
 
+  const handleSelectNotificationSubmission = (submissionId: string) => {
+    setSelectedNotificationSubmissionId(submissionId);
+    if (currentUser?.role === 'super_admin') {
+      setActiveRoleView('super_admin');
+    } else if (currentUser?.role === 'admin') {
+      setActiveRoleView('admin');
+    } else if (currentUser?.role === 'teacher') {
+      setActiveRoleView('teacher');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FFFAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
@@ -146,6 +160,7 @@ export default function App() {
         onNavigateHome={handleNavigateHome}
         onNavigateBack={handleNavigateBack}
         canNavigateBack={canNavigateBack}
+        onSelectNotificationSubmission={handleSelectNotificationSubmission}
       />
 
       {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}
@@ -291,6 +306,7 @@ export default function App() {
                 setSubViewBackHandler(() => onBack);
                 setSubViewHomeHandler(() => onHome);
               }}
+              targetSubmissionId={selectedNotificationSubmissionId}
             />
           ) : activeRoleView === 'teacher' ? (
             <TeacherPortal
@@ -308,6 +324,7 @@ export default function App() {
                 setSubViewBackHandler(() => onBack);
                 setSubViewHomeHandler(() => onHome);
               }}
+              targetSubmissionId={selectedNotificationSubmissionId}
             />
           ) : (
             <StudentPortal
@@ -343,6 +360,7 @@ export default function App() {
               setSubViewBackHandler(() => onBack);
               setSubViewHomeHandler(() => onHome);
             }}
+            targetSubmissionId={selectedNotificationSubmissionId}
           />
         ) : currentUser.role === 'teacher' ? (
           <TeacherPortal
@@ -360,6 +378,7 @@ export default function App() {
               setSubViewBackHandler(() => onBack);
               setSubViewHomeHandler(() => onHome);
             }}
+            targetSubmissionId={selectedNotificationSubmissionId}
           />
         ) : (
           <StudentPortal
