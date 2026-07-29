@@ -24,6 +24,7 @@ export interface HomeworkTaskItem {
   title: string;
   content?: string;
   attachmentUrl?: string;
+  deadline?: string;
 }
 
 export interface StudentFeedback {
@@ -104,9 +105,12 @@ export interface HomeworkTask {
   title: string;
   content: string;
   attachmentLink?: string;
-  deadline: string;
+  deadline?: string;
   createdAt: string;
 }
+
+export type CompletionStatus = 'COMPLETED' | 'UNCOMPLETED';
+export type FeedbackStatus = 'PENDING' | 'COMPLETED' | 'NONE';
 
 export interface HomeworkSubmission {
   id: string;
@@ -115,13 +119,42 @@ export interface HomeworkSubmission {
   homeworkTitle: string;
   studentId: string;
   studentName: string;
+  classId?: string;
+  className?: string;
+  teacherId?: string;
+  teacherName?: string;
   isStudentChecked: boolean; // Học viên tích chọn đã làm
   isTeacherFeedbackChecked: boolean; // Admin/Super Admin tích chọn đã feedback
+  completionStatus?: CompletionStatus; // 'COMPLETED' | 'UNCOMPLETED'
+  feedbackStatus?: FeedbackStatus; // 'PENDING' | 'COMPLETED' | 'NONE'
+  completionTime?: string; // e.g. "16:45"
   studentContent?: string;
   feedbackText?: string;
   ratingStars?: number;
   submissionDate?: string;
   feedbackDate?: string;
+  feedbackTime?: string;
+  feedbackByUserId?: string;
+  feedbackByUserName?: string;
+  fileUrl?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  className: string;
+  teacherId: string;
+  teacherName?: string;
+  homeworkTaskId: string;
+  homeworkTitle: string;
+  submissionId: string;
+  completionTime: string;
+  createdAt: string;
+  isRead: boolean;
 }
 
 export interface Invoice {
