@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Class, Student, Session, User as UserType } from '../../types';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from '../admin/ClassDetailsView';
@@ -19,6 +19,9 @@ import {
   User,
   Coffee,
   Heart,
+  ShieldAlert,
+  Home,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface TeacherPortalProps {
@@ -29,6 +32,7 @@ interface TeacherPortalProps {
   onRefreshData: () => void;
   onOpenAddSession: (classId?: string) => void;
   onOpenPublicStudentLink?: (hash: string) => void;
+  onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
@@ -39,15 +43,39 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onRefreshData,
   onOpenAddSession,
   onOpenPublicStudentLink,
+  onSetSubViewNavigation,
 }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'all_classes'>('today');
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
 
-  // Restrict classes so teacher only sees their assigned classes
+  // STRICT TEACHER SCOPING: Filter classes strictly assigned to this teacher
+  const isSuperOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
   const assignedClasses = (classes || []).filter((c) => {
-    if (!currentUser || currentUser.role === 'super_admin' || currentUser.role === 'admin') return true;
-    return c.teacherId === currentUser.uid || c.teacherName === currentUser.displayName;
+    if (!currentUser || isSuperOrAdmin) return true;
+    return c.teacherId === currentUser.uid || (c.teacherName && c.teacherName === currentUser.displayName);
   });
+
+  // Notify parent component about Sub-View Navigation state (Header Home & Back Buttons)
+  useEffect(() => {
+    if (onSetSubViewNavigation) {
+      if (inspectedClass) {
+        onSetSubViewNavigation(
+          true,
+          () => setInspectedClass(null),
+          () => {
+            setInspectedClass(null);
+            setActiveTab('today');
+          }
+        );
+      } else {
+        onSetSubViewNavigation(
+          false,
+          undefined,
+          () => setActiveTab('today')
+        );
+      }
+    }
+  }, [inspectedClass, onSetSubViewNavigation]);
 
   // HELPER: Check if a class is ongoing right now based on local time & schedule
   const getOngoingClassRightNow = (classesList: Class[]) => {
@@ -99,16 +127,61 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
+    // ROUTE GUARD CHECK: Ensure Teacher cannot inspect unassigned classes
+    const isAssigned = isSuperOrAdmin || assignedClasses.some((c) => c.id === inspectedClass.id);
+
+    if (!isAssigned) {
+      return (
+        <div className="p-8 rounded-3xl bg-rose-50 border border-rose-200 text-center max-w-md mx-auto space-y-4 shadow-md my-12">
+          <ShieldAlert className="w-12 h-12 text-rose-600 mx-auto animate-bounce" />
+          <h3 className="text-lg font-black text-rose-950">Quyền Truy Cập Bị Giới Hạn</h3>
+          <p className="text-xs text-rose-800 font-medium">
+            Bạn không có quyền quản lý hoặc xem dữ liệu của lớp học này. Vui lòng quay về trang chủ Giáo Viên của bạn.
+          </p>
+          <button
+            onClick={() => setInspectedClass(null)}
+            className="px-6 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 shadow-md"
+          >
+            ← Quay Về Trang Chủ Giáo Viên
+          </button>
+        </div>
+      );
+    }
+
     return (
-      <ClassDetailsView
-        selectedClass={inspectedClass}
-        students={students}
-        sessions={sessions}
-        homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
-        onBack={() => setInspectedClass(null)}
-        onOpenAddSession={onOpenAddSession}
-        onOpenPublicStudentLink={onOpenPublicStudentLink}
-      />
+      <div className="space-y-4">
+        {/* SUB-VIEW BREADCRUMB & BACK BUTTON FOR TEACHER */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-purple-100 dark:border-purple-800 shadow-2xs">
+          <button
+            onClick={() => setInspectedClass(null)}
+            className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Giáo Viên
+          </button>
+          <span className="text-xs font-black text-slate-700 dark:text-purple-200 truncate">
+            Đang Xem Chi Tiết Lớp: {inspectedClass.className}
+          </span>
+          <button
+            onClick={() => {
+              setInspectedClass(null);
+              setActiveTab('today');
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
+          >
+            <Home className="w-3.5 h-3.5 mr-1" /> Home
+          </button>
+        </div>
+
+        <ClassDetailsView
+          selectedClass={inspectedClass}
+          students={students}
+          sessions={sessions}
+          homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+          onBack={() => setInspectedClass(null)}
+          onOpenAddSession={onOpenAddSession}
+          onOpenPublicStudentLink={onOpenPublicStudentLink}
+        />
+      </div>
     );
   }
 
