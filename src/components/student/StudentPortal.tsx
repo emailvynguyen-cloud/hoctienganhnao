@@ -167,6 +167,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     if (mod === 3) cardBgStyle = 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200';
     if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-sky-50/90 via-blue-50/70 to-sky-50/90 border-sky-200';
 
+    const currentTeacherName = session.teacherName || primaryClass?.teacherName || 'Giáo viên';
+
     return (
       <div
         key={session.id}
@@ -190,7 +192,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 )}
               </div>
               <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                Ngày học: {session.date} • GV: {session.teacherName || primaryClass?.teacherName}
+                Ngày học: {session.date} • GV: {currentTeacherName}
               </span>
             </div>
           </div>
@@ -217,11 +219,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </p>
         </div>
 
-        {/* Teacher Comment for THIS specific student in THIS session */}
+        {/* Teacher Comment for THIS specific student in THIS session (DYNAMIC TEACHER NAME) */}
         {session.studentFeedbacks?.[currentStudent.id] && (
           <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
             <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
-              💬 Nhận Xét Riêng Từ Cô Vy Cho Em:
+              💬 Nhận Xét Riêng Từ Giáo Viên ({currentTeacherName}) Cho Em:
             </span>
             {session.studentFeedbacks[currentStudent.id].strengths && (
               <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
@@ -433,7 +435,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5">
               <p><strong>Lớp học:</strong> {primaryClass?.className || 'Lớp Ms. Vy English'}</p>
-              <p><strong>Giáo viên phụ trách:</strong> {primaryClass?.teacherName || 'Ms. Vy'}</p>
+              <p><strong>Giáo viên phụ trách:</strong> {primaryClass?.teacherName || 'Giáo viên'}</p>
               <p><strong>Giáo trình:</strong> {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}</p>
               <p><strong>Lịch học:</strong> {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}</p>
             </div>
@@ -689,7 +691,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  Phản Hồi Từ {viewingFeedbackSub.feedbackByUserName || 'Cô Vy'}
+                  Phản Hồi Từ {viewingFeedbackSub.feedbackByUserName || viewingFeedbackSub.teacherName || 'Giáo Viên'}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
                   Bài tập: <strong>{viewingFeedbackSub.homeworkTitle}</strong> • {viewingFeedbackSub.feedbackDate} {viewingFeedbackSub.feedbackTime || ''}
