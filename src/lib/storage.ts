@@ -357,7 +357,7 @@ export const StorageEngine = {
       sub.feedbackDate = todayDateStr;
       sub.feedbackTime = feedbackTimeStr;
       sub.feedbackByUserId = teacherUser?.uid || 'admin';
-      sub.feedbackByUserName = teacherUser?.displayName || 'Cô Vy';
+      sub.feedbackByUserName = teacherUser?.displayName || 'Giáo Viên';
       this.saveHomeworkSubmissions(subs);
 
       const students = this.getStudents() || [];
