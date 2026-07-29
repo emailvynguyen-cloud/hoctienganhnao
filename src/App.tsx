@@ -22,7 +22,7 @@ const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
   centerLogoUrl: '/logo.jpg',
 };
 
-// Synchronously parse initial URL parameters to detect student hash before initial render
+// SYNCHRONOUS DETECTION: Detect if the session is a Genuine Student/Parent Secret-Link Session via URL query parameter (?hash=...)
 const getInitialPublicHash = (): string | null => {
   if (typeof window === 'undefined') return null;
   const urlParams = new URLSearchParams(window.location.search);
@@ -30,17 +30,18 @@ const getInitialPublicHash = (): string | null => {
 };
 
 export default function App() {
+  // activePublicHash is ONLY set when a genuine Student/Parent opens a secret link directly via browser URL
   const [activePublicHash, setActivePublicHash] = useState<string | null>(getInitialPublicHash);
   const [currentUser, setCurrentUser] = useState<User | null>(() => StorageEngine.getCurrentUser());
   const [activeRoleView, setActiveRoleView] = useState<UserRole>('super_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
-  // Sub-View Navigation Handlers (Back / Home)
+  // Sub-View Navigation Handlers for Header (Back / Home)
   const [canNavigateBack, setCanNavigateBack] = useState<boolean>(false);
   const [subViewBackHandler, setSubViewBackHandler] = useState<(() => void) | undefined>(undefined);
   const [subViewHomeHandler, setSubViewHomeHandler] = useState<(() => void) | undefined>(undefined);
 
-  // SYNCHRONOUS INITIALIZATION: DO NOT OPEN LOGIN MODAL IF ACCESSED VIA PUBLIC STUDENT LINK (?hash=...)
+  // Login Modal state: Open if no logged-in user AND not in genuine public student link mode
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
     const hash = getInitialPublicHash();
     if (hash) return false;
@@ -54,7 +55,7 @@ export default function App() {
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [addSessionClassId, setAddSessionClassId] = useState<string | undefined>(undefined);
 
-  // Synchronously initialize states from StorageEngine
+  // Synchronously initialize datasets from StorageEngine
   const [students, setStudents] = useState<Student[]>(() => StorageEngine.getStudents());
   const [classes, setClasses] = useState<Class[]>(() => StorageEngine.getClasses());
   const [sessions, setSessions] = useState<Session[]>(() => StorageEngine.getSessions());
@@ -79,7 +80,7 @@ export default function App() {
   useEffect(() => {
     loadData();
 
-    // Check URL parameters for Obfuscated Student Public Hash ?hash=... or ?student=...
+    // Re-check URL query parameters on mount
     const hash = getInitialPublicHash();
     if (hash) {
       setActivePublicHash(hash);
@@ -87,7 +88,7 @@ export default function App() {
     }
   }, []);
 
-  // Soft Dark Mode Class toggle
+  // Dark Mode toggle
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -108,7 +109,7 @@ export default function App() {
     setIsAddSessionOpen(true);
   };
 
-  // Sub-View Navigation Callbacks
+  // Sub-View Navigation Callbacks (Passed down to Header)
   const handleSetSubViewNavigation = (canBack: boolean, onBack?: () => void, onHome?: () => void) => {
     setCanNavigateBack(canBack);
     setSubViewBackHandler(() => onBack);
@@ -235,7 +236,7 @@ export default function App() {
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        {/* PUBLIC STUDENT VIEW (Accessed via Secret Hash Link) */}
+        {/* GENUINE PUBLIC STUDENT VIEW (Accessed ONLY via Direct URL Secret Link ?hash=...) */}
         {activePublicHash ? (
           <PublicStudentPortal
             publicHash={activePublicHash}
@@ -284,7 +285,7 @@ export default function App() {
             </div>
           </div>
         ) : effectiveRole === 'super_admin' || effectiveRole === 'admin' ? (
-          /* ADMIN & SUPER ADMIN VIEW */
+          /* ADMIN & SUPER ADMIN MANAGEMENT PORTAL */
           <AdminDashboard
             currentUser={currentUser}
             effectiveRole={effectiveRole}
@@ -296,13 +297,12 @@ export default function App() {
             onUpdateStudents={loadData}
             onUpdateClasses={loadData}
             onUpdateInvoices={loadData}
-            onOpenPublicLink={(hash) => setActivePublicHash(hash)}
             onOpenAddSession={handleOpenAddSession}
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
             onSetSubViewNavigation={handleSetSubViewNavigation}
           />
         ) : effectiveRole === 'teacher' ? (
-          /* TEACHER VIEW (CAN CLICK ASSIGNED STUDENTS/CLASSES) */
+          /* TEACHER MANAGEMENT PORTAL */
           <TeacherPortal
             currentUser={currentUser}
             classes={classes}
@@ -310,11 +310,10 @@ export default function App() {
             sessions={sessions}
             onRefreshData={loadData}
             onOpenAddSession={handleOpenAddSession}
-            onOpenPublicStudentLink={(hash) => setActivePublicHash(hash)}
             onSetSubViewNavigation={handleSetSubViewNavigation}
           />
         ) : (
-          /* STUDENT VIEW */
+          /* LOGGED IN STUDENT PORTAL VIEW */
           <StudentPortal
             currentStudent={currentStudent}
             classes={classes}
