@@ -350,7 +350,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             />
             <button
               onClick={() => setIsAvatarModalOpen(true)}
-              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-purple-600 text-white shadow-md hover:bg-purple-700 transition flex items-center justify-center border-2 border-white"
+              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-purple-600 text-white shadow-md hover:bg-purple-700 transition flex items-center justify-center border-2 border-white cursor-pointer"
               title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -365,13 +365,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs inline-block">
                 {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
               </span>
-
-              <button
-                onClick={() => setIsAvatarModalOpen(true)}
-                className="text-xs text-purple-800 dark:text-purple-300 font-extrabold underline hover:text-purple-950 transition ml-2"
-              >
-                [ 📷 Đổi Avatar KakaoTalk ]
-              </button>
             </div>
 
             <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5">
