@@ -3,7 +3,7 @@ import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, Ban
 import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
-import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import {
   Calendar,
   CheckCircle2,
@@ -31,6 +31,8 @@ import {
   History,
   Search,
   BarChart2,
+  Trophy,
+  Zap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -155,9 +157,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const studentAvatarSrc = currentStudent.avatar && currentStudent.avatar.length > 20
-    ? currentStudent.avatar
-    : KAKAOTALK_SVG_AVATARS.ryan;
+  const studentAvatarSrc = resolveAvatarUrl(currentStudent.avatar);
 
   // ALTERNATING PASTEL BACKGROUND COLOR STYLES PER SESSION
   const getSessionBgStyle = (sessionNumber: number) => {
@@ -335,21 +335,47 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           )}
         </div>
 
-        {/* CONCISE SESSION HOMEWORK PROGRESS PILL FOR THIS STUDENT */}
-        <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between text-xs">
-          <span className="text-purple-900 font-extrabold flex items-center">
-            <BarChart2 className="w-4 h-4 mr-1.5 text-pink-500" /> Tiến độ bài tập buổi #{session.sessionNumber}:
-          </span>
+        {/* MOTIVATING MINI PROGRESS BAR STRIP FOR THIS SESSION */}
+        <div className="pt-3 border-t border-purple-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2 flex-1 max-w-md">
+            <span className="text-purple-950 dark:text-purple-200 font-black flex items-center shrink-0">
+              <BarChart2 className="w-4 h-4 mr-1 text-pink-500 animate-pulse" /> Tiến độ bài tập buổi #{session.sessionNumber}:
+            </span>
 
-          <span className={`px-3 py-1 rounded-full text-xs font-black shadow-2xs ${
-            sessionPercent === 100
-              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-              : sessionPercent > 0
-              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-              : 'bg-rose-100 text-rose-900 border border-rose-300'
-          }`}>
-            Đã làm {completedItems} / {totalItems} bài ({sessionPercent}%) {sessionPercent === 100 ? '✓' : sessionPercent > 0 ? '⏳' : '⚠️'}
-          </span>
+            {/* CUTE MOTIVATING MINI PROGRESS BAR CONTAINER */}
+            <div className="flex-1 bg-purple-200/60 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-purple-300/80 shadow-inner">
+              <div
+                className={`h-full rounded-full transition-all duration-700 shadow-xs ${
+                  sessionPercent === 100
+                    ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600'
+                    : sessionPercent > 0
+                    ? 'bg-gradient-to-r from-amber-400 via-pink-400 to-purple-500'
+                    : 'bg-rose-400'
+                }`}
+                style={{ width: `${sessionPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* MOTIVATIONAL BADGE PILL */}
+          <div className="shrink-0">
+            <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs flex items-center space-x-1.5 ${
+              sessionPercent === 100
+                ? 'bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-950 border border-emerald-300'
+                : sessionPercent > 0
+                ? 'bg-gradient-to-r from-amber-100 to-pink-100 text-amber-950 border border-amber-300'
+                : 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-950 border border-rose-300'
+            }`}>
+              <span>Đã làm <strong>{completedItems} / {totalItems}</strong> bài ({sessionPercent}%)</span>
+              {sessionPercent === 100 ? (
+                <span className="text-emerald-700 font-black">🎉 Hoàn Thành 100%!</span>
+              ) : sessionPercent > 0 ? (
+                <span className="text-amber-700 font-black">💪 Cố Lên Em Nhé!</span>
+              ) : (
+                <span className="text-rose-700 font-black">⚡ Tick Bài Ngay!</span>
+              )}
+            </span>
+          </div>
         </div>
 
       </div>
