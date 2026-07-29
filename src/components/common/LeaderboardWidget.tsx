@@ -12,7 +12,7 @@ interface LeaderboardWidgetProps {
 }
 
 const WEEKLY_TITLES = [
-  '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑',
+  '🥇 Ngôi Sao Chăm Chỉ 👑',
   '🥈 Ngôi Sao Nỗ Lực ⭐',
   '🥉 Chiến Binh Kiên Trì 💪',
   '🏅 Nhà Chinh Phục 🚀',
@@ -35,6 +35,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
 }) => {
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
 
+  // DISPLAY ALL ACTIVE STUDENTS IN THE CENTER (NO CAPPING AT TOP 5)
   const activeStudents = (students || []).filter((s) => s && s.status !== 'soft_deleted');
   const allSubmissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
 
@@ -84,7 +85,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                   🏆 BẢNG THÀNH TÍCH THI ĐUA VINH DANH
                 </h3>
                 <span className="px-3 py-1 rounded-full text-xs font-black bg-white/30 text-white uppercase tracking-wider shadow-sm backdrop-blur-xs">
-                  {rankedStudents.length} HỌC VIÊN
+                  TOÀN BỘ {rankedStudents.length} HỌC VIÊN
                 </span>
               </div>
               <p className="text-xs text-amber-100 mt-1 font-extrabold max-w-lg">
@@ -131,13 +132,14 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         </div>
       </div>
 
-      {/* Leaderboard List - ALL STUDENTS WITH GORGEOUS PASTEL CARDS */}
+      {/* Leaderboard List - ALL STUDENTS (DISPLAY ENTIRE CENTER STUDENTS) */}
       <div className="space-y-3.5">
         {rankedStudents.map((item, index) => {
           const isTop1 = index === 0;
           const isTop2 = index === 1;
           const isTop3 = index === 2;
           
+          // ONLY TOP 5 SHOW HONOR TITLES
           const honorTitle = index < 5 ? titlesList[index] : null;
           const avatarSrc = resolveAvatarUrl(item.student.avatar);
 
@@ -180,7 +182,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                       🌟
                     </div>
                   ) : (
-                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black text-xs">
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black text-xs font-mono">
                       #{index + 1}
                     </div>
                   )}
@@ -221,9 +223,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-purple-300 mt-0.5 font-bold">
-                    Đã làm & feedback <strong>{item.feedbackCount} / {item.totalSubmitted}</strong> bài tập về nhà ({timeFilter === 'week' ? 'Tuần Này' : 'Tháng Này'})
-                  </p>
+                  {/* REMOVED SUBTEXT UNDER STUDENT NAME AS REQUESTED */}
                 </div>
               </div>
 
