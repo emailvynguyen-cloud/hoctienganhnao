@@ -385,8 +385,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* 1. GENERAL INFO CARD WITH AVATAR PICKER */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 p-6 shadow-sm relative overflow-hidden">
+      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND & AVATAR PICKER */}
+      <div className="bg-gradient-to-r from-pink-100/90 via-purple-100/90 to-indigo-100/90 dark:from-purple-950 dark:to-slate-900 rounded-3xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-md relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
           
           {/* Avatar with Camera Overlay */}
@@ -397,7 +397,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               onError={(e) => {
                 (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
               }}
-              className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-100 shadow-md transition group-hover:scale-105"
+              className="w-20 h-20 rounded-3xl object-cover border-4 border-white shadow-md transition group-hover:scale-105"
             />
             <button
               onClick={() => setIsAvatarModalOpen(true)}
@@ -413,19 +413,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
                 {currentStudent.name}
               </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-800 border border-pink-200 inline-block">
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs inline-block">
                 {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
               </span>
 
               <button
                 onClick={() => setIsAvatarModalOpen(true)}
-                className="text-xs text-purple-700 font-bold underline hover:text-purple-900 transition ml-2"
+                className="text-xs text-purple-800 dark:text-purple-300 font-extrabold underline hover:text-purple-950 transition ml-2"
               >
                 [ 📷 Đổi Avatar KakaoTalk ]
               </button>
             </div>
 
-            <div className="text-xs text-slate-600 dark:text-slate-400 font-medium space-y-0.5">
+            <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5 pt-1">
               <p><strong>Lớp học:</strong> {primaryClass?.className || 'Lớp Ms. Vy English'}</p>
               <p><strong>Giáo viên phụ trách:</strong> {primaryClass?.teacherName || 'Ms. Vy'}</p>
               <p><strong>Giáo trình:</strong> {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}</p>
@@ -434,7 +434,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
 
           {/* Remaining Sessions Highlight Pill */}
-          <div className="bg-gradient-to-tr from-purple-600 to-pink-500 text-white p-4 rounded-3xl shadow-lg text-center min-w-[150px] shrink-0">
+          <div className="bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 text-white p-4 rounded-3xl shadow-xl text-center min-w-[150px] shrink-0 border-2 border-white/40">
             <span className="text-[10px] font-black uppercase tracking-wider block opacity-90">
               Số Buổi Học Phí Còn Lại
             </span>
