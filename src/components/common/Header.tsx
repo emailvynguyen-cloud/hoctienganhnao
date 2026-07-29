@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UserRole, User } from '../../types';
 import {
   Shield,
@@ -16,6 +16,11 @@ import {
   Trophy,
   Key,
   Cloud,
+  Smartphone,
+  X,
+  Share,
+  PlusSquare,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -47,6 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   activePublicHash,
   onExitPublicView,
 }) => {
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-purple-950/90 border-b border-purple-100 dark:border-purple-900 shadow-sm transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,6 +92,16 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Controls Right */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
+            {/* PWA INSTALL / ADD TO HOME SCREEN BUTTON */}
+            <button
+              onClick={() => setIsPwaModalOpen(true)}
+              className="px-3 py-1.5 rounded-2xl bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300 font-extrabold text-xs transition flex items-center shadow-xs"
+              title="Hướng dẫn Thêm App ra Màn Hình Chính Điện Thoại"
+            >
+              <Smartphone className="w-3.5 h-3.5 mr-1.5 text-purple-700 animate-bounce" />
+              <span className="hidden sm:inline">Thêm Vào </span>Màn Hình Chính
+            </button>
+
             {/* Gemini API Key Settings Button with Red Subtext */}
             <button
               onClick={onOpenGeminiSettings}
@@ -198,6 +215,68 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* PWA INSTALLATION INSTRUCTION MODAL */}
+      {isPwaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-5 relative text-slate-800 dark:text-white">
+            
+            <button
+              onClick={() => setIsPwaModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-1">
+              <img src="/logo.jpg" alt="Ms. Vy Logo" style={{ width: '64px', height: '64px' }} className="w-16 h-16 rounded-3xl object-cover border-2 border-purple-300 mx-auto shadow-md" />
+              <h3 className="text-lg font-black text-slate-900 dark:text-white pt-2">
+                Hướng Dẫn Cài App MS. VY ENGLISH Ra Màn Hình Chính Điện Thoại
+              </h3>
+              <p className="text-xs text-purple-700 dark:text-purple-300 font-extrabold">
+                Sử dụng như ứng dụng App thật trên điện thoại mà không cần vào App Store hay Google Play!
+              </p>
+            </div>
+
+            {/* IPHONE (IOS SAFARI) GUIDE */}
+            <div className="p-4 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-200 space-y-2 text-xs">
+              <span className="font-black text-pink-900 dark:text-pink-300 flex items-center uppercase text-[11px]">
+                📱 Dành cho iPhone / iPad (Trình duyệt Safari):
+              </span>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-700 dark:text-slate-300 font-medium">
+                <li>Mở đường link ứng dụng bằng trình duyệt **Safari**.</li>
+                <li>Bấm vào biểu tượng **Chia sẻ** (hình ô vuông có mũi tên chỉ lên <Share className="w-3.5 h-3.5 inline text-indigo-600" /> ở dưới cùng màn hình).</li>
+                <li>Cuộn xuống và chọn **"Thêm vào Màn hình chính" (Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-pink-600" />)**.</li>
+                <li>Bấm **"Thêm" (Add)** ở góc trên bên phải $\rightarrow$ Biểu tượng app **Ms. Vy** sẽ xuất hiện ngay ngoài màn hình điện thoại!</li>
+              </ol>
+            </div>
+
+            {/* ANDROID (CHROME) GUIDE */}
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 space-y-2 text-xs">
+              <span className="font-black text-purple-900 dark:text-purple-300 flex items-center uppercase text-[11px]">
+                🤖 Dành cho Android (Samsung, Oppo, Xiaomi - Chrome):
+              </span>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-700 dark:text-slate-300 font-medium">
+                <li>Mở ứng dụng bằng trình duyệt **Google Chrome**.</li>
+                <li>Bấm vào dấu **3 chấm `⋮`** ở góc trên cùng bên phải.</li>
+                <li>Chọn **"Cài đặt ứng dụng"** hoặc **"Thêm vào Màn hình chính"**.</li>
+                <li>Xác nhận **"Cài đặt"** $\rightarrow$ App Ms. Vy sẽ tự động được tải ra màn hình chính!</li>
+              </ol>
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                onClick={() => setIsPwaModalOpen(false)}
+                className="px-6 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 shadow-md transition"
+              >
+                Đã Hiểu - Đóng Hướng Dẫn
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </header>
   );
 };
