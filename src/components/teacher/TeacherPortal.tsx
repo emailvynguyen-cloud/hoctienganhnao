@@ -298,9 +298,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
             <button
               onClick={() => onOpenAddSession()}
-              className="px-5 py-3 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs transition shrink-0"
+              className="px-5 py-3 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs transition shrink-0 flex items-center"
             >
-              + Tạo Bài Học & Nhập Điểm Buổi Học Mới
+              <PlusCircle className="w-4 h-4 mr-1.5" /> + Thêm buổi học
             </button>
           </div>
 
