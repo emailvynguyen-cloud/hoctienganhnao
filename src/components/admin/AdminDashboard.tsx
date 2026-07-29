@@ -334,6 +334,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
+  const filteredClasses = safeClasses.filter((c) =>
+    (c.className || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+    (c.code || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+    (c.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
+  );
+
+  const filteredStudents = safeStudents.filter((s) => s && s.status !== 'soft_deleted' && (
+    (s.name || '').toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+    (s.phone || '').includes(studentSearchQuery) ||
+    (s.email || '').toLowerCase().includes(studentSearchQuery.toLowerCase())
+  ));
+
   return (
     <div className="space-y-6">
       
@@ -747,7 +759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setInspectedStudent(std)}
-                    className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition flex items-center shadow-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center"
                   >
                     <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
                   </button>
@@ -756,6 +768,120 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* TAB 7: INVOICES & TUITION VIETQR MANAGEMENT - SUPER ADMIN ONLY */}
+      {activeTab === 'invoices' && isSuperAdmin && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6">
+          
+          {/* Header & Quick Action */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-sky-100 via-blue-50 to-pink-100 text-sky-950 border-2 border-sky-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <QrCode className="w-5 h-5 text-sky-600 animate-pulse" />
+                <h3 className="text-lg font-black text-sky-950 dark:text-white">
+                  Quản Lý Học Phí & Mã VietQR Tự Động (MBBank 0355176317)
+                </h3>
+              </div>
+              <p className="text-xs text-sky-900 font-medium">
+                Tài khoản thụ hưởng: <strong>{bankConfig.bankName} - {bankConfig.accountNo} ({bankConfig.accountName})</strong>
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                if (safeStudents.length > 0) {
+                  setSelectedStudentForReceipt(safeStudents[0]);
+                } else {
+                  alert('Chưa có học viên nào trong hệ thống!');
+                }
+              }}
+              className="px-5 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0"
+            >
+              <DollarSign className="w-4 h-4 mr-1.5" /> + Tạo Phiếu Thu / Mã VietQR Mới
+            </button>
+          </div>
+
+          {/* Student Tuition Fee Status Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
+                💳 Danh Sách Theo Dõi Học Phí Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length} Học Viên)
+              </h4>
+              <span className="text-xs font-bold text-pink-600 bg-pink-100 px-3 py-1 rounded-full border border-pink-200">
+                Click "Tạo Phiếu Thu / VietQR" để gửi cho Phụ huynh
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {safeStudents.filter(s => s && s.status !== 'soft_deleted').map((std) => {
+                const stdClass = safeClasses.find((c) => std.classIds && std.classIds.includes(c.id)) || safeClasses[0];
+
+                return (
+                  <div
+                    key={std.id}
+                    className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 dark:bg-slate-800/40 hover:bg-pink-100/40 transition space-y-3 shadow-xs"
+                  >
+                    <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                      <div className="flex items-center space-x-2">
+                        <img
+                          src={resolveAvatarUrl(std.avatar)}
+                          alt={std.name}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                          }}
+                          className="w-8 h-8 rounded-xl object-cover border border-pink-200"
+                        />
+                        <span className="font-extrabold text-xs text-slate-900 dark:text-white">{std.name}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-200 text-pink-950">
+                        {std.remainingSessions} Buổi Còn
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 dark:text-slate-300 font-medium space-y-1">
+                      <p><strong>Lớp:</strong> {stdClass?.className || 'Ms. Vy English'}</p>
+                      <p><strong>SĐT:</strong> {std.phone || 'Chưa có'}</p>
+                      <p><strong>Gói học phí:</strong> <span className="font-bold text-pink-600">{formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</span></p>
+                    </div>
+
+                    <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
+                      <button
+                        onClick={() => setSelectedStudentForReceipt(std)}
+                        className="px-3.5 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
+                      >
+                        <QrCode className="w-3.5 h-3.5 mr-1 text-sky-700" /> Tạo Phiếu Thu / VietQR
+                      </button>
+
+                      <button
+                        onClick={() => setInspectedStudent(std)}
+                        className="text-xs font-bold text-pink-600 hover:underline"
+                      >
+                        Xem Học Tập →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* RECEIPT GENERATOR MODAL FOR SUPER ADMIN */}
+      {selectedStudentForReceipt && (
+        <ReceiptGeneratorModal
+          isOpen={!!selectedStudentForReceipt}
+          onClose={() => setSelectedStudentForReceipt(null)}
+          student={selectedStudentForReceipt}
+          classes={safeClasses}
+          bankConfig={bankConfig}
+          onRefreshData={() => {
+            onUpdateInvoices();
+            onUpdateStudents();
+          }}
+        />
       )}
 
     </div>
