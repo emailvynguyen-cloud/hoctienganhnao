@@ -30,9 +30,13 @@ import {
   AlertCircle,
   Clock,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ArrowLeft,
   Home,
   Eye,
+  Video,
+  Sparkles,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -72,6 +76,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
+
+  // Expanded Teacher in Teachers Management Tab
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetSubmissionId) {
@@ -140,18 +147,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
 
-  // Filtered lists
-  const filteredClasses = safeClasses.filter((c) =>
-    (c.className || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
-    (c.code || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
-    (c.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
-  );
+  // HELPER: Detect if teacher is Ms. Vy
+  const isMsVyTeacher = (teacherName?: string, teacherId?: string) => {
+    if (!teacherName && !teacherId) return false;
+    const nameLower = (teacherName || '').toLowerCase();
+    return nameLower.includes('vy') || teacherId === 'u_super_admin' || teacherId === currentUser?.uid;
+  };
 
-  const filteredStudents = safeStudents.filter((s) => s && s.status !== 'soft_deleted' && (
-    (s.name || '').toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-    (s.phone || '').includes(studentSearchQuery) ||
-    (s.email || '').toLowerCase().includes(studentSearchQuery.toLowerCase())
-  ));
+  // TIMETABLE CLASSES: In Super Admin mode, ONLY show Ms. Vy's own classes on main timetable!
+  const msVyTimetableClasses = isSuperAdmin
+    ? safeClasses.filter((cls) => isMsVyTeacher(cls.teacherName, cls.teacherId))
+    : safeClasses;
+
+  // OTHER TEACHERS LIST (EXCLUDING MS. VY)
+  const allUsers = StorageEngine.getUsers() || [];
+  const registeredTeacherUsers = allUsers.filter((u) => u.role === 'teacher' && !isMsVyTeacher(u.displayName, u.uid));
+
+  // Also collect any teachers referenced in classes who might not be in registeredTeacherUsers
+  const otherTeachersMap = new Map<string, { id: string; name: string; email?: string; phone?: string; avatarUrl?: string }>();
+
+  registeredTeacherUsers.forEach((u) => {
+    otherTeachersMap.set(u.uid, {
+      id: u.uid,
+      name: u.displayName,
+      email: u.email,
+      phone: u.phoneNumber,
+      avatarUrl: u.avatarUrl,
+    });
+  });
+
+  safeClasses.forEach((cls) => {
+    if (cls.teacherName && !isMsVyTeacher(cls.teacherName, cls.teacherId)) {
+      const key = cls.teacherId || cls.teacherName;
+      if (!otherTeachersMap.has(key)) {
+        otherTeachersMap.set(key, {
+          id: key,
+          name: cls.teacherName,
+          email: `${cls.teacherName.toLowerCase().replace(/[^a-z0-9]/g, '')}@msvyenglish.edu.vn`,
+        });
+      }
+    }
+  });
+
+  const otherTeachersList = Array.from(otherTeachersMap.values());
 
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,7 +347,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {isSuperAdmin ? <Crown className="w-5 h-5 text-amber-600" /> : <ShieldAlert className="w-5 h-5 text-pink-600" />}
           <span>
             {isSuperAdmin
-              ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Toàn quyền quản lý lớp, giáo viên, học viên, học phí & xem Doanh thu tháng.'
+              ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Quản lý thời khóa biểu Ms. Vy, theo dõi đội ngũ giáo viên, học viên, học phí & doanh thu.'
               : 'Bạn đang ở phân hệ QUẢN TRỊ VIÊN (Admin): Theo dõi lịch học, danh sách lớp học, học viên & Chấm bài tập về nhà.'}
           </span>
         </div>
@@ -325,7 +363,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
           }`}
         >
-          Thời Khóa Biểu Tuần
+          Thời Khóa Biểu Tuần {isSuperAdmin ? '(Ms. Vy)' : ''}
         </button>
 
         <button
@@ -349,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
+            <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên ({otherTeachersList.length})
           </button>
         )}
 
@@ -404,14 +442,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
-      {/* TAB 1: WEEKLY TIMETABLE */}
+      {/* TAB 1: WEEKLY TIMETABLE (SUPER ADMIN SHOWS ONLY MS. VY'S CLASSES TO KEEP IT CLEAN & LEAN) */}
       {activeTab === 'timetable' && (
-        <WeeklyTimetable
-          classes={safeClasses}
-          students={safeStudents}
-          sessions={sessions}
-          onOpenAddSession={onOpenAddSession}
-        />
+        <div className="space-y-4">
+          {isSuperAdmin && (
+            <div className="p-3.5 rounded-2xl bg-pink-100/80 text-pink-950 border border-pink-200 text-xs font-bold flex items-center justify-between shadow-2xs">
+              <span className="flex items-center">
+                <Sparkles className="w-4 h-4 mr-2 text-pink-500 animate-pulse" />
+                Lịch dạy cá nhân của <strong>Ms. Vy</strong> (Đã được tinh gọn để quản lý cá nhân & trung tâm cùng lúc).
+              </span>
+              <button
+                onClick={() => setActiveTab('teachers')}
+                className="px-3 py-1 rounded-xl bg-white text-sky-950 border border-sky-300 font-extrabold text-[11px] hover:bg-sky-50 transition"
+              >
+                Xem Lớp Của Các Giáo Viên Khác →
+              </button>
+            </div>
+          )}
+
+          <WeeklyTimetable
+            classes={msVyTimetableClasses}
+            students={safeStudents}
+            sessions={sessions}
+            onOpenAddSession={onOpenAddSession}
+          />
+        </div>
       )}
 
       {/* TAB 2: HOMEWORK GRADING QUEUE */}
@@ -425,28 +480,140 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 3: TEACHERS MANAGEMENT - SUPER ADMIN ONLY */}
+      {/* TAB 3: TEACHERS MANAGEMENT - SUPER ADMIN ONLY (EXCLUDES MS. VY, SHOWS OTHER TEACHERS & THEIR CLASSES ON CLICK) */}
       {activeTab === 'teachers' && isSuperAdmin && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-                <UserCheck className="w-5 h-5 mr-2 text-sky-600" /> Quản Lý Đội Ngũ Giáo Viên & Lớp Học Phụ Trách
+                <UserCheck className="w-5 h-5 mr-2 text-sky-600" /> Quản Lý Đội Ngũ Giáo Viên Trung Tâm ({otherTeachersList.length} Giáo Viên)
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Bấm vào từng lớp học của giáo viên bên dưới để truy cập trực tiếp trang thông tin & buổi học
+                Bấm vào tên từng giáo viên bên dưới để xem danh sách toàn bộ các lớp học hiện có của người đó
               </p>
             </div>
 
             {/* ADD TEACHER BUTTON - SUPER ADMIN ONLY */}
-            {isSuperAdmin && (
-              <button
-                onClick={onOpenAccountManagement}
-                className="px-4 py-2.5 rounded-2xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 border border-sky-300 transition shadow-xs flex items-center shrink-0"
-              >
-                + Cấp Tài Khoản Giáo Viên Mới
-              </button>
-            )}
+            <button
+              onClick={onOpenAccountManagement}
+              className="px-4 py-2.5 rounded-2xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 border border-sky-300 transition shadow-xs flex items-center shrink-0"
+            >
+              + Cấp Tài Khoản Giáo Viên Mới
+            </button>
+          </div>
+
+          {/* OTHER TEACHERS LIST & EXPANDABLE CLASSES */}
+          <div className="space-y-4">
+            {otherTeachersList.map((teacher) => {
+              const teacherClasses = safeClasses.filter(
+                (c) => c.teacherId === teacher.id || (c.teacherName && c.teacherName.toLowerCase().includes(teacher.name.toLowerCase()))
+              );
+
+              const isExpanded = selectedTeacherId === teacher.id;
+
+              return (
+                <div
+                  key={teacher.id}
+                  className="rounded-3xl border border-sky-100 dark:border-slate-800 bg-sky-50/40 dark:bg-slate-800/40 overflow-hidden shadow-2xs transition"
+                >
+                  {/* Teacher Card Header */}
+                  <div
+                    onClick={() => setSelectedTeacherId(isExpanded ? null : teacher.id)}
+                    className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-sky-100/50 transition"
+                  >
+                    <div className="flex items-center space-x-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-200 text-sky-950 flex items-center justify-center font-black text-lg shrink-0 border border-sky-300">
+                        👩‍🏫
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-black text-base text-slate-900 dark:text-white">
+                            {teacher.name}
+                          </h4>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-sky-200 text-sky-950">
+                            Giáo viên active
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Email: {teacher.email} • SĐT: {teacher.phone || 'Chưa cập nhật'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 shrink-0 justify-between sm:justify-end">
+                      <span className="px-3 py-1.5 rounded-2xl bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-300 font-extrabold text-xs border border-sky-200">
+                        {teacherClasses.length} Lớp Phụ Trách
+                      </span>
+
+                      <button className="px-3.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-bold text-xs flex items-center">
+                        {isExpanded ? (
+                          <>
+                            Thu Gọn <ChevronUp className="w-4 h-4 ml-1" />
+                          </>
+                        ) : (
+                          <>
+                            Xem Lớp Học ({teacherClasses.length}) <ChevronDown className="w-4 h-4 ml-1" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Teacher Classes List */}
+                  {isExpanded && (
+                    <div className="p-5 bg-white dark:bg-slate-900 border-t border-sky-100 dark:border-slate-800 space-y-3 animate-fadeIn">
+                      <span className="text-xs font-extrabold text-sky-950 dark:text-sky-300 uppercase tracking-wider block">
+                        📚 Danh Sách Các Lớp Học Của {teacher.name} ({teacherClasses.length} Lớp):
+                      </span>
+
+                      {teacherClasses.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {teacherClasses.map((cls) => (
+                            <div
+                              key={cls.id}
+                              className="p-4 rounded-2xl border border-sky-100 bg-sky-50/30 hover:border-sky-300 transition space-y-2.5"
+                            >
+                              <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-400 text-white uppercase">
+                                  {cls.code}
+                                </span>
+                                <span className="text-xs font-bold text-slate-600">{cls.schedule}</span>
+                              </div>
+
+                              <div>
+                                <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                                  {cls.className}
+                                </h5>
+                                <p className="text-[11px] text-slate-500 mt-0.5">Giáo trình: {cls.courseName}</p>
+                              </div>
+
+                              <div className="pt-2 border-t border-sky-100 flex items-center justify-between">
+                                <button
+                                  onClick={() => setInspectedClass(cls)}
+                                  className="text-xs font-extrabold text-sky-700 hover:underline flex items-center"
+                                >
+                                  <Eye className="w-3.5 h-3.5 mr-1" /> Chi Tiết Lớp →
+                                </button>
+
+                                <button
+                                  onClick={() => onOpenAddSession(cls.id)}
+                                  className="px-3 py-1 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
+                                >
+                                  <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">Giáo viên này chưa được phân công lớp học nào.</p>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
