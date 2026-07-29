@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Class, Student, Session, User as UserType } from '../../types';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from '../admin/ClassDetailsView';
+import { StudentPortal } from '../student/StudentPortal';
 import { StorageEngine } from '../../lib/storage';
 import {
   Calendar,
@@ -22,6 +23,7 @@ import {
   ShieldAlert,
   Home,
   ArrowLeft,
+  Eye,
 } from 'lucide-react';
 
 interface TeacherPortalProps {
@@ -31,7 +33,6 @@ interface TeacherPortalProps {
   sessions: Session[];
   onRefreshData: () => void;
   onOpenAddSession: (classId?: string) => void;
-  onOpenPublicStudentLink?: (hash: string) => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
 }
 
@@ -42,11 +43,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   sessions,
   onRefreshData,
   onOpenAddSession,
-  onOpenPublicStudentLink,
   onSetSubViewNavigation,
 }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'all_classes'>('today');
+
+  // Sub-View Inspection State (Keeps Teacher Portal Context Intact)
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
+  const [inspectedStudent, setInspectedStudent] = useState<Student | null>(null);
 
   // STRICT TEACHER SCOPING: Filter classes strictly assigned to this teacher
   const isSuperOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
@@ -55,10 +58,20 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     return c.teacherId === currentUser.uid || (c.teacherName && c.teacherName === currentUser.displayName);
   });
 
-  // Notify parent component about Sub-View Navigation state (Header Home & Back Buttons)
+  // Notify parent Header about Sub-View Navigation state
   useEffect(() => {
     if (onSetSubViewNavigation) {
-      if (inspectedClass) {
+      if (inspectedStudent) {
+        onSetSubViewNavigation(
+          true,
+          () => setInspectedStudent(null),
+          () => {
+            setInspectedStudent(null);
+            setInspectedClass(null);
+            setActiveTab('today');
+          }
+        );
+      } else if (inspectedClass) {
         onSetSubViewNavigation(
           true,
           () => setInspectedClass(null),
@@ -75,7 +88,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         );
       }
     }
-  }, [inspectedClass, onSetSubViewNavigation]);
+  }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
 
   // HELPER: Check if a class is ongoing right now based on local time & schedule
   const getOngoingClassRightNow = (classesList: Class[]) => {
@@ -124,6 +137,54 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   };
 
   const currentOngoingClass = getOngoingClassRightNow(assignedClasses);
+
+  // IF INSPECTING A STUDENT LEARNING PAGE (TEACHER PORTAL CONTEXT INTACT)
+  if (inspectedStudent) {
+    return (
+      <div className="space-y-4">
+        {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-purple-200 dark:border-purple-800 shadow-xs">
+          <button
+            onClick={() => setInspectedStudent(null)}
+            className="px-4 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 font-extrabold text-xs transition flex items-center shrink-0 border border-purple-300"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Giáo Viên
+          </button>
+
+          <div className="text-center">
+            <span className="text-xs font-black text-purple-950 dark:text-purple-200 block">
+              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{inspectedStudent.name}</strong>
+            </span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase">
+              (Bạn vẫn đang ở Quyền Teacher Management Portal)
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              setInspectedStudent(null);
+              setInspectedClass(null);
+              setActiveTab('today');
+            }}
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center shrink-0 border border-slate-300"
+          >
+            <Home className="w-3.5 h-3.5 mr-1" /> Home Giáo Viên
+          </button>
+        </div>
+
+        <StudentPortal
+          currentStudent={inspectedStudent}
+          classes={classes}
+          sessions={sessions}
+          homeworkTasks={StorageEngine.getHomeworkTasks()}
+          homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+          invoices={[]}
+          bankConfig={StorageEngine.getBankConfig()!}
+          onRefreshData={onRefreshData}
+        />
+      </div>
+    );
+  }
 
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
@@ -179,7 +240,12 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
           onBack={() => setInspectedClass(null)}
           onOpenAddSession={onOpenAddSession}
-          onOpenPublicStudentLink={onOpenPublicStudentLink}
+          onOpenPublicStudentLink={(hash) => {
+            const foundStd = students.find((s) => s.publicHash === hash);
+            if (foundStd) {
+              setInspectedStudent(foundStd);
+            }
+          }}
         />
       </div>
     );
@@ -394,7 +460,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
             <button
               onClick={() => onOpenAddSession()}
-              className="px-4 py-2 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm"
+              className="px-4 py-2.5 rounded-2xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition shadow-sm"
             >
               + Thêm Buổi Học
             </button>
