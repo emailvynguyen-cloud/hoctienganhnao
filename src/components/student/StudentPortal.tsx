@@ -240,7 +240,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   key={hwItem.id}
                   className={`p-3.5 rounded-2xl border transition flex items-center justify-between text-xs ${
                     isChecked
-                      ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950'
+                      ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 font-bold'
                       : 'bg-white/90 dark:bg-slate-800/90 border-purple-100 text-slate-800'
                   }`}
                 >
@@ -257,7 +257,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       {isChecked && <CheckCircle2 className="w-4 h-4" />}
                     </button>
                     <div>
-                      <h5 className={`font-extrabold ${isChecked ? 'line-through opacity-70' : ''}`}>
+                      <h5 className="font-extrabold text-slate-900 dark:text-white">
                         {hwItem.title}
                       </h5>
                       {hwItem.content && (
