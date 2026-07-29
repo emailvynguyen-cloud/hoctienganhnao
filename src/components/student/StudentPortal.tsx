@@ -599,7 +599,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </p>
             </div>
 
-            {/* KAKAOTALK FRIENDS AVATAR GRID */}
+            {/* KAKAOTALK FRIENDS AVATAR GRID WITH SAFE FALLBACK */}
             <div className="space-y-2">
               <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
                 ✨ Bộ Cặp Đôi KakaoTalk Friends Nổi Tiếng:
@@ -608,10 +608,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {KAKAOTALK_AVATARS_LIST.map((kt) => (
                   <button
                     key={kt.id}
-                    onClick={() => handleSelectKakaoAvatar(kt.svgDataUrl)}
+                    onClick={() => handleSelectKakaoAvatar(kt.url || kt.svgDataUrl)}
                     className="p-2 rounded-2xl border-2 border-purple-100 hover:border-purple-500 hover:bg-purple-50 transition flex flex-col items-center space-y-1 group"
                   >
-                    <img src={kt.svgDataUrl} alt={kt.name} className="w-12 h-12 rounded-xl object-cover group-hover:scale-110 transition" />
+                    <img
+                      src={kt.url || kt.svgDataUrl}
+                      alt={kt.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                      }}
+                      className="w-12 h-12 rounded-xl object-cover group-hover:scale-110 transition"
+                    />
                     <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{kt.name}</span>
                   </button>
                 ))}
