@@ -76,12 +76,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text text-transparent">
                   MS. VY ENGLISH
                 </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300 border border-pink-200">
-                  <Sparkles className="w-3 h-3 mr-1 text-pink-500" /> ONLINE TRACKER
-                </span>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200" title="Cơ sở dữ liệu đám mây Real-time đang hoạt động">
-                  <Cloud className="w-3 h-3 mr-1 text-emerald-600 animate-pulse" /> REALTIME CLOUD
-                </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-purple-300 hidden sm:block font-medium">
                 Hiểu Từ Bản Chất • Nói Được Tự Tin • Theo Dõi Học Tập
