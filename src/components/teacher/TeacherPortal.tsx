@@ -71,28 +71,93 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     return c.teacherId === currentUser.uid || (c.teacherName && c.teacherName === currentUser.displayName);
   });
 
-  // TODAY'S ACTIVE CLASS DETECTION
+  // REAL-TIME VIETNAM TIME (ICT / GMT+7) & ACTIVE CLASS DETECTION
+  const getCurrentVietnamTimeMinutes = () => {
+    const now = new Date();
+    try {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      };
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const timeStr = formatter.format(now);
+      const parts = timeStr.split(':');
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      return h * 60 + m;
+    } catch (e) {
+      return now.getHours() * 60 + now.getMinutes();
+    }
+  };
+
   const getTodayDayKey = () => {
-    const dayIndex = new Date().getDay(); // 0: Sunday, 1: Monday, ...
+    const now = new Date();
+    let dayIndex = now.getDay(); // 0: Sunday, 1: Monday, ...
+    try {
+      const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' }).format(now);
+      if (dayStr === 'Sun') dayIndex = 0;
+      if (dayStr === 'Mon') dayIndex = 1;
+      if (dayStr === 'Tue') dayIndex = 2;
+      if (dayStr === 'Wed') dayIndex = 3;
+      if (dayStr === 'Thu') dayIndex = 4;
+      if (dayStr === 'Fri') dayIndex = 5;
+      if (dayStr === 'Sat') dayIndex = 6;
+    } catch (e) {}
+
     if (dayIndex === 0) return 'CN';
     return `T${dayIndex + 1}`;
   };
 
+  const parseClassTimeRange = (scheduleStr?: string) => {
+    if (!scheduleStr) return null;
+    const match = scheduleStr.match(/(\d{1,2})[:h](\d{2})\s*[-–—to]\s*(\d{1,2})[:h](\d{2})/i);
+    if (!match) return null;
+
+    const startH = parseInt(match[1], 10);
+    const startM = parseInt(match[2], 10);
+    const endH = parseInt(match[3], 10);
+    const endM = parseInt(match[4], 10);
+
+    return {
+      startMinutes: startH * 60 + startM,
+      endMinutes: endH * 60 + endM,
+    };
+  };
+
   const todayDayKey = getTodayDayKey();
-  const todayClasses = assignedClasses.filter((c) => {
+  const currentVietnamMinutes = getCurrentVietnamTimeMinutes();
+
+  // Find class that is TRULY in session right now in Vietnam Time
+  const activeTodayClass = assignedClasses.find((c) => {
     if (!c || !c.schedule) return false;
     const sched = c.schedule.toUpperCase();
-    if (todayDayKey === 'T2') return sched.includes('T2') || sched.includes('THỨ 2');
-    if (todayDayKey === 'T3') return sched.includes('T3') || sched.includes('THỨ 3');
-    if (todayDayKey === 'T4') return sched.includes('T4') || sched.includes('THỨ 4');
-    if (todayDayKey === 'T5') return sched.includes('T5') || sched.includes('THỨ 5');
-    if (todayDayKey === 'T6') return sched.includes('T6') || sched.includes('THỨ 6');
-    if (todayDayKey === 'T7') return sched.includes('T7') || sched.includes('THỨ 7');
-    if (todayDayKey === 'CN') return sched.includes('CN') || sched.includes('CHỦ NHẬT');
-    return false;
-  });
 
-  const activeTodayClass = todayClasses[0] || null;
+    // 1. Check Day of Week
+    let isToday = false;
+    if (todayDayKey === 'T2') isToday = sched.includes('T2') || sched.includes('THỨ 2');
+    else if (todayDayKey === 'T3') isToday = sched.includes('T3') || sched.includes('THỨ 3');
+    else if (todayDayKey === 'T4') isToday = sched.includes('T4') || sched.includes('THỨ 4');
+    else if (todayDayKey === 'T5') isToday = sched.includes('T5') || sched.includes('THỨ 5');
+    else if (todayDayKey === 'T6') isToday = sched.includes('T6') || sched.includes('THỨ 6');
+    else if (todayDayKey === 'T7') isToday = sched.includes('T7') || sched.includes('THỨ 7');
+    else if (todayDayKey === 'CN') isToday = sched.includes('CN') || sched.includes('CHỦ NHẬT');
+
+    if (!isToday) return false;
+
+    // 2. Check Time Range (with 15 min early buffer before class and 10 min buffer after class)
+    const timeRange = parseClassTimeRange(c.schedule);
+    if (!timeRange) return true; // If no time range parsed, fallback to day match
+
+    const earlyBuffer = 15; // 15 mins before start time
+    const lateBuffer = 10;  // 10 mins after end time
+
+    return (
+      currentVietnamMinutes >= (timeRange.startMinutes - earlyBuffer) &&
+      currentVietnamMinutes <= (timeRange.endMinutes + lateBuffer)
+    );
+  }) || null;
 
   // Notify parent Header about Sub-View Navigation state
   useEffect(() => {
@@ -312,7 +377,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {activeTab === 'today' && (
         <div className="space-y-6">
 
-          {/* DEDICATED TOP BANNER: ACTIVE / UPCOMING CLASS TODAY vs "Hiện không có lớp, nghỉ ngơi nha công chúa" */}
+          {/* REAL-TIME TOP BANNER: ACTIVE CLASS (IN VIETNAM TIME) vs "Hiện không có lớp, nghỉ ngơi đi nhé công chúa" */}
           {activeTodayClass ? (
             <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-100 via-teal-50 to-sky-100 text-emerald-950 shadow-sm border-2 border-emerald-300 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -369,10 +434,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 👑
               </div>
               <h3 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                "Hiện không có lớp, nghỉ ngơi nha công chúa"
+                "Hiện không có lớp, nghỉ ngơi đi nhé công chúa"
               </h3>
               <p className="text-xs font-semibold text-pink-800 max-w-md mx-auto">
-                Khung giờ hôm nay không có ca dạy nào, hãy dành thời gian nghỉ ngơi thư thái và nạp năng lượng tuyệt vời nhé em! 💖
+                Khung giờ hiện tại không có ca dạy nào, hãy dành thời gian nghỉ ngơi thư thái và nạp năng lượng tuyệt vời nhé em! 💖
               </p>
             </div>
           )}
