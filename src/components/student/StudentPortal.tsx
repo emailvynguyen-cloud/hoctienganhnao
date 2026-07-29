@@ -86,15 +86,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const recent2Sessions = studentSessions.slice(0, 2);
   const olderSessions = studentSessions.slice(2);
 
-  // OVERALL HOMEWORK PROGRESS SUMMARY CALCULATION
-  const allHomeworkItems = studentSessions.flatMap((s) => s.homeworkItems || []);
-  const totalHomeworkCount = allHomeworkItems.length;
-  const totalCompletedCount = allHomeworkItems.filter((item) =>
+  // MOST RECENT SESSION HOMEWORK PROGRESS SUMMARY CALCULATION
+  const latestSession = studentSessions[0];
+  const latestHomeworkItems = latestSession?.homeworkItems || [];
+  const latestHomeworkCount = latestHomeworkItems.length;
+  const latestCompletedCount = latestHomeworkItems.filter((item) =>
     currentStudent.completedHomeworkTaskIds?.includes(item.id)
   ).length;
 
-  const overallProgressPercent = totalHomeworkCount > 0
-    ? Math.min(100, Math.round((totalCompletedCount / totalHomeworkCount) * 100))
+  const latestProgressPercent = latestHomeworkCount > 0
+    ? Math.min(100, Math.round((latestCompletedCount / latestHomeworkCount) * 100))
     : 100;
 
   // Extract all session materials
@@ -475,18 +476,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         starsCount={currentStudent.stars}
       />
 
-      {/* 3. OVERALL HOMEWORK PROGRESS SUMMARY BAR (REQUIREMENT 8) */}
+      {/* 3. MOST RECENT SESSION HOMEWORK PROGRESS SUMMARY BAR */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center space-x-2">
             <BookOpen className="w-5 h-5 text-pink-500 animate-bounce" />
             <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
-              📚 TIẾN ĐỘ BÀI TẬP VỀ NHÀ TỔNG QUAN
+              📚 TIẾN ĐỘ BÀI TẬP BUỔI MỚI NHẤT {latestSession ? `(BUỔI #${latestSession.sessionNumber})` : ''}
             </h3>
           </div>
 
           <span className="text-xs font-extrabold text-pink-900 bg-pink-100 px-3.5 py-1 rounded-full border border-pink-200 shadow-2xs">
-            <strong>{totalCompletedCount} / {totalHomeworkCount}</strong> bài đã hoàn thành ({overallProgressPercent}%)
+            <strong>{latestCompletedCount} / {latestHomeworkCount}</strong> bài đã hoàn thành ({latestProgressPercent}%)
           </span>
         </div>
 
@@ -494,17 +495,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         <div className="bg-pink-100 dark:bg-slate-800 h-5 rounded-2xl overflow-hidden p-1 border border-pink-200 shadow-inner">
           <div
             className="h-full rounded-xl bg-gradient-to-r from-pink-400 via-rose-400 to-emerald-400 transition-all duration-1000 shadow-xs flex items-center justify-end pr-2"
-            style={{ width: `${Math.max(5, overallProgressPercent)}%` }}
+            style={{ width: `${Math.max(5, latestProgressPercent)}%` }}
           >
             <span className="text-[10px] font-black text-white drop-shadow-xs font-mono">
-              {overallProgressPercent}%
+              {latestProgressPercent}%
             </span>
           </div>
         </div>
 
-        {overallProgressPercent === 100 && totalHomeworkCount > 0 && (
+        {latestProgressPercent === 100 && latestHomeworkCount > 0 && (
           <div className="p-3.5 rounded-2xl bg-emerald-100 text-emerald-950 text-xs font-black text-center border border-emerald-300 animate-pulse">
-            🎉 Tuyệt vời! Bạn đã hoàn thành tất cả bài tập!
+            🎉 Tuyệt vời! Bạn đã hoàn thành tất cả bài tập của buổi mới nhất!
           </div>
         )}
       </div>
