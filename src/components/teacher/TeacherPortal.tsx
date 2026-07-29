@@ -27,6 +27,8 @@ import {
   Eye,
   MessageSquare,
   Bell,
+  PlayCircle,
+  Smile,
 } from 'lucide-react';
 
 interface TeacherPortalProps {
@@ -68,6 +70,29 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     if (!currentUser || isSuperOrAdmin) return true;
     return c.teacherId === currentUser.uid || (c.teacherName && c.teacherName === currentUser.displayName);
   });
+
+  // TODAY'S ACTIVE CLASS DETECTION
+  const getTodayDayKey = () => {
+    const dayIndex = new Date().getDay(); // 0: Sunday, 1: Monday, ...
+    if (dayIndex === 0) return 'CN';
+    return `T${dayIndex + 1}`;
+  };
+
+  const todayDayKey = getTodayDayKey();
+  const todayClasses = assignedClasses.filter((c) => {
+    if (!c || !c.schedule) return false;
+    const sched = c.schedule.toUpperCase();
+    if (todayDayKey === 'T2') return sched.includes('T2') || sched.includes('THỨ 2');
+    if (todayDayKey === 'T3') return sched.includes('T3') || sched.includes('THỨ 3');
+    if (todayDayKey === 'T4') return sched.includes('T4') || sched.includes('THỨ 4');
+    if (todayDayKey === 'T5') return sched.includes('T5') || sched.includes('THỨ 5');
+    if (todayDayKey === 'T6') return sched.includes('T6') || sched.includes('THỨ 6');
+    if (todayDayKey === 'T7') return sched.includes('T7') || sched.includes('THỨ 7');
+    if (todayDayKey === 'CN') return sched.includes('CN') || sched.includes('CHỦ NHẬT');
+    return false;
+  });
+
+  const activeTodayClass = todayClasses[0] || null;
 
   // Notify parent Header about Sub-View Navigation state
   useEffect(() => {
@@ -286,6 +311,73 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* TAB 1: TODAY'S CLASSES & SESSIONS */}
       {activeTab === 'today' && (
         <div className="space-y-6">
+
+          {/* DEDICATED TOP BANNER: ACTIVE / UPCOMING CLASS TODAY vs "Hiện không có lớp, nghỉ ngơi nha công chúa" */}
+          {activeTodayClass ? (
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-100 via-teal-50 to-sky-100 text-emerald-950 shadow-sm border-2 border-emerald-300 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-3 py-1 rounded-full text-[11px] font-black bg-emerald-500 text-white uppercase tracking-wider animate-pulse flex items-center">
+                      <PlayCircle className="w-3.5 h-3.5 mr-1" /> Lớp Học Đang Bắt Đầu Hôm Nay
+                    </span>
+                    <span className="text-xs font-bold text-emerald-800">
+                      Mã lớp: {activeTodayClass.code}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white pt-1">
+                    {activeTodayClass.className}
+                  </h3>
+                  <p className="text-xs font-semibold text-emerald-900 flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                    Lịch dạy: <strong>{activeTodayClass.schedule}</strong> • Giáo trình: {activeTodayClass.courseName}
+                  </p>
+                </div>
+
+                {/* Direct Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {activeTodayClass.zoomLink ? (
+                    <a
+                      href={activeTodayClass.zoomLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition flex items-center cursor-pointer"
+                    >
+                      <Video className="w-4 h-4 mr-2 animate-bounce" /> Vào Lớp Học Zoom Ngay →
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => setInspectedClass(activeTodayClass)}
+                      className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition flex items-center"
+                    >
+                      <PlayCircle className="w-4 h-4 mr-2" /> Vào Chi Tiết Lớp Học →
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onOpenAddSession(activeTodayClass.id)}
+                    className="px-4 py-3 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-950 font-extrabold text-xs border border-emerald-300 shadow-2xs transition flex items-center"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-1.5 text-emerald-600" /> + Thêm Buổi / Nhập Điểm
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 rounded-3xl bg-gradient-to-r from-pink-100 via-rose-50 to-purple-100 text-pink-950 shadow-sm border-2 border-pink-300 text-center space-y-3">
+              <div className="w-14 h-14 rounded-3xl bg-white/80 text-pink-500 flex items-center justify-center text-3xl mx-auto shadow-xs border border-pink-200">
+                👑
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                "Hiện không có lớp, nghỉ ngơi nha công chúa"
+              </h3>
+              <p className="text-xs font-semibold text-pink-800 max-w-md mx-auto">
+                Khung giờ hôm nay không có ca dạy nào, hãy dành thời gian nghỉ ngơi thư thái và nạp năng lượng tuyệt vời nhé em! 💖
+              </p>
+            </div>
+          )}
+
+          {/* Greeting Banner */}
           <div className="p-6 rounded-3xl bg-gradient-to-r from-pink-200 via-rose-100 to-sky-100 text-pink-950 shadow-xs border-2 border-pink-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <h3 className="text-xl font-black flex items-center">
