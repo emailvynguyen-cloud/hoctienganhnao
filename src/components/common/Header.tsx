@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Flame,
   ArrowLeft,
+  Home,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -38,6 +39,9 @@ interface HeaderProps {
   onResetData: () => void;
   activePublicHash?: string | null;
   onExitPublicView?: () => void;
+  onNavigateHome?: () => void;
+  onNavigateBack?: () => void;
+  canNavigateBack?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -53,6 +57,9 @@ export const Header: React.FC<HeaderProps> = ({
   onResetData,
   activePublicHash,
   onExitPublicView,
+  onNavigateHome,
+  onNavigateBack,
+  canNavigateBack = false,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
 
@@ -63,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Logo & Branding */}
           <div className="flex items-center space-x-3">
-            <div className="relative group shrink-0">
+            <div className="relative group shrink-0 cursor-pointer" onClick={onNavigateHome}>
               <img
                 src="/logo.jpg"
                 alt="Ms. Vy English Logo"
@@ -75,7 +82,10 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text text-transparent">
+                <span
+                  onClick={onNavigateHome}
+                  className="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-600 bg-clip-text text-transparent cursor-pointer"
+                >
                   MS. VY ENGLISH
                 </span>
               </div>
@@ -88,6 +98,43 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Controls Right */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
+            {/* ROLE-BASED NAVIGATION SYSTEM: HOME & BACK BUTTONS (SUPER ADMIN, ADMIN, TEACHER) */}
+            {!activePublicHash && currentUser && (
+              <div className="flex items-center space-x-1.5 border-r border-purple-200 dark:border-purple-800 pr-2 sm:pr-3 mr-1">
+                
+                {/* HOME BUTTON */}
+                {onNavigateHome && (
+                  <button
+                    onClick={onNavigateHome}
+                    className="px-3 py-1.5 rounded-2xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 dark:hover:bg-purple-800 text-purple-950 dark:text-purple-100 font-black text-xs transition flex items-center shadow-xs border border-purple-300 dark:border-purple-700"
+                    title={
+                      currentRole === 'super_admin'
+                        ? 'Về Trang Chủ Super Admin'
+                        : currentRole === 'admin'
+                        ? 'Về Trang Chủ Admin'
+                        : 'Về Trang Chủ Giáo Viên'
+                    }
+                  >
+                    <Home className="w-3.5 h-3.5 mr-1 text-purple-700 dark:text-purple-300" />
+                    <span className="hidden sm:inline">Trang Chủ</span>
+                  </button>
+                )}
+
+                {/* BACK BUTTON (ACTIVE IN SUB-VIEWS) */}
+                {canNavigateBack && onNavigateBack && (
+                  <button
+                    onClick={onNavigateBack}
+                    className="px-3 py-1.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs transition flex items-center shadow-xs border border-slate-300 dark:border-slate-700"
+                    title="Quay lại trang trước"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1 text-slate-600 dark:text-slate-300" />
+                    <span className="hidden sm:inline">Quay Lại</span>
+                  </button>
+                )}
+
+              </div>
+            )}
+
             {/* PWA INSTALL / ADD TO HOME SCREEN BUTTON */}
             <button
               onClick={() => setIsPwaModalOpen(true)}
@@ -117,6 +164,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
             </button>
 
+            {/* NO MANAGEMENT BUTTONS FOR STUDENT PORTAL (?hash=...) */}
             {!activePublicHash && (
               <>
                 {/* Logged in User Profile Info */}
