@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { UserRole, User } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { UserRole, User, AppNotification } from '../../types';
+import { StorageEngine } from '../../lib/storage';
 import {
   Shield,
   GraduationCap,
@@ -24,6 +25,9 @@ import {
   Flame,
   ArrowLeft,
   Home,
+  Bell,
+  Check,
+  ChevronRight,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -42,6 +46,7 @@ interface HeaderProps {
   onNavigateHome?: () => void;
   onNavigateBack?: () => void;
   canNavigateBack?: boolean;
+  onSelectNotificationSubmission?: (submissionId: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -60,63 +65,112 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateHome,
   onNavigateBack,
   canNavigateBack = false,
+  onSelectNotificationSubmission,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  // Load Notifications and auto-refresh periodically
+  const refreshNotifs = () => {
+    const allNotifs = StorageEngine.getNotifications() || [];
+    if (!currentUser) {
+      setNotifications([]);
+      return;
+    }
+
+    const isSuperOrAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+    if (isSuperOrAdmin) {
+      setNotifications(allNotifs);
+    } else if (currentUser.role === 'teacher') {
+      const classes = StorageEngine.getClasses() || [];
+      const teacherClassIds = classes
+        .filter((c) => c.teacherId === currentUser.uid || c.teacherName === currentUser.displayName)
+        .map((c) => c.id);
+
+      const scopedNotifs = allNotifs.filter((n) => teacherClassIds.includes(n.classId));
+      setNotifications(scopedNotifs);
+    } else {
+      setNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshNotifs();
+    const interval = setInterval(refreshNotifs, 3000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleNotificationClick = (notif: AppNotification) => {
+    StorageEngine.markNotificationAsRead(notif.id);
+    refreshNotifs();
+    setIsNotifDropdownOpen(false);
+    if (onSelectNotificationSubmission && notif.submissionId) {
+      onSelectNotificationSubmission(notif.submissionId);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-pink-100 dark:border-slate-800 shadow-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
-          {/* Logo & Branding */}
-          <div className="flex items-center space-x-3">
-            <div className="relative group shrink-0 cursor-pointer" onClick={onNavigateHome}>
+          {/* Left: Brand Logo & Title */}
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={onNavigateHome}>
+            <div className="relative">
               <img
                 src="/logo.jpg"
                 alt="Ms. Vy English Logo"
-                style={{ width: '52px', height: '52px', maxWidth: '52px', maxHeight: '52px' }}
-                className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 dark:border-slate-700 shadow-sm transform group-hover:scale-105 transition duration-300 shrink-0"
+                style={{ width: '48px', height: '48px' }}
+                className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shadow-xs group-hover:scale-105 transition duration-300"
               />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-pink-400 rounded-full border-2 border-white animate-pulse" />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full flex items-center justify-center">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+              </span>
             </div>
 
             <div>
               <div className="flex items-center space-x-2">
-                <span
-                  onClick={onNavigateHome}
-                  className="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-pink-500 via-rose-400 to-sky-500 bg-clip-text text-transparent cursor-pointer"
-                >
+                <span className="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-pink-500 via-rose-400 to-sky-500 bg-clip-text text-transparent">
                   MS. VY ENGLISH
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-100 text-pink-900 border border-pink-200 uppercase">
+                  ONLINE
+                </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block font-medium">
-                Hiểu Từ Bản Chất • Nói Được Tự Tin • Theo Dõi Học Tập
+              <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 tracking-wide hidden sm:block">
+                Hệ Thống Theo Dõi Học Tập & Quản Lý Lớp Học
               </p>
             </div>
           </div>
 
-          {/* Controls Right */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            
-            {/* ROLE-BASED NAVIGATION SYSTEM: HOME & BACK BUTTONS (SUPER ADMIN, ADMIN, TEACHER) */}
-            {!activePublicHash && currentUser && (
-              <div className="flex items-center space-x-1.5 border-r border-pink-100 dark:border-slate-800 pr-2 sm:pr-3 mr-1">
-                
+          {/* Right: Actions, Navigation, Role Switcher & Notifications */}
+          <div className="flex items-center space-x-2.5">
+
+            {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}
+            {!activePublicHash && (
+              <div className="flex items-center space-x-1.5">
                 {/* HOME BUTTON */}
-                {onNavigateHome && (
+                <button
+                  onClick={onNavigateHome}
+                  className="px-3 py-1.5 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shadow-xs border border-pink-200"
+                  title="Về Trang Chủ Quản Lý"
+                >
+                  <Home className="w-3.5 h-3.5 sm:mr-1 text-pink-600" />
+                  <span className="hidden sm:inline">Trang Chủ</span>
+                </button>
+
+                {/* EXIT GENUINE PUBLIC VIEW IF ACTIVE */}
+                {activePublicHash && onExitPublicView && (
                   <button
-                    onClick={onNavigateHome}
-                    className="px-3.5 py-1.5 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-black text-xs transition flex items-center shadow-xs border border-pink-200"
-                    title={
-                      currentRole === 'super_admin'
-                        ? 'Về Trang Chủ Super Admin'
-                        : currentRole === 'admin'
-                        ? 'Về Trang Chủ Admin'
-                        : 'Về Trang Chủ Giáo Viên'
-                    }
+                    onClick={onExitPublicView}
+                    className="px-3 py-1.5 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold text-xs transition flex items-center shadow-xs border border-amber-200"
+                    title="Thoát chế độ xem học viên bí mật"
                   >
-                    <Home className="w-3.5 h-3.5 mr-1 text-pink-600" />
-                    <span className="hidden sm:inline">Trang Chủ</span>
+                    <Lock className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                    Thoát Link Secret
                   </button>
                 )}
 
@@ -161,6 +215,67 @@ export const Header: React.FC<HeaderProps> = ({
 
               <Sparkles className="w-3.5 h-3.5 text-pink-500 animate-pulse" />
             </button>
+
+            {/* NOTIFICATION BELL FOR ADMIN / TEACHER PORTAL */}
+            {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+                  className="p-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 border border-pink-200 transition shadow-xs relative flex items-center justify-center"
+                  title="Thông báo bài tập cần feedback"
+                >
+                  <Bell className="w-4 h-4 text-pink-700" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                {isNotifDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-2 border-pink-200 p-4 space-y-3 z-50 animate-fadeIn text-xs">
+                    <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                      <span className="font-black text-slate-900 dark:text-white flex items-center">
+                        <Bell className="w-4 h-4 mr-1.5 text-pink-500" /> Thông Báo Bài Tập ({notifications.length})
+                      </span>
+                      <span className="text-[10px] font-bold text-pink-600">
+                        {unreadCount} chưa đọc
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {notifications.length > 0 ? (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`p-3 rounded-2xl border transition cursor-pointer space-y-1 ${
+                              n.isRead
+                                ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 opacity-70'
+                                : 'bg-pink-50/80 border-pink-300 shadow-2xs hover:bg-pink-100/80'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
+                              <span>{n.title}</span>
+                              <span className="text-[10px] text-pink-600 font-mono">{n.completionTime}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 font-medium">{n.message}</p>
+                            <div className="pt-1 flex items-center justify-end">
+                              <span className="text-[10px] font-black text-pink-700 hover:underline flex items-center">
+                                XEM BÀI / CHẤM BÀI →
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-400 italic text-center py-4">Chưa có thông báo bài tập mới.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* NO MANAGEMENT BUTTONS FOR STUDENT PORTAL (?hash=...) */}
             {!activePublicHash && (
@@ -222,32 +337,14 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
 
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 rounded-2xl text-slate-500 hover:bg-pink-100 dark:hover:bg-slate-800 transition"
-              title="Chuyển chế độ Sáng / Tối"
-            >
-              {isDarkMode ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 text-pink-600" />}
-            </button>
-
-            {/* Reset Database */}
-            <button
-              onClick={onResetData}
-              className="p-2 rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-              title="Reset Dữ Liệu Mẫu Ban Đầu"
-            >
-              <RefreshCw className="w-4.5 h-4.5" />
-            </button>
-
           </div>
         </div>
       </div>
 
-      {/* PWA INSTALLATION INSTRUCTION MODAL */}
+      {/* PWA MODAL INSTRUCTION */}
       {isPwaModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border-2 border-pink-100 p-6 space-y-5 relative text-slate-800 dark:text-white">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-pink-200 p-6 space-y-5 relative text-slate-800 dark:text-white">
             
             <button
               onClick={() => setIsPwaModalOpen(false)}
@@ -256,48 +353,38 @@ export const Header: React.FC<HeaderProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <div className="text-center space-y-1">
-              <img src="/logo.jpg" alt="Ms. Vy Logo" style={{ width: '64px', height: '64px' }} className="w-16 h-16 rounded-3xl object-cover border-2 border-pink-300 mx-auto shadow-md" />
-              <h3 className="text-lg font-black text-slate-900 dark:text-white pt-2">
-                Hướng Dẫn Cài App MS. VY ENGLISH Ra Màn Hình Chính Điện Thoại
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center mx-auto shadow-xs border border-pink-200">
+                <Smartphone className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Thêm Ứng Dụng Ra Màn Hình Chính
               </h3>
-              <p className="text-xs text-pink-700 dark:text-pink-300 font-extrabold">
-                Sử dụng như ứng dụng App thật trên điện thoại mà không cần vào App Store hay Google Play!
+              <p className="text-xs text-slate-500 font-medium">
+                Sử dụng Ms. Vy English tiện lợi như một App di động nguyên bản trên điện thoại iOS & Android!
               </p>
             </div>
 
-            {/* IPHONE (IOS SAFARI) GUIDE */}
-            <div className="p-4 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-200 space-y-2 text-xs">
-              <span className="font-black text-pink-900 dark:text-pink-300 flex items-center uppercase text-[11px]">
-                📱 Dành cho iPhone / iPad (Trình duyệt Safari):
-              </span>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-700 dark:text-slate-300 font-medium">
-                <li>Mở đường link ứng dụng bằng trình duyệt **Safari**.</li>
-                <li>Bấm vào biểu tượng **Chia sẻ** (hình ô vuông có mũi tên chỉ lên <Share className="w-3.5 h-3.5 inline text-sky-600" /> ở dưới cùng màn hình).</li>
-                <li>Cuộn xuống và chọn **"Thêm vào Màn hình chính" (Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-pink-600" />)**.</li>
-                <li>Bấm **"Thêm" (Add)** ở góc trên bên phải $\rightarrow$ Biểu tượng app **Ms. Vy** sẽ xuất hiện ngay ngoài màn hình điện thoại!</li>
-              </ol>
+            <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-pink-50/50 dark:bg-slate-800 p-4 rounded-2xl border border-pink-100">
+              <div className="space-y-1">
+                <span className="font-extrabold text-pink-900 dark:text-pink-300 block">📱 Cho iPhone (Safari):</span>
+                <p>1. Bấm vào biểu tượng <strong>Chia sẻ (Share) <Share className="w-3.5 h-3.5 inline text-sky-600" /></strong> bên dưới trình duyệt.</p>
+                <p>2. Chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen) <PlusSquare className="w-3.5 h-3.5 inline text-pink-600" /></strong>.</p>
+              </div>
+
+              <div className="space-y-1 pt-2 border-t border-pink-200/60">
+                <span className="font-extrabold text-pink-900 dark:text-pink-300 block">🤖 Cho Android (Chrome):</span>
+                <p>1. Bấm vào biểu tượng <strong>3 Dấu Chấm (⋮)</strong> ở góc phải trình duyệt.</p>
+                <p>2. Chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.</p>
+              </div>
             </div>
 
-            {/* ANDROID (CHROME) GUIDE */}
-            <div className="p-4 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-2 text-xs">
-              <span className="font-black text-sky-900 dark:text-sky-300 flex items-center uppercase text-[11px]">
-                🤖 Dành cho Android (Samsung, Oppo, Xiaomi - Chrome):
-              </span>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-700 dark:text-slate-300 font-medium">
-                <li>Mở ứng dụng bằng trình duyệt **Google Chrome**.</li>
-                <li>Bấm vào dấu **3 chấm `⋮`** ở góc trên cùng bên phải.</li>
-                <li>Chọn **"Cài đặt ứng dụng"** hoặc **"Thêm vào Màn hình chính"**.</li>
-                <li>Xác nhận **"Cài đặt"** $\rightarrow$ App Ms. Vy sẽ tự động được tải ra màn hình chính!</li>
-              </ol>
-            </div>
-
-            <div className="text-center pt-2">
+            <div className="text-center">
               <button
                 onClick={() => setIsPwaModalOpen(false)}
-                className="px-6 py-2.5 rounded-2xl bg-pink-200 text-pink-950 font-extrabold text-xs hover:bg-pink-300 shadow-xs border border-pink-300 transition"
+                className="w-full py-3 rounded-2xl bg-pink-200 text-pink-950 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs border border-pink-300"
               >
-                Đã Hiểu - Đóng Hướng Dẫn
+                Đã Hiểu, Cảm Ơn!
               </button>
             </div>
 
