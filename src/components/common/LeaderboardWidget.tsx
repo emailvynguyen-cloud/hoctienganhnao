@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Student, Session, HomeworkSubmission } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { Trophy, Star, Award, Sparkles, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown } from 'lucide-react';
+import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen, Award } from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
   onClose?: () => void;
   students: Student[];
-  sessions: Session[];
+  classes?: any[];
+  sessions?: Session[];
 }
 
 const WEEKLY_TITLES = [
@@ -31,80 +32,126 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   isOpen = true,
   onClose,
   students,
-  sessions,
+  sessions = [],
 }) => {
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
 
-  // ALWAYS FETCH FRESH REALTIME STUDENTS FROM STORAGEENGINE
-  const freshStudentsList = StorageEngine.getStudents() || students;
-  const activeStudents = (freshStudentsList || []).filter((s) => s && s.status !== 'soft_deleted');
+  // FETCH FRESH DATA FROM STORAGEENGINE
+  const freshStudentsList = StorageEngine.getStudents() || students || [];
+  const activeStudents = freshStudentsList.filter((s) => s && s.status !== 'soft_deleted');
+  const allSessions = StorageEngine.getSessions() || sessions || [];
   const allSubmissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
 
-  const currentYearMonth = new Date().toISOString().slice(0, 7); // e.g. "2025-07"
+  const now = new Date();
+  const currentYearMonth = now.toISOString().slice(0, 7); // e.g. "2026-07"
 
+  // RANKING COMPUTATION WITH STRICT 3-TIER TIE-BREAKER
   const rankedStudents = activeStudents.map((student) => {
-    const studentSubs = allSubmissions.filter((sub) => sub && sub.studentId === student.id);
+    // Student's classes sessions
+    const studentSessions = allSessions.filter((s) =>
+      s && student.classIds && student.classIds.includes(s.classId)
+    );
 
-    let filteredSubs = studentSubs;
+    let targetSessions = studentSessions;
     if (timeFilter === 'month') {
-      filteredSubs = studentSubs.filter((sub) => sub.submissionDate && sub.submissionDate.startsWith(currentYearMonth));
+      const monthlySess = studentSessions.filter((s) => s.date && s.date.startsWith(currentYearMonth));
+      if (monthlySess.length > 0) targetSessions = monthlySess;
+    } else {
+      // Weekly filter: recent sessions or last 7 days
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const weeklySess = studentSessions.filter((s) => s.date && s.date >= sevenDaysAgo);
+      if (weeklySess.length > 0) targetSessions = weeklySess;
     }
 
-    const totalSubmitted = Math.max(1, filteredSubs.length);
-    const feedbackCount = filteredSubs.filter((sub) => sub.isTeacherFeedbackChecked).length;
+    // Homework items in these target sessions
+    const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
+    const totalAssignedCount = targetHwItems.length;
 
-    const rate = Math.min(100, Math.round((feedbackCount / totalSubmitted) * 100));
+    // Completed homework count
+    const completedHomeworkIds = student.completedHomeworkTaskIds || [];
+    const completedCount = totalAssignedCount > 0
+      ? targetHwItems.filter((item) => completedHomeworkIds.includes(item.id)).length
+      : completedHomeworkIds.length;
+
+    // Completion Rate %
+    const completionRate = totalAssignedCount > 0
+      ? Math.min(100, Math.round((completedCount / totalAssignedCount) * 100))
+      : (completedCount > 0 ? 100 : 0);
+
+    // Feedback Average Stars Calculation
+    const studentSubs = allSubmissions.filter((sub) => sub && sub.studentId === student.id);
+    const ratedSubs = studentSubs.filter((sub) => sub.ratingStars && sub.ratingStars > 0);
+    const averageStars = ratedSubs.length > 0
+      ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1))
+      : 5.0;
 
     return {
       student,
-      totalSubmitted,
-      feedbackCount,
-      rate,
-      score: feedbackCount * 10 + (student.completedHomeworkTaskIds?.length || 0) * 5,
+      completionRate,
+      completedCount,
+      totalAssignedCount,
+      averageStars,
     };
-  }).sort((a, b) => b.score - a.score);
+  }).sort((a, b) => {
+    // TIE-BREAKER 1: Completion Rate % (Higher first)
+    if (b.completionRate !== a.completionRate) {
+      return b.completionRate - a.completionRate;
+    }
+    // TIE-BREAKER 2: Total Completed Homework Count (Higher first)
+    if (b.completedCount !== a.completedCount) {
+      return b.completedCount - a.completedCount;
+    }
+    // TIE-BREAKER 3: Quality of Homework (Average Feedback Stars) (Higher first)
+    return b.averageStars - a.averageStars;
+  });
 
   const titlesList = timeFilter === 'week' ? WEEKLY_TITLES : MONTHLY_TITLES;
 
   const content = (
     <div className="space-y-6">
-      {/* SOFT PASTEL HEADER BANNER */}
-      <div className="bg-gradient-to-r from-pink-200 via-rose-100 to-sky-100 text-pink-950 p-6 sm:p-8 rounded-3xl shadow-sm relative overflow-hidden border-2 border-pink-300">
+      
+      {/* REDESIGNED CLEAN & ELEGANT HEADER BANNER */}
+      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-sky-100/90 dark:from-slate-900 dark:to-slate-900 p-6 sm:p-7 rounded-3xl border-2 border-pink-200 dark:border-slate-800 shadow-sm space-y-4">
         
-        {/* Floating Background Stars & Crowns */}
-        <div className="absolute top-2 right-12 opacity-20 text-4xl animate-pulse">👑</div>
-        <div className="absolute bottom-2 right-24 opacity-20 text-3xl animate-bounce">⭐</div>
-        <div className="absolute top-4 left-1/3 opacity-20 text-3xl">✨</div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center space-x-4 text-center sm:text-left">
-            <div className="w-16 h-16 rounded-3xl bg-white/60 backdrop-blur-md flex items-center justify-center border-2 border-white shadow-xs shrink-0">
-              <Trophy className="w-9 h-9 text-amber-500 animate-bounce" />
+        {/* Top Row: Icon, Main Title & Close Button */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-300 to-yellow-400 text-amber-950 flex items-center justify-center font-black text-xl shadow-xs border-2 border-white shrink-0">
+              🏆
             </div>
             <div>
-              <div className="flex items-center justify-center sm:justify-start space-x-2">
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-pink-950">
-                  🏆 BẢNG THÀNH TÍCH THI ĐUA VINH DANH
-                </h3>
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-400 text-white uppercase tracking-wider shadow-xs">
-                  TOÀN BỘ {rankedStudents.length} HỌC VIÊN
-                </span>
-              </div>
-              <p className="text-xs text-pink-900 mt-1 font-extrabold max-w-lg">
-                Vinh danh Top 5 danh hiệu cao quý và xếp hạng toàn bộ học viên trung tâm MS. VY ENGLISH
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                BẢNG THÀNH TÍCH VINH DANH
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                Vinh danh học viên xuất sắc nhất trung tâm MS. VY ENGLISH
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
-            {/* Time Filter Selector Pills */}
-            <div className="bg-white/70 backdrop-blur-md p-1.5 rounded-2xl flex items-center space-x-1 border border-pink-200 shadow-xs">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-pink-100 text-slate-500 hover:text-pink-600 transition shadow-xs border border-pink-200 dark:border-slate-700 shrink-0"
+              title="Đóng bảng vinh danh"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Bottom Row: Filter Switcher Bar & Total Counter Badge */}
+        <div className="pt-2 border-t border-pink-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          
+          <div className="flex items-center space-x-2">
+            {/* Filter Toggle Buttons */}
+            <div className="bg-white/90 dark:bg-slate-800/90 p-1.5 rounded-2xl border border-pink-200 dark:border-slate-700 flex items-center space-x-1 shadow-2xs">
               <button
                 onClick={() => setTimeFilter('week')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                   timeFilter === 'week'
-                    ? 'bg-amber-300 text-amber-950 shadow-xs scale-105 border border-amber-400'
-                    : 'text-slate-700 hover:bg-pink-100'
+                    ? 'bg-amber-300 text-amber-950 shadow-xs border border-amber-400'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
                 }`}
               >
                 🏆 Xếp Hạng Tuần
@@ -113,35 +160,35 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 onClick={() => setTimeFilter('month')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                   timeFilter === 'month'
-                    ? 'bg-pink-300 text-pink-950 shadow-xs scale-105 border border-pink-400'
-                    : 'text-slate-700 hover:bg-pink-100'
+                    ? 'bg-pink-300 text-pink-950 shadow-xs border border-pink-400'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
                 }`}
               >
                 👑 Xếp Hạng Tháng
               </button>
             </div>
 
-            {/* EXIT BUTTON */}
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs transition shadow-xs flex items-center shrink-0 border border-slate-300"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" /> Thoát
-              </button>
-            )}
+            <span className="px-3 py-1.5 rounded-2xl text-xs font-black bg-pink-100 text-pink-950 border border-pink-200 shrink-0">
+              Toàn bộ {rankedStudents.length} Học Viên
+            </span>
           </div>
+
+          <div className="text-[11px] text-slate-500 font-bold hidden md:block">
+            💡 Tiêu chí xét hạng: Tỷ lệ hoàn thành → Số bài đã làm → Điểm sao chất lượng
+          </div>
+
         </div>
+
       </div>
 
-      {/* Leaderboard List - ALL STUDENTS */}
+      {/* LEADERBOARD LIST - RANKED STUDENTS */}
       <div className="space-y-3.5">
         {rankedStudents.map((item, index) => {
           const isTop1 = index === 0;
           const isTop2 = index === 1;
           const isTop3 = index === 2;
           
-          // ONLY TOP 5 SHOW HONOR TITLES
+          // TOP 5 HONOR TITLES
           const honorTitle = index < 5 ? titlesList[index] : null;
           const avatarSrc = resolveAvatarUrl(item.student.avatar);
 
@@ -150,7 +197,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               key={item.student.id}
               className={`p-4 sm:p-5 rounded-3xl border-2 transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:shadow-md ${
                 isTop1
-                  ? 'bg-gradient-to-r from-amber-100/90 via-yellow-100/70 to-pink-100/90 border-amber-300 shadow-md ring-4 ring-amber-200/40 scale-[1.01]'
+                  ? 'bg-gradient-to-r from-amber-100/90 via-yellow-50 to-pink-100/90 border-amber-300 shadow-md ring-4 ring-amber-200/40 scale-[1.01]'
                   : isTop2
                   ? 'bg-gradient-to-r from-slate-100/95 via-pink-50/90 to-sky-50/90 border-slate-300 shadow-xs'
                   : isTop3
@@ -233,31 +280,47 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                   </div>
 
                   <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1">
-                    SĐT: {item.student.phone || 'Chưa cập nhật'} • Tích lũy: <strong>{item.student.completedHomeworkTaskIds?.length || 0} bài đã hoàn thành</strong>
+                    SĐT: {item.student.phone || 'Chưa cập nhật'}
                   </p>
                 </div>
               </div>
 
-              {/* SCORE & COMPLETION RATE METRICS */}
-              <div className="flex items-center space-x-4 border-t sm:border-t-0 border-pink-100 pt-2 sm:pt-0 justify-between sm:justify-end">
-                <div className="text-right">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+              {/* 3 METRIC PILLS: COMPLETION RATE, TOTAL TASKS & QUALITY STARS */}
+              <div className="flex flex-wrap items-center gap-2.5 border-t sm:border-t-0 border-pink-100 pt-3 sm:pt-0 justify-end shrink-0">
+                
+                {/* METRIC 1: COMPLETION RATE */}
+                <div className="px-3.5 py-2 rounded-2xl bg-emerald-50 dark:bg-slate-800 border border-emerald-200 text-center min-w-[100px]">
+                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block">
                     Tỷ Lệ Hoàn Thành
                   </span>
-                  <div className="text-sm font-black text-pink-600 dark:text-pink-400 flex items-center justify-end">
-                    <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-500" />
-                    {item.rate}%
-                  </div>
+                  <span className="text-sm font-black text-emerald-950 dark:text-emerald-200 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                    {item.completionRate}%
+                  </span>
                 </div>
 
-                <div className="text-right bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl border border-pink-200 shadow-2xs">
-                  <span className="text-[10px] uppercase tracking-wider font-black text-pink-700 block">
-                    Điểm Thi Đua
+                {/* METRIC 2: TOTAL COMPLETED TASKS */}
+                <div className="px-3.5 py-2 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-200 text-center min-w-[90px]">
+                  <span className="text-[10px] uppercase font-bold text-pink-800 dark:text-pink-300 block">
+                    Số Bài Đã Làm
                   </span>
-                  <span className="text-lg font-black text-pink-950 dark:text-white font-mono">
-                    {item.score} <span className="text-xs font-extrabold text-pink-600">ĐTS</span>
+                  <span className="text-sm font-black text-pink-950 dark:text-white font-mono flex items-center justify-center">
+                    <BookOpen className="w-3.5 h-3.5 mr-1 text-pink-500" />
+                    {item.completedCount} Bài
                   </span>
                 </div>
+
+                {/* METRIC 3: FEEDBACK QUALITY STARS */}
+                <div className="px-3.5 py-2 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-200 text-center min-w-[95px]">
+                  <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-300 block">
+                    Chất Lượng
+                  </span>
+                  <span className="text-sm font-black text-amber-950 dark:text-white font-mono flex items-center justify-center">
+                    <Star className="w-3.5 h-3.5 mr-1 fill-current text-amber-500" />
+                    {item.averageStars} / 5
+                  </span>
+                </div>
+
               </div>
 
             </div>
@@ -272,14 +335,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   if (onClose) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-        <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border-2 border-pink-100 p-6 max-h-[90vh] overflow-y-auto relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 z-20"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
+        <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border-2 border-pink-100 p-6 sm:p-8 max-h-[90vh] overflow-y-auto relative">
           {content}
         </div>
       </div>
