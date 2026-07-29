@@ -434,8 +434,10 @@ export default function App() {
 
       {isAddSessionOpen && (
         <AddSessionModal
+          isOpen={isAddSessionOpen}
           classes={classes}
           students={students}
+          initialClassId={addSessionClassId}
           defaultClassId={addSessionClassId}
           onClose={() => setIsAddSessionOpen(false)}
           onSessionAdded={loadData}
