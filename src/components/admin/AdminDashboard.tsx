@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Student, Class, Invoice, BankConfig, Session, User, UserRole } from '../../types';
 import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
@@ -29,6 +29,8 @@ import {
   AlertCircle,
   Clock,
   ChevronRight,
+  ArrowLeft,
+  Home,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -45,6 +47,7 @@ interface AdminDashboardProps {
   onOpenPublicLink: (hash: string) => void;
   onOpenAddSession: (classId?: string) => void;
   onOpenAccountManagement: () => void;
+  onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -61,6 +64,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenPublicLink,
   onOpenAddSession,
   onOpenAccountManagement,
+  onSetSubViewNavigation,
 }) => {
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
@@ -97,6 +101,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newStudentClassId, setNewStudentClassId] = useState(classes[0]?.id || '');
   const [newTuitionPrice, setNewTuitionPrice] = useState(2000000);
   const [newSessionCount, setNewSessionCount] = useState(8);
+
+  // Notify parent Header about Sub-View Navigation state
+  useEffect(() => {
+    if (onSetSubViewNavigation) {
+      if (inspectedClass) {
+        onSetSubViewNavigation(
+          true,
+          () => setInspectedClass(null),
+          () => {
+            setInspectedClass(null);
+            setActiveTab('timetable');
+          }
+        );
+      } else {
+        onSetSubViewNavigation(
+          false,
+          undefined,
+          () => setActiveTab('timetable')
+        );
+      }
+    }
+  }, [inspectedClass, onSetSubViewNavigation]);
 
   // Filtered Lists with Null Safeguards
   const safeClasses = classes || [];
@@ -177,15 +203,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
     return (
-      <ClassDetailsView
-        selectedClass={inspectedClass}
-        students={safeStudents}
-        sessions={sessions}
-        homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
-        onBack={() => setInspectedClass(null)}
-        onOpenAddSession={onOpenAddSession}
-        onOpenPublicStudentLink={onOpenPublicLink}
-      />
+      <div className="space-y-4">
+        {/* SUB-VIEW BREADCRUMB & BACK BUTTON */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-purple-100 dark:border-purple-800 shadow-2xs">
+          <button
+            onClick={() => setInspectedClass(null)}
+            className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Quản Lý
+          </button>
+          <span className="text-xs font-black text-slate-700 dark:text-purple-200 truncate">
+            Đang Xem Chi Tiết Lớp: {inspectedClass.className}
+          </span>
+          <button
+            onClick={() => {
+              setInspectedClass(null);
+              setActiveTab('timetable');
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
+          >
+            <Home className="w-3.5 h-3.5 mr-1" /> Home
+          </button>
+        </div>
+
+        <ClassDetailsView
+          selectedClass={inspectedClass}
+          students={safeStudents}
+          sessions={sessions}
+          homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+          onBack={() => setInspectedClass(null)}
+          onOpenAddSession={onOpenAddSession}
+          onOpenPublicStudentLink={onOpenPublicLink}
+        />
+      </div>
     );
   }
 
