@@ -3,6 +3,7 @@ import { Class, Student, Session, User as UserType } from '../../types';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from '../admin/ClassDetailsView';
 import { StudentPortal } from '../student/StudentPortal';
+import { HomeworkGradingWidget } from '../admin/HomeworkGradingWidget';
 import { StorageEngine } from '../../lib/storage';
 import {
   Calendar,
@@ -24,6 +25,8 @@ import {
   Home,
   ArrowLeft,
   Eye,
+  MessageSquare,
+  Bell,
 } from 'lucide-react';
 
 interface TeacherPortalProps {
@@ -34,6 +37,7 @@ interface TeacherPortalProps {
   onRefreshData: () => void;
   onOpenAddSession: (classId?: string) => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
+  targetSubmissionId?: string | null;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
@@ -44,8 +48,15 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onRefreshData,
   onOpenAddSession,
   onSetSubViewNavigation,
+  targetSubmissionId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'all_classes'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'grading' | 'schedule' | 'all_classes'>('today');
+
+  useEffect(() => {
+    if (targetSubmissionId) {
+      setActiveTab('grading');
+    }
+  }, [targetSubmissionId]);
 
   // Sub-View Inspection State (Keeps Teacher Portal Context Intact)
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
@@ -198,7 +209,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
               setInspectedClass(null);
               setActiveTab('today');
             }}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0 border border-slate-300"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
           >
             <Home className="w-3.5 h-3.5 mr-1" /> Home
           </button>
@@ -236,6 +247,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           }`}
         >
           Lịch Dạy Hôm Nay
+        </button>
+
+        <button
+          onClick={() => setActiveTab('grading')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'grading'
+              ? 'bg-rose-400 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5 mr-1" /> Bài Tập Cần Feedback
         </button>
 
         <button
@@ -324,7 +346,18 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 2: WEEKLY TIMETABLE FOR TEACHER */}
+      {/* TAB 2: HOMEWORK GRADING QUEUE FOR TEACHER */}
+      {activeTab === 'grading' && (
+        <HomeworkGradingWidget
+          currentUser={currentUser}
+          students={students}
+          classes={assignedClasses}
+          onRefreshData={onRefreshData}
+          targetSubmissionId={targetSubmissionId}
+        />
+      )}
+
+      {/* TAB 3: WEEKLY TIMETABLE FOR TEACHER */}
       {activeTab === 'schedule' && (
         <WeeklyTimetable
           classes={assignedClasses}
@@ -334,7 +367,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         />
       )}
 
-      {/* TAB 3: ALL ASSIGNED CLASSES LIST */}
+      {/* TAB 4: ALL ASSIGNED CLASSES LIST */}
       {activeTab === 'all_classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
