@@ -97,28 +97,12 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Thêm Vào </span>Màn Hình Chính
             </button>
 
-            {/* Gemini API Key Settings Button with Red Subtext */}
-            <button
-              onClick={onOpenGeminiSettings}
-              className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 transition text-left flex flex-col items-start shadow-sm"
-              title="Thiết lập Google Gemini API Key"
-            >
-              <div className="flex items-center text-rose-700 font-extrabold text-xs">
-                <Key className="w-3.5 h-3.5 mr-1 text-rose-600" />
-                <span>Settings (API Key)</span>
-              </div>
-              <span className="text-[9px] font-black text-rose-600 animate-pulse">
-                Lấy API key để sử dụng app
-              </span>
-            </button>
-
             {/* HIGHLY DECORATED STUNNING LEADERBOARD BUTTON */}
             <button
               onClick={onOpenLeaderboard}
               className="relative group px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white font-black text-xs transition-all duration-300 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-pink-500/35 hover:scale-105 flex items-center space-x-1.5 border-2 border-amber-200 overflow-hidden"
               title="Xem Bảng Thành Tích Thi Đua Vinh Danh"
             >
-              {/* Shimmer Light Effect Overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
               
               <div className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
@@ -132,15 +116,8 @@ export const Header: React.FC<HeaderProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
             </button>
 
-            {/* If in Public Student Link View */}
-            {activePublicHash ? (
-              <button
-                onClick={onExitPublicView}
-                className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md hover:from-purple-600 hover:to-pink-600 transition flex items-center"
-              >
-                ← Quay Về Trang Quản Lý
-              </button>
-            ) : (
+            {/* DO NOT SHOW "QUAY VỀ TRANG QUẢN LÝ" BUTTON IN PUBLIC LINK VIEW TO PREVENT UNINTENDED ACCESS */}
+            {!activePublicHash && (
               <>
                 {/* Logged in User Profile Info */}
                 {currentUser ? (
