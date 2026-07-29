@@ -151,13 +151,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isMsVyTeacher = (teacherName?: string, teacherId?: string) => {
     if (!teacherName && !teacherId) return false;
     const nameLower = (teacherName || '').toLowerCase();
-    return nameLower.includes('vy') || teacherId === 'u_super_admin' || teacherId === currentUser?.uid;
+    return (
+      nameLower.includes('vy') ||
+      teacherId === 'u_super_admin' ||
+      teacherId === currentUser?.uid ||
+      nameLower.includes('điều hành')
+    );
   };
 
-  // TIMETABLE CLASSES: In Super Admin mode, ONLY show Ms. Vy's own classes on main timetable!
-  const msVyTimetableClasses = isSuperAdmin
-    ? safeClasses.filter((cls) => isMsVyTeacher(cls.teacherName, cls.teacherId))
-    : safeClasses;
+  // TIMETABLE CLASSES: ALWAYS filter strictly ONLY Ms. Vy's own classes for Ms. Vy's timetable!
+  const msVyTimetableClasses = safeClasses.filter((cls) => isMsVyTeacher(cls.teacherName, cls.teacherId));
 
   // OTHER TEACHERS LIST (EXCLUDING MS. VY)
   const allUsers = StorageEngine.getUsers() || [];
