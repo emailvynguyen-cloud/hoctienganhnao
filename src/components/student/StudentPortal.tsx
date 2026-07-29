@@ -64,7 +64,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   if (!currentStudent) {
     return (
-      <div className="p-8 text-center bg-white rounded-3xl border border-purple-100 text-xs text-slate-500 font-bold max-w-md mx-auto my-12 shadow-sm space-y-4">
+      <div className="p-8 text-center bg-white rounded-3xl border border-pink-100 text-xs text-slate-500 font-bold max-w-md mx-auto my-12 shadow-sm space-y-4">
         <p>Hệ thống đang sẵn sàng. Vui lòng đăng nhập tài khoản hoặc dùng đường link cá nhân.</p>
       </div>
     );
@@ -149,22 +149,22 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     const totalItems = itemsList.length;
     const sessionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 100;
 
-    // ALTERNATING PASTEL STYLES
+    // ALTERNATING SOFT PASTEL STYLES
     const mod = Math.abs(session.sessionNumber) % 4;
-    let cardBgStyle = 'bg-gradient-to-r from-pink-50/90 via-purple-50/70 to-pink-50/90 border-pink-200';
+    let cardBgStyle = 'bg-gradient-to-r from-pink-50/90 via-rose-50/70 to-pink-50/90 border-pink-200';
     if (mod === 2) cardBgStyle = 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200';
     if (mod === 3) cardBgStyle = 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200';
-    if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-indigo-50/90 border-indigo-200';
+    if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-sky-50/90 via-blue-50/70 to-sky-50/90 border-sky-200';
 
     return (
       <div
         key={session.id}
-        className={`rounded-3xl border p-6 shadow-sm space-y-4 hover:shadow-md transition duration-200 dark:bg-slate-900 ${cardBgStyle}`}
+        className={`rounded-3xl border p-6 shadow-xs space-y-4 hover:shadow-md transition duration-200 dark:bg-slate-900 ${cardBgStyle}`}
       >
         {/* Session Header: Number, Date, Record Video */}
-        <div className="flex items-center justify-between border-b border-purple-200/60 pb-3">
+        <div className="flex items-center justify-between border-b border-pink-200/60 pb-3">
           <div className="flex items-center space-x-3">
-            <span className="w-10 h-10 rounded-2xl bg-purple-600 text-white font-black text-sm flex items-center justify-center shadow-md">
+            <span className="w-10 h-10 rounded-2xl bg-pink-400 text-white font-black text-sm flex items-center justify-center shadow-xs">
               #{session.sessionNumber}
             </span>
             <div>
@@ -173,7 +173,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   Buổi Học Số {session.sessionNumber}
                 </h4>
                 {isRecent && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-500 text-white uppercase animate-pulse">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase animate-pulse">
                     Mới Nhất
                   </span>
                 )}
@@ -189,19 +189,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               href={session.recordLink}
               target="_blank"
               rel="noreferrer"
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition flex items-center shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
             >
-              <Video className="w-3.5 h-3.5 mr-1" /> Xem Record Video
+              <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
             </a>
           )}
         </div>
 
         {/* Lesson Content */}
         <div className="space-y-1">
-          <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+          <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
             📘 Nội Dung Bài Học:
           </span>
-          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-purple-100/80 backdrop-blur-xs">
+          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs">
             {session.lessonContent}
           </p>
         </div>
@@ -227,7 +227,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
         {/* Homework Items Checklist */}
         <div className="space-y-2">
-          <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+          <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
             📝 Bài Tập Về Nhà Nền Nổi ({itemsList.length} bài):
           </span>
 
@@ -241,7 +241,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   className={`p-3.5 rounded-2xl border transition flex items-center justify-between text-xs ${
                     isChecked
                       ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 font-bold'
-                      : 'bg-white/90 dark:bg-slate-800/90 border-purple-100 text-slate-800'
+                      : 'bg-white/90 dark:bg-slate-800/90 border-pink-100 text-slate-800'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -249,8 +249,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       onClick={() => handleToggleTaskCheck(hwItem.id)}
                       className={`w-6 h-6 rounded-xl flex items-center justify-center transition border-2 ${
                         isChecked
-                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
-                          : 'border-purple-300 hover:border-purple-500 bg-white'
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                          : 'border-pink-300 hover:border-pink-500 bg-white'
                       }`}
                       title={isChecked ? 'Bấm để hủy tích' : 'Bấm để tích đã làm bài này'}
                     >
@@ -271,7 +271,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       href={hwItem.attachmentUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-3 py-1 rounded-xl bg-purple-100 text-purple-800 text-[11px] font-bold hover:bg-purple-200 transition shrink-0"
+                      className="px-3 py-1 rounded-xl bg-pink-100 text-pink-900 text-[11px] font-bold hover:bg-pink-200 transition shrink-0"
                     >
                       🔗 Xem Link Đính Kèm
                     </a>
@@ -285,21 +285,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
 
         {/* MOTIVATING MINI PROGRESS BAR STRIP FOR THIS SESSION */}
-        <div className="pt-3 border-t border-purple-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="pt-3 border-t border-pink-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2 flex-1 max-w-md">
-            <span className="text-purple-950 dark:text-purple-200 font-black flex items-center shrink-0">
+            <span className="text-pink-950 dark:text-pink-200 font-black flex items-center shrink-0">
               <BarChart2 className="w-4 h-4 mr-1 text-pink-500 animate-pulse" /> Tiến độ bài tập buổi #{session.sessionNumber}:
             </span>
 
             {/* CUTE MOTIVATING MINI PROGRESS BAR CONTAINER */}
-            <div className="flex-1 bg-purple-200/60 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-purple-300/80 shadow-inner">
+            <div className="flex-1 bg-pink-100 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-pink-200 shadow-inner">
               <div
                 className={`h-full rounded-full transition-all duration-700 shadow-xs ${
                   sessionPercent === 100
-                    ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600'
+                    ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-400'
                     : sessionPercent > 0
-                    ? 'bg-gradient-to-r from-amber-400 via-pink-400 to-purple-500'
-                    : 'bg-rose-400'
+                    ? 'bg-gradient-to-r from-amber-300 via-pink-300 to-rose-300'
+                    : 'bg-rose-300'
                 }`}
                 style={{ width: `${sessionPercent}%` }}
               />
@@ -310,10 +310,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           <div className="shrink-0">
             <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs flex items-center space-x-1.5 ${
               sessionPercent === 100
-                ? 'bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-950 border border-emerald-300'
+                ? 'bg-emerald-100 text-emerald-950 border border-emerald-300'
                 : sessionPercent > 0
-                ? 'bg-gradient-to-r from-amber-100 to-pink-100 text-amber-950 border border-amber-300'
-                : 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-950 border border-rose-300'
+                ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                : 'bg-rose-100 text-rose-950 border border-rose-300'
             }`}>
               <span>Đã làm <strong>{completedItems} / {totalItems}</strong> bài ({sessionPercent}%)</span>
               {sessionPercent === 100 ? (
@@ -335,7 +335,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     <div className="space-y-6 max-w-6xl mx-auto">
       
       {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND */}
-      <div className="bg-gradient-to-r from-pink-100/90 via-purple-100/90 to-indigo-100/90 dark:from-purple-950 dark:to-slate-900 rounded-3xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-sky-100/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200 dark:border-slate-800 p-6 shadow-sm relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
           
           {/* Avatar with Camera Overlay */}
@@ -346,11 +346,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               onError={(e) => {
                 (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
               }}
-              className="w-20 h-20 rounded-3xl object-cover border-4 border-white shadow-md transition group-hover:scale-105"
+              className="w-20 h-20 rounded-3xl object-cover border-4 border-white shadow-sm transition group-hover:scale-105"
             />
             <button
               onClick={() => setIsAvatarModalOpen(true)}
-              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-purple-600 text-white shadow-md hover:bg-purple-700 transition flex items-center justify-center border-2 border-white cursor-pointer"
+              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-pink-400 text-white shadow-xs hover:bg-pink-500 transition flex items-center justify-center border-2 border-white cursor-pointer"
               title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -362,7 +362,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <h2 className="text-xl font-black text-slate-900 dark:text-white">
                 {currentStudent.name}
               </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs inline-block">
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-xs inline-block">
                 {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
               </span>
             </div>
@@ -375,15 +375,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
           </div>
 
-          {/* Remaining Sessions Highlight Pill */}
-          <div className="bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 text-white p-4 rounded-3xl shadow-xl text-center min-w-[150px] shrink-0 border-2 border-white/40">
-            <span className="text-[10px] font-black uppercase tracking-wider block opacity-90">
+          {/* REDESIGNED SOFT PASTEL CARD: Số Buổi Học Phí Còn Lại */}
+          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 p-4.5 rounded-3xl shadow-sm text-center min-w-[150px] shrink-0 border-2 border-pink-300">
+            <span className="text-[10px] font-black uppercase tracking-wider block text-pink-900 opacity-90">
               Số Buổi Học Phí Còn Lại
             </span>
-            <div className="text-3xl font-black mt-0.5">
+            <div className="text-3xl font-black mt-0.5 text-pink-950">
               {currentStudent.remainingSessions} <span className="text-sm font-bold">Buổi</span>
             </div>
-            <span className="text-[10px] font-medium block mt-1 opacity-80">
+            <span className="text-[10px] font-medium block mt-1 text-pink-800">
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
           </div>
@@ -397,19 +397,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         starsCount={currentStudent.stars}
       />
 
-      {/* 3. KHO TÀI LIỆU & GIÁO TRÌNH XUYÊN SUỐT KHÓA HỌC */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100 dark:border-purple-800 p-6 shadow-sm space-y-5">
+      {/* 3. REDESIGNED SOFT PASTEL CARD: KHO TÀI LIỆU & GIÁO TRÌNH CHÍNH */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-sm space-y-5">
         
         {/* PHẦN 1: LINK TÀI LIỆU CHÍNH */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
-            <FolderOpen className="w-5 h-5 text-purple-600 animate-pulse" />
-            <h3 className="font-black text-base text-purple-950 dark:text-white uppercase tracking-wider">
+            <FolderOpen className="w-5 h-5 text-sky-500 animate-pulse" />
+            <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
               Kho Tài Liệu & Giáo Trình Chính
             </h3>
           </div>
 
-          <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-500 text-white shadow-lg">
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-sky-100 via-blue-50 to-emerald-100 text-sky-950 shadow-xs border-2 border-sky-200">
             <div className="flex flex-wrap gap-2.5">
               {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
                 primaryClass.resourceLinks.map((res) => (
@@ -418,9 +418,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     href={res.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-4 py-2.5 rounded-2xl bg-white text-purple-950 font-extrabold text-xs hover:bg-purple-50 transition shadow-md flex items-center shrink-0 border border-white/60"
+                    className="px-4 py-2.5 rounded-2xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center shrink-0 border border-sky-200"
                   >
-                    <ExternalLink className="w-4 h-4 mr-2 text-purple-600" />
+                    <ExternalLink className="w-4 h-4 mr-2 text-sky-600" />
                     {res.title}
                   </a>
                 ))
@@ -429,9 +429,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   href="https://drive.google.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2.5 rounded-2xl bg-white text-purple-950 font-extrabold text-xs hover:bg-purple-50 transition shadow-md flex items-center border border-white/60"
+                  className="px-4 py-2.5 rounded-2xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center border border-sky-200"
                 >
-                  <ExternalLink className="w-4 h-4 mr-2 text-purple-600" />
+                  <ExternalLink className="w-4 h-4 mr-2 text-sky-600" />
                   Mở Thư Mục Giáo Trình Chính
                 </a>
               )}
@@ -440,15 +440,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
 
         {/* PHẦN 2: SEARCHABLE / COLLAPSIBLE SESSION MATERIALS */}
-        <div className="pt-2 border-t border-purple-100 dark:border-purple-800 space-y-3">
+        <div className="pt-2 border-t border-pink-100 dark:border-slate-800 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-xs font-extrabold text-slate-700 dark:text-purple-300 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               📎 Tài Liệu Theo Từng Buổi Học ({allSessionMaterials.length} File)
             </span>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-56">
-                <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-2.5" />
+                <Search className="w-3.5 h-3.5 text-pink-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   placeholder="Tìm tài liệu buổi học..."
@@ -457,21 +457,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     setMaterialSearchQuery(e.target.value);
                     if (!isExtraMaterialsOpen) setIsExtraMaterialsOpen(true);
                   }}
-                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-purple-200 text-xs bg-purple-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-pink-200 text-xs bg-pink-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
                 />
               </div>
 
               <button
                 onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
-                className="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 text-xs font-extrabold transition flex items-center shrink-0"
+                className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 text-xs font-extrabold transition flex items-center shrink-0 border border-pink-200"
               >
                 {isExtraMaterialsOpen ? (
                   <>
-                    <ChevronUp className="w-4 h-4 mr-1 text-purple-600" /> Thu Gọn
+                    <ChevronUp className="w-4 h-4 mr-1 text-pink-600" /> Thu Gọn
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="w-4 h-4 mr-1 text-purple-600" /> Mở Xem
+                    <ChevronDown className="w-4 h-4 mr-1 text-pink-600" /> Mở Xem
                   </>
                 )}
               </button>
@@ -488,16 +488,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     href={mat.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-3.5 rounded-2xl border border-purple-100 bg-purple-50/50 hover:border-purple-300 transition flex items-center space-x-3 group"
+                    className="p-3.5 rounded-2xl border border-pink-100 bg-pink-50/40 hover:border-pink-300 transition flex items-center space-x-3 group"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0">
                       <FileText className="w-4 h-4" />
                     </div>
                     <div>
-                      <h5 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-600 transition">
+                      <h5 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition">
                         Buổi {mat.sessionNum}: {mat.title}
                       </h5>
-                      <span className="text-[10px] text-purple-600 font-bold underline">
+                      <span className="text-[10px] text-pink-600 font-bold underline">
                         Bấm để xem / tải về →
                       </span>
                     </div>
@@ -518,7 +518,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
             <Flame className="w-5 h-5 mr-2 text-pink-500 animate-pulse" /> 2 Buổi Học Mới Nhất (Cập Nhật Liên Tục)
           </h3>
-          <span className="text-xs text-purple-700 font-black bg-purple-100 px-3 py-1 rounded-full">
+          <span className="text-xs text-pink-900 font-black bg-pink-100 px-3 py-1 rounded-full border border-pink-200">
             Tất cả bài tập đều có tích chọn tự động
           </span>
         </div>
@@ -526,7 +526,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {recent2Sessions.length > 0 ? (
           recent2Sessions.map((s) => renderSessionCard(s, true))
         ) : (
-          <div className="p-8 text-center bg-white rounded-3xl border border-purple-100 text-xs text-slate-500 italic">
+          <div className="p-8 text-center bg-white rounded-3xl border border-pink-100 text-xs text-slate-500 italic">
             Chưa có thông tin buổi học nào được ghi nhận.
           </div>
         )}
@@ -537,18 +537,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         <div className="space-y-4 pt-2">
           <button
             onClick={() => setIsOlderSessionsOpen(!isOlderSessionsOpen)}
-            className="w-full p-4 rounded-3xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 hover:border-purple-400 transition flex items-center justify-between text-xs font-black text-purple-950 dark:text-purple-200 shadow-sm"
+            className="w-full p-4 rounded-3xl bg-white dark:bg-slate-900 border border-pink-200 dark:border-slate-800 hover:border-pink-300 transition flex items-center justify-between text-xs font-black text-slate-800 dark:text-slate-200 shadow-xs"
           >
             <span className="flex items-center">
-              <History className="w-4 h-4 mr-2 text-purple-600" />
+              <History className="w-4 h-4 mr-2 text-pink-500" />
               Xem Lại Các Buổi Học Cũ Hơn ({olderSessions.length} buổi)
             </span>
             {isOlderSessionsOpen ? (
-              <span className="text-purple-600 flex items-center">
+              <span className="text-pink-600 flex items-center">
                 Thu gọn danh sách <ChevronUp className="w-4 h-4 ml-1" />
               </span>
             ) : (
-              <span className="text-purple-600 flex items-center">
+              <span className="text-pink-600 flex items-center">
                 Mở rộng tất cả {olderSessions.length} buổi <ChevronDown className="w-4 h-4 ml-1" />
               </span>
             )}
@@ -564,8 +564,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* AVATAR KAKAOTALK SELECTOR / UPLOAD MODAL */}
       {isAvatarModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border-2 border-purple-100 p-6 space-y-6 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border-2 border-pink-100 p-6 space-y-6 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setIsAvatarModalOpen(false)}
@@ -585,7 +585,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             {/* KAKAOTALK FRIENDS AVATAR GRID WITH SAFE FALLBACK */}
             <div className="space-y-2">
-              <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+              <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
                 ✨ Bộ Cặp Đôi KakaoTalk Friends Nổi Tiếng:
               </span>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
@@ -593,7 +593,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   <button
                     key={kt.id}
                     onClick={() => handleSelectKakaoAvatar(kt.url || kt.svgDataUrl)}
-                    className="p-2 rounded-2xl border-2 border-purple-100 hover:border-purple-500 hover:bg-purple-50 transition flex flex-col items-center space-y-1 group"
+                    className="p-2 rounded-2xl border-2 border-pink-100 hover:border-pink-400 hover:bg-pink-50 transition flex flex-col items-center space-y-1 group"
                   >
                     <img
                       src={kt.url || kt.svgDataUrl}
@@ -610,12 +610,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
 
             {/* CUSTOM UPLOAD IMAGE SECTION */}
-            <div className="pt-3 border-t border-purple-100 space-y-2">
-              <span className="text-xs font-extrabold text-purple-900 dark:text-purple-300 uppercase tracking-wider block">
+            <div className="pt-3 border-t border-pink-100 space-y-2">
+              <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
                 📤 Hoặc Tải Ảnh Tự Chọn Từ Máy Tính / Điện Thoại:
               </span>
-              <label className="p-4 rounded-2xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-xs text-purple-900 font-bold">
-                <Upload className="w-6 h-6 text-purple-600" />
+              <label className="p-4 rounded-2xl border-2 border-dashed border-pink-300 hover:border-pink-400 bg-pink-50/50 hover:bg-pink-100/50 transition cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-xs text-pink-950 font-bold">
+                <Upload className="w-6 h-6 text-pink-500" />
                 <span>Bấm vào đây để chọn file ảnh từ máy (Max 2MB)</span>
                 <input type="file" accept="image/*" onChange={handleFileUploadAvatar} className="hidden" />
               </label>
