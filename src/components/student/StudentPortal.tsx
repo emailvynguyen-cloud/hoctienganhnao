@@ -375,17 +375,29 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
           </div>
 
-          {/* REDESIGNED SOFT PASTEL CARD: Số Buổi Học Phí Còn Lại */}
-          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 p-4.5 rounded-3xl shadow-sm text-center min-w-[150px] shrink-0 border-2 border-pink-300">
-            <span className="text-[10px] font-black uppercase tracking-wider block text-pink-900 opacity-90">
-              Số Buổi Học Phí Còn Lại
+          {/* REDESIGNED BALANCED CARD: SỐ BUỔI CÒN LẠI */}
+          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 px-5 py-4.5 rounded-3xl shadow-sm border-2 border-pink-300 min-w-[170px] sm:min-w-[190px] min-h-[135px] shrink-0 flex flex-col items-center justify-between text-center self-center sm:self-auto">
+            
+            {/* Header Title */}
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-pink-900/90 text-center block pt-0.5">
+              SỐ BUỔI CÒN LẠI
             </span>
-            <div className="text-3xl font-black mt-0.5 text-pink-950">
-              {currentStudent.remainingSessions} <span className="text-sm font-bold">Buổi</span>
+
+            {/* Main Number & Unit on Same Baseline */}
+            <div className="flex items-baseline justify-center space-x-1.5 my-1.5">
+              <span className="text-3xl sm:text-4xl font-black text-pink-950 font-mono leading-none tracking-tight">
+                {currentStudent.remainingSessions}
+              </span>
+              <span className="text-sm sm:text-base font-extrabold text-pink-900 leading-none">
+                Buổi
+              </span>
             </div>
-            <span className="text-[10px] font-medium block mt-1 text-pink-800">
+
+            {/* Footer Package Info */}
+            <span className="text-[11px] sm:text-xs font-semibold text-pink-800/90 text-center block pb-0.5">
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
+
           </div>
 
         </div>
