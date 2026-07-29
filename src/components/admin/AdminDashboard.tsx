@@ -339,16 +339,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <MessageSquare className="w-3.5 h-3.5 mr-1" /> Chấm Bài Tập Về Nhà
         </button>
 
-        <button
-          onClick={() => setActiveTab('teachers')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
-            activeTab === 'teachers'
-              ? 'bg-sky-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
-          }`}
-        >
-          <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
-        </button>
+        {/* TEACHERS MANAGEMENT TAB - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (
+          <button
+            onClick={() => setActiveTab('teachers')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+              activeTab === 'teachers'
+                ? 'bg-sky-400 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên
+          </button>
+        )}
 
         {/* REVENUE TAB - SUPER ADMIN ONLY */}
         {isSuperAdmin && (
@@ -422,8 +425,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 3: TEACHERS MANAGEMENT */}
-      {activeTab === 'teachers' && (
+      {/* TAB 3: TEACHERS MANAGEMENT - SUPER ADMIN ONLY */}
+      {activeTab === 'teachers' && isSuperAdmin && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
