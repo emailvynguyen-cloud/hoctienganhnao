@@ -4,6 +4,7 @@ import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
+import { StudentPortal } from '../student/StudentPortal';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
@@ -31,6 +32,7 @@ import {
   ChevronRight,
   ArrowLeft,
   Home,
+  Eye,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -44,7 +46,6 @@ interface AdminDashboardProps {
   onUpdateStudents: () => void;
   onUpdateClasses: () => void;
   onUpdateInvoices: () => void;
-  onOpenPublicLink: (hash: string) => void;
   onOpenAddSession: (classId?: string) => void;
   onOpenAccountManagement: () => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
@@ -61,7 +62,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateStudents,
   onUpdateClasses,
   onUpdateInvoices,
-  onOpenPublicLink,
   onOpenAddSession,
   onOpenAccountManagement,
   onSetSubViewNavigation,
@@ -71,8 +71,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
 
-  // Dedicated Class Details Inspection View
+  // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact)
   const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
+  const [inspectedStudent, setInspectedStudent] = useState<Student | null>(null);
 
   // Selected Student for Receipt Generator Tool
   const [selectedStudentForReceipt, setSelectedStudentForReceipt] = useState<Student | null>(null);
@@ -105,7 +106,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Notify parent Header about Sub-View Navigation state
   useEffect(() => {
     if (onSetSubViewNavigation) {
-      if (inspectedClass) {
+      if (inspectedStudent) {
+        onSetSubViewNavigation(
+          true,
+          () => setInspectedStudent(null),
+          () => {
+            setInspectedStudent(null);
+            setInspectedClass(null);
+            setActiveTab('timetable');
+          }
+        );
+      } else if (inspectedClass) {
         onSetSubViewNavigation(
           true,
           () => setInspectedClass(null),
@@ -122,7 +133,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         );
       }
     }
-  }, [inspectedClass, onSetSubViewNavigation]);
+  }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
 
   // Filtered Lists with Null Safeguards
   const safeClasses = classes || [];
@@ -200,6 +211,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onUpdateStudents();
   };
 
+  // IF INSPECTING A STUDENT LEARNING PAGE (MANAGER PORTAL CONTEXT INTACT)
+  if (inspectedStudent) {
+    return (
+      <div className="space-y-4">
+        {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-purple-200 dark:border-purple-800 shadow-xs">
+          <button
+            onClick={() => setInspectedStudent(null)}
+            className="px-4 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 font-extrabold text-xs transition flex items-center shrink-0 border border-purple-300"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Trang Quản Lý
+          </button>
+
+          <div className="text-center">
+            <span className="text-xs font-black text-purple-950 dark:text-purple-200 block">
+              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{inspectedStudent.name}</strong>
+            </span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase">
+              (Bạn vẫn đang ở Quyền {isSuperAdmin ? 'Super Admin' : 'Admin'} Management Portal)
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              setInspectedStudent(null);
+              setInspectedClass(null);
+              setActiveTab('timetable');
+            }}
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center shrink-0 border border-slate-300"
+          >
+            <Home className="w-3.5 h-3.5 mr-1" /> Home Quản Lý
+          </button>
+        </div>
+
+        <StudentPortal
+          currentStudent={inspectedStudent}
+          classes={safeClasses}
+          sessions={sessions}
+          homeworkTasks={StorageEngine.getHomeworkTasks()}
+          homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+          invoices={invoices}
+          bankConfig={bankConfig}
+          onRefreshData={onUpdateStudents}
+        />
+      </div>
+    );
+  }
+
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
     return (
@@ -222,7 +281,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }}
             className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
           >
-            <Home className="w-3.5 h-3.5 mr-1" /> Home
+            <Home className="w-3.5 h-3.5 mr-1" /> Home Quản Lý
           </button>
         </div>
 
@@ -233,7 +292,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
           onBack={() => setInspectedClass(null)}
           onOpenAddSession={onOpenAddSession}
-          onOpenPublicStudentLink={onOpenPublicLink}
+          onOpenPublicStudentLink={(hash) => {
+            const foundStd = safeStudents.find((s) => s.publicHash === hash);
+            if (foundStd) {
+              setInspectedStudent(foundStd);
+            }
+          }}
         />
       </div>
     );
@@ -777,10 +841,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => onOpenPublicLink(std.publicHash)}
-                    className="px-3.5 py-1.5 rounded-xl bg-pink-100 text-pink-800 font-bold text-xs hover:bg-pink-200 transition flex items-center"
+                    onClick={() => setInspectedStudent(std)}
+                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 transition flex items-center shadow-xs"
                   >
-                    <Share2 className="w-3.5 h-3.5 mr-1" /> Mở Link Xem Học Tập
+                    <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const fullUrl = `${window.location.origin}${window.location.pathname}?hash=${std.publicHash}`;
+                      navigator.clipboard.writeText(fullUrl);
+                      alert(`Đã copy link học tập cá nhân của ${std.name}!\n\nLink: ${fullUrl}`);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-pink-100 text-pink-800 font-bold text-xs hover:bg-pink-200 transition flex items-center"
+                    title="Copy đường link gửi cho Phụ Huynh / Học Viên"
+                  >
+                    <Share2 className="w-3.5 h-3.5 mr-1" /> Copy Link Gửi Học Viên
                   </button>
                 </div>
               </div>
