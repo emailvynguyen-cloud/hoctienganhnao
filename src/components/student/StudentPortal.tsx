@@ -375,26 +375,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
           </div>
 
-          {/* REDESIGNED BALANCED CARD: SỐ BUỔI CÒN LẠI */}
-          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 px-5 py-4.5 rounded-3xl shadow-sm border-2 border-pink-300 min-w-[170px] sm:min-w-[190px] min-h-[135px] shrink-0 flex flex-col items-center justify-between text-center self-center sm:self-auto">
+          {/* 3-TIER CENTERED MINI STATISTIC CARD: SỐ BUỔI CÒN LẠI */}
+          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 px-6 py-5 rounded-3xl shadow-xs border-2 border-pink-300 min-w-[180px] sm:min-w-[200px] min-h-[150px] sm:min-h-[160px] shrink-0 flex flex-col items-center justify-center text-center self-center sm:self-auto gap-3">
             
-            {/* Header Title */}
-            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-pink-900/90 text-center block pt-0.5">
+            {/* Tier 1 — Title */}
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-pink-900/90 text-center block">
               SỐ BUỔI CÒN LẠI
             </span>
 
-            {/* Main Number & Unit on Same Baseline */}
-            <div className="flex items-baseline justify-center space-x-1.5 my-1.5">
-              <span className="text-3xl sm:text-4xl font-black text-pink-950 font-mono leading-none tracking-tight">
+            {/* Tier 2 — Main Number & Unit on Same Baseline */}
+            <div className="flex items-baseline justify-center gap-1.5">
+              <span className="text-3xl font-black text-pink-950 font-mono leading-none tracking-tight">
                 {currentStudent.remainingSessions}
               </span>
-              <span className="text-sm sm:text-base font-extrabold text-pink-900 leading-none">
+              <span className="text-sm sm:text-base font-bold text-pink-900 leading-none">
                 Buổi
               </span>
             </div>
 
-            {/* Footer Package Info */}
-            <span className="text-[11px] sm:text-xs font-semibold text-pink-800/90 text-center block pb-0.5">
+            {/* Tier 3 — Package Info */}
+            <span className="text-[11px] sm:text-xs font-medium text-pink-800/90 text-center block">
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
 
