@@ -72,9 +72,11 @@ export class SupabaseRealtimeChannel {
     const wsUrl = `wss://qbzmamuahgmaruwcqfyl.supabase.co/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
 
     try {
+      console.log('[SUPABASE REALTIME DEBUG] 1. WebSocket created:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
+        console.log('[SUPABASE REALTIME DEBUG] 2. WebSocket opened successfully');
         // Join topic for postgres_changes on schema 'public' (matches supabase.channel(...).on('postgres_changes', ...))
         const joinMsg = {
           topic: `realtime:${this.channelName}`,
@@ -88,12 +90,32 @@ export class SupabaseRealtimeChannel {
           },
           ref: Date.now().toString()
         };
+        console.log('[SUPABASE REALTIME DEBUG] 3. Sending phx_join payload:', joinMsg);
         this.ws?.send(JSON.stringify(joinMsg));
       };
 
       this.ws.onmessage = (event) => {
+        console.log('[SUPABASE REALTIME DEBUG] 4. Raw WS message received:', event.data);
         try {
           const data = JSON.parse(event.data);
+          console.log('[SUPABASE REALTIME DEBUG] 5. Parsed WS object:', data);
+
+          if (data && data.event === 'phx_reply') {
+            console.log('[SUPABASE REALTIME DEBUG] 6. phx_reply status & response:', {
+              status: data.payload?.status,
+              response: data.payload?.response,
+            });
+          }
+
+          if (data && data.event === 'postgres_changes') {
+            console.log('[SUPABASE REALTIME DEBUG] 7. postgres_changes details:', {
+              schema: data.payload?.schema || data.payload?.data?.schema,
+              table: data.payload?.table || data.payload?.data?.table,
+              eventType: data.payload?.type || data.payload?.data?.type || data.event,
+              payload: data.payload,
+            });
+          }
+
           if (data && (data.event === 'postgres_changes' || data.event === 'INSERT' || data.event === 'UPDATE' || data.event === 'DELETE' || (data.payload && data.payload.data))) {
             const changePayload = data.payload?.data || data.payload;
             this.onDataChangeCallback(changePayload);
@@ -101,20 +123,24 @@ export class SupabaseRealtimeChannel {
         } catch (e) {}
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (err) => {
+        console.error('[SUPABASE REALTIME DEBUG] 8. WebSocket error encountered:', err);
         this.scheduleReconnect();
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
+        console.log('[SUPABASE REALTIME DEBUG] 9. WebSocket closed:', { code: event?.code, reason: event?.reason });
         this.scheduleReconnect();
       };
     } catch (e) {
+      console.error('[SUPABASE REALTIME DEBUG] WebSocket connection exception:', e);
       this.scheduleReconnect();
     }
   }
 
   private scheduleReconnect() {
     if (this.isClosedManually || this.reconnectTimer) return;
+    console.log('[SUPABASE REALTIME DEBUG] 10. Reconnect scheduled in 2s');
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
