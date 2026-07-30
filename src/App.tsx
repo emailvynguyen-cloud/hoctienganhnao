@@ -351,10 +351,11 @@ export default function App() {
 
       </main>
 
-      {/* SYSTEM MODALS */}
-      {isLoginOpen && (
+      {/* MANDATORY SYSTEM LOGIN MODAL (EXCEPT PUBLIC STUDENT SECRET LINK) */}
+      {(isLoginOpen || (!currentUser && !activePublicHash)) && (
         <LoginModal
-          isOpen={isLoginOpen}
+          isOpen={true}
+          canClose={!!currentUser}
           onClose={() => setIsLoginOpen(false)}
           onLoginSuccess={(user) => {
             setCurrentUser(user);

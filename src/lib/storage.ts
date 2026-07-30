@@ -83,7 +83,7 @@ async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
 
 export const StorageEngine = {
   getCurrentUser(): User | null {
-    return getItem<User | null>(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
+    return getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
   },
   setCurrentUser(user: User | null) {
     if (user) setItem(STORAGE_KEYS.CURRENT_USER, user);
