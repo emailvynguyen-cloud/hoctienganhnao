@@ -46,6 +46,7 @@ interface HeaderProps {
   onNavigateHome?: () => void;
   onNavigateBack?: () => void;
   canNavigateBack?: boolean;
+  onNotificationClick?: (submissionId: string) => void;
   onSelectNotificationSubmission?: (submissionId: string) => void;
 }
 
@@ -65,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateHome,
   onNavigateBack,
   canNavigateBack = false,
+  onNotificationClick,
   onSelectNotificationSubmission,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
@@ -109,14 +111,22 @@ export const Header: React.FC<HeaderProps> = ({
       prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
     );
     setIsNotifDropdownOpen(false);
-    if (onSelectNotificationSubmission && notif.submissionId) {
-      onSelectNotificationSubmission(notif.submissionId);
+
+    const handler = onNotificationClick || onSelectNotificationSubmission;
+    if (handler && notif.submissionId) {
+      handler(notif.submissionId);
     }
   };
 
   const handleMarkAllAsRead = () => {
     StorageEngine.markAllNotificationsAsRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const handleDismissSingleNotif = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    StorageEngine.markNotificationAsRead(id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   return (
@@ -266,19 +276,32 @@ export const Header: React.FC<HeaderProps> = ({
                           <div
                             key={n.id}
                             onClick={() => handleNotificationClick(n)}
-                            className={`p-3 rounded-2xl border transition cursor-pointer space-y-1 ${
+                            className={`p-3.5 rounded-2xl border transition cursor-pointer space-y-1 relative group ${
                               n.isRead
-                                ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 opacity-70'
-                                : 'bg-pink-50/80 border-pink-300 shadow-2xs hover:bg-pink-100/80'
+                                ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 opacity-60'
+                                : 'bg-pink-50/90 border-pink-300 shadow-2xs hover:bg-pink-100'
                             }`}
                           >
-                            <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
-                              <span>{n.title}</span>
-                              <span className="text-[10px] text-pink-600 font-mono">{n.completionTime}</span>
+                            <div className="flex items-center justify-between font-extrabold text-slate-900 dark:text-white">
+                              <span className="truncate pr-2">{n.title}</span>
+                              <div className="flex items-center space-x-1 shrink-0">
+                                <span className="text-[10px] text-pink-600 font-mono">{n.completionTime}</span>
+                                {!n.isRead && (
+                                  <button
+                                    onClick={(e) => handleDismissSingleNotif(e, n.id)}
+                                    className="p-0.5 rounded-full hover:bg-pink-200 text-slate-400 hover:text-pink-700 transition cursor-pointer"
+                                    title="Tắt thông báo này"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-[11px] text-slate-600 font-medium">{n.message}</p>
+
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{n.message}</p>
+
                             <div className="pt-1 flex items-center justify-end">
-                              <span className="text-[10px] font-black text-pink-700 hover:underline flex items-center">
+                              <span className="text-[10px] font-black text-pink-700 dark:text-pink-400 hover:underline flex items-center">
                                 XEM BÀI / CHẤM BÀI →
                               </span>
                             </div>

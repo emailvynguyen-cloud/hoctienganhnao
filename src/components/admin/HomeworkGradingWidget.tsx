@@ -63,6 +63,17 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
     setStars(sub.ratingStars || 5);
   };
 
+  React.useEffect(() => {
+    if (targetSubmissionId) {
+      const sub = scopedSubmissions.find((s) => s && s.id === targetSubmissionId);
+      if (sub) {
+        handleOpenGrading(sub);
+      } else {
+        setSelectedSubId(targetSubmissionId);
+      }
+    }
+  }, [targetSubmissionId]);
+
   const handleAutoGenerateAI = async (sub: HomeworkSubmission) => {
     setIsGeneratingAI(true);
     try {

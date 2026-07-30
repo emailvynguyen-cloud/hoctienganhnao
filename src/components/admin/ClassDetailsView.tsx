@@ -22,6 +22,8 @@ import {
   Check,
   AlertCircle,
   BarChart2,
+  Trash2,
+  UserX,
 } from 'lucide-react';
 
 interface ClassDetailsViewProps {
@@ -30,10 +32,13 @@ interface ClassDetailsViewProps {
   sessions: Session[];
   homeworkSubmissions: HomeworkSubmission[];
   bankConfig?: BankConfig;
+  currentUser?: User | null;
   onBack: () => void;
   onOpenAddSession: (classId: string) => void;
   onOpenEditSession?: (session: Session) => void;
   onOpenPublicStudentLink?: (hash: string) => void;
+  onDeleteClass?: (classId: string) => void;
+  onRemoveStudentFromClass?: (studentId: string, classId: string) => void;
 }
 
 export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
@@ -41,10 +46,13 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   students,
   sessions,
   homeworkSubmissions,
+  currentUser,
   onBack,
   onOpenAddSession,
   onOpenEditSession,
   onOpenPublicStudentLink,
+  onDeleteClass,
+  onRemoveStudentFromClass,
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
@@ -118,16 +126,34 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
             </div>
           </div>
 
-          {selectedClass.zoomLink && (
-            <a
-              href={selectedClass.zoomLink}
-              target="_blank"
-              rel="noreferrer"
-              className="px-6 py-3.5 rounded-2xl bg-amber-300 text-slate-900 font-black text-xs hover:bg-amber-200 transition shadow-xs flex items-center justify-center shrink-0 border border-amber-400"
-            >
-              <Video className="w-4 h-4 mr-2 text-slate-800" /> VÀO PHÒNG HỌC (ZOOM)
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedClass.zoomLink && (
+              <a
+                href={selectedClass.zoomLink}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-3 rounded-2xl bg-amber-300 text-slate-900 font-black text-xs hover:bg-amber-200 transition shadow-xs flex items-center justify-center shrink-0 border border-amber-400"
+              >
+                <Video className="w-4 h-4 mr-2 text-slate-800" /> VÀO PHÒNG HỌC (ZOOM)
+              </a>
+            )}
+
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA LỚP HỌC "${selectedClass.className}" (${selectedClass.code})? Toàn bộ phân công của lớp sẽ bị hủy!`)) {
+                    if (onDeleteClass) {
+                      onDeleteClass(selectedClass.id);
+                    }
+                  }
+                }}
+                className="px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition shadow-md flex items-center shrink-0 cursor-pointer"
+                title="Quyền Super Admin: Xóa lớp học này"
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" /> 🗑️ Xóa Lớp Học Này
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -167,8 +193,27 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                 </div>
               </div>
 
-              <div className="p-2 rounded-xl bg-pink-100 text-pink-900 group-hover:bg-pink-400 group-hover:text-white transition text-xs font-bold shrink-0">
-                <Share2 className="w-4 h-4" />
+              <div className="flex items-center space-x-1.5 shrink-0">
+                <div className="p-2 rounded-xl bg-pink-100 text-pink-900 group-hover:bg-pink-400 group-hover:text-white transition text-xs font-bold">
+                  <Share2 className="w-4 h-4" />
+                </div>
+
+                {currentUser?.role === 'super_admin' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Bạn có chắc chắn muốn XÓA HỌC VIÊN ${std.name} ra khỏi lớp học ${selectedClass.className}?`)) {
+                        if (onRemoveStudentFromClass) {
+                          onRemoveStudentFromClass(std.id, selectedClass.id);
+                        }
+                      }
+                    }}
+                    className="p-2 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition text-xs font-bold cursor-pointer"
+                    title="Quyền Super Admin: Xóa học viên này ra khỏi lớp"
+                  >
+                    <UserX className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

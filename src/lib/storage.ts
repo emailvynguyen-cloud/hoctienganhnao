@@ -211,9 +211,27 @@ export const StorageEngine = {
     }
   },
   deleteStudent(id: string) {
+    this.deleteStudentPermanently(id);
+  },
+  deleteStudentPermanently(id: string) {
     const students = this.getStudents() || [];
+    const targetStudent = students.find((s) => s && s.id === id);
     const updated = students.filter((s) => s && s.id !== id);
     this.saveStudents(updated);
+
+    if (targetStudent) {
+      const users = this.getUsers() || [];
+      const updatedUsers = users.filter((u) => u.email !== targetStudent.email && u.uid !== `u_${id}`);
+      this.saveUsers(updatedUsers);
+    }
+  },
+  removeStudentFromClass(studentId: string, classId: string) {
+    const students = this.getStudents() || [];
+    const std = students.find((s) => s && s.id === studentId);
+    if (std && std.classIds) {
+      std.classIds = std.classIds.filter((cid) => cid !== classId);
+      this.saveStudents(students);
+    }
   },
 
   getClasses(): Class[] {
@@ -254,6 +272,18 @@ export const StorageEngine = {
     const classes = this.getClasses() || [];
     const updated = classes.filter((c) => c && c.id !== id);
     this.saveClasses(updated);
+
+    const students = this.getStudents() || [];
+    let studentUpdated = false;
+    students.forEach((s) => {
+      if (s && s.classIds && s.classIds.includes(id)) {
+        s.classIds = s.classIds.filter((cid) => cid !== id);
+        studentUpdated = true;
+      }
+    });
+    if (studentUpdated) {
+      this.saveStudents(students);
+    }
   },
 
   getSessions(): Session[] {

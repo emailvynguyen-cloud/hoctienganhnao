@@ -155,6 +155,15 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   }) || null;
 
   // Notify parent Header about Sub-View Navigation state
+  // AUTO SWITCH TO GRADING TAB WHEN NOTIFICATION IS CLICKED
+  useEffect(() => {
+    if (targetSubmissionId) {
+      setActiveTab('grading');
+      setInspectedClass(null);
+      setInspectedStudent(null);
+    }
+  }, [targetSubmissionId]);
+
   useEffect(() => {
     if (onSetSubViewNavigation) {
       if (inspectedStudent) {

@@ -128,6 +128,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [safeClasses, newStudentClassId]);
 
+  // AUTO SWITCH TO GRADING TAB WHEN NOTIFICATION IS CLICKED
+  useEffect(() => {
+    if (targetSubmissionId) {
+      setActiveTab('grading');
+      setInspectedClass(null);
+      setInspectedStudent(null);
+    }
+  }, [targetSubmissionId]);
+
   // Handle Sub-View Navigation Updates to Parent Header
   useEffect(() => {
     if (onSetSubViewNavigation) {
@@ -338,6 +347,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           students={safeStudents}
           sessions={sessions}
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
+          currentUser={currentUser}
           onBack={() => setInspectedClass(null)}
           onOpenAddSession={onOpenAddSession}
           onOpenEditSession={(session) => onOpenAddSession(session.classId, session)}
@@ -346,6 +356,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             if (foundStd) {
               setInspectedStudent(foundStd);
             }
+          }}
+          onDeleteClass={(classId) => {
+            StorageEngine.deleteClass(classId);
+            onUpdateClasses();
+            onUpdateStudents();
+            setInspectedClass(null);
+          }}
+          onRemoveStudentFromClass={(studentId, classId) => {
+            StorageEngine.removeStudentFromClass(studentId, classId);
+            onUpdateStudents();
           }}
         />
       </div>
@@ -570,10 +590,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 shrink-0 justify-between sm:justify-end">
+                    <div className="flex items-center space-x-2 shrink-0 justify-between sm:justify-end">
                       <span className="px-3 py-1.5 rounded-2xl bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-300 font-extrabold text-xs border border-sky-200">
                         {teacherClasses.length} Lớp Phụ Trách
                       </span>
+
+                      {isSuperAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA TÀI KHOẢN giáo viên "${teacher.name}" khỏi hệ thống?`)) {
+                              StorageEngine.deleteUser(teacher.id);
+                              onUpdateClasses();
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition flex items-center shrink-0 cursor-pointer"
+                          title="Quyền Super Admin: Xóa tài khoản giáo viên này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa Giáo Viên
+                        </button>
+                      )}
 
                       <button className="px-3.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-bold text-xs flex items-center">
                         {isExpanded ? (
@@ -617,7 +653,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <p className="text-[11px] text-slate-500 mt-0.5">Giáo trình: {cls.courseName}</p>
                               </div>
 
-                              <div className="pt-2 border-t border-sky-100 flex items-center justify-between">
+                              <div className="pt-2 border-t border-sky-100 flex items-center justify-between gap-1.5">
                                 <button
                                   onClick={() => setInspectedClass(cls)}
                                   className="text-xs font-extrabold text-sky-700 hover:underline flex items-center"
@@ -625,12 +661,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   <Eye className="w-3.5 h-3.5 mr-1" /> Chi Tiết Lớp →
                                 </button>
 
-                                <button
-                                  onClick={() => onOpenAddSession(cls.id)}
-                                  className="px-3 py-1 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
-                                >
-                                  <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
-                                </button>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={() => onOpenAddSession(cls.id)}
+                                    className="px-3 py-1 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
+                                  >
+                                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
+                                  </button>
+
+                                  {isSuperAdmin && (
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA LỚP HỌC "${cls.className}" (${cls.code})?`)) {
+                                          StorageEngine.deleteClass(cls.id);
+                                          onUpdateClasses();
+                                          onUpdateStudents();
+                                        }
+                                      }}
+                                      className="p-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white transition text-xs font-bold cursor-pointer"
+                                      title="Quyền Super Admin: Xóa lớp học"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -781,6 +835,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
                   </button>
+
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`CẢNH BÁO NGUY HIỂM: Bạn có chắc chắn muốn XÓA VĨNH VIỄN học viên ${std.name}? Toàn bộ lịch sử bài tập & học phí của học viên này sẽ bị xóa khỏi hệ thống!`)) {
+                          StorageEngine.deleteStudentPermanently(std.id);
+                          onUpdateStudents();
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white font-extrabold text-xs transition shadow-xs flex items-center cursor-pointer"
+                      title="Quyền Super Admin: Xóa học viên vĩnh viễn"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa Vĩnh Viễn
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
