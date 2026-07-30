@@ -45,17 +45,43 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
     activeAccountName
   );
 
+  const handleSavePendingInvoice = () => {
+    StorageEngine.addInvoice({
+      code: receiptCode,
+      studentId: student.id,
+      studentName: student.name,
+      studentPhone: student.phone,
+      amount: packagePrice,
+      sessionsPurchased: packageSessions,
+      status: 'pending',
+      qrContent: qrUrl,
+      bankId: activeBankId,
+      accountNo: activeAccountNo,
+      accountName: activeAccountName,
+    });
+    alert(`Đã tạo và lưu Phiếu thu #${receiptCode} ở trạng thái CHỜ THU HỌC PHÍ thành công! Khi phụ huynh chuyển khoản xong, bạn có thể tick Hoàn thành để cộng ${packageSessions} buổi cho học viên.`);
+    onRefreshData();
+    onClose();
+  };
+
   const handleMarkAsPaid = () => {
     if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Hệ thống sẽ cộng thêm ${packageSessions} buổi vào tài khoản.`)) {
-      const updatedStudent: Student = {
-        ...student,
-        remainingSessions: (student.remainingSessions || 0) + packageSessions,
-        totalPaidSessions: (student.totalPaidSessions || 0) + packageSessions,
-      };
+      StorageEngine.addInvoice({
+        code: receiptCode,
+        studentId: student.id,
+        studentName: student.name,
+        studentPhone: student.phone,
+        amount: packagePrice,
+        sessionsPurchased: packageSessions,
+        status: 'paid',
+        qrContent: qrUrl,
+        bankId: activeBankId,
+        accountNo: activeAccountNo,
+        accountName: activeAccountName,
+      });
 
-      StorageEngine.updateStudent(updatedStudent);
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      alert(`Thành công! Đã cộng ${packageSessions} buổi vào tài khoản em ${student.name}.`);
+      alert(`Thành công! Đã thu ${formatVND(packagePrice)} và cộng ${packageSessions} buổi vào tài khoản em ${student.name}.`);
       onRefreshData();
       onClose();
     }
@@ -64,7 +90,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   // HANDLE DOWNLOAD / SAVE RECEIPT IMAGE (TẢI ẢNH PHIẾU THU KÈM QR)
   const handleSaveReceiptImage = async () => {
     try {
-      // Fetch VietQR image blob and trigger download
       const response = await fetch(qrUrl);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -79,7 +104,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
       alert(`Đã lưu ảnh Mã VietQR cho học viên ${student.name}! Bạn có thể gửi ảnh này trực tiếp qua Zalo cho Phụ huynh.`);
     } catch (e) {
-      // Fallback direct window download
       const link = document.createElement('a');
       link.href = qrUrl;
       link.target = '_blank';
@@ -209,7 +233,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 copyToClipboard(transferInfo);
@@ -222,21 +246,30 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
               {copiedContent ? 'Đã Copy Cú Pháp' : 'Copy Cú Pháp Nộp'}
             </button>
 
-            {/* BUTTON LƯU / TẢI ẢNH PHIẾU THU MÃ VIETQR */}
             <button
               onClick={handleSaveReceiptImage}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md"
+              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md"
             >
-              <Download className="w-4 h-4 mr-1.5" /> 📸 Tải / Lưu Ảnh Phiếu Thu (PNG)
+              <Download className="w-4 h-4 mr-1.5" /> 📸 Tải Ảnh QR (PNG)
             </button>
           </div>
 
-          <button
-            onClick={handleMarkAsPaid}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md w-full sm:w-auto flex items-center justify-center"
-          >
-            <ShieldCheck className="w-4 h-4 mr-1.5" /> Xác Nhận Đã Nhận Tiền (+{packageSessions} Buổi)
-          </button>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={handleSavePendingInvoice}
+              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs transition shadow-xs flex items-center justify-center cursor-pointer"
+              title="Lưu vào danh sách chờ nộp tiền"
+            >
+              ⏳ Lưu Phiếu (Chờ Thu Tiền)
+            </button>
+
+            <button
+              onClick={handleMarkAsPaid}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md flex items-center justify-center cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 mr-1" /> Xác Nhận Đã Thu Ngay (+{packageSessions} Buổi)
+            </button>
+          </div>
         </div>
 
       </div>

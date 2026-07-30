@@ -81,7 +81,27 @@ async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
   }
 }
 
+import { CloudSyncEngine } from './cloudSync';
+
 export const StorageEngine = {
+  getAllData(): Record<string, any> {
+    return {
+      [STORAGE_KEYS.STUDENTS]: this.getStudents(),
+      [STORAGE_KEYS.CLASSES]: this.getClasses(),
+      [STORAGE_KEYS.SESSIONS]: this.getSessions(),
+      [STORAGE_KEYS.HOMEWORK_TASKS]: this.getHomeworkTasks(),
+      [STORAGE_KEYS.HOMEWORK_SUBMISSIONS]: this.getHomeworkSubmissions(),
+      [STORAGE_KEYS.NOTIFICATIONS]: this.getNotifications(),
+      [STORAGE_KEYS.INVOICES]: this.getInvoices(),
+      [STORAGE_KEYS.USERS]: this.getUsers(),
+      [STORAGE_KEYS.BANK_CONFIG]: this.getBankConfig(),
+    };
+  },
+
+  syncAllToCloud() {
+    CloudSyncEngine.pushToCloud(this.getAllData());
+  },
+
   getCurrentUser(): User | null {
     return getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
   },
@@ -95,7 +115,7 @@ export const StorageEngine = {
   },
   saveUsers(users: User[]) {
     setItem(STORAGE_KEYS.USERS, users);
-    syncCollectionToCloud('users', users);
+    this.syncAllToCloud();
   },
   authenticateUser(emailOrUsername: string, passwordInput: string): User | null {
     const users = this.getUsers() || [];
@@ -138,7 +158,62 @@ export const StorageEngine = {
   },
   saveStudents(students: Student[]) {
     setItem(STORAGE_KEYS.STUDENTS, students);
-    syncCollectionToCloud('students', students);
+    this.syncAllToCloud();
+  },
+  addStudent(studentData: Partial<Student>): Student {
+    const students = this.getStudents() || [];
+    const newId = studentData.id || `std_${Date.now()}`;
+    const newStudent: Student = {
+      id: newId,
+      name: studentData.name || 'Học viên mới',
+      email: studentData.email || `${newId}@gmail.com`,
+      phone: studentData.phone || '',
+      classIds: studentData.classIds || [],
+      remainingSessions: Number(studentData.remainingSessions) || 8,
+      totalPaidSessions: Number(studentData.totalPaidSessions) || 8,
+      tuitionPackagePrice: Number(studentData.tuitionPackagePrice) || 2000000,
+      packageSessionCount: Number(studentData.packageSessionCount) || 8,
+      publicHash: `hash_${newId}_${Math.random().toString(36).substr(2, 6)}`,
+      joinedDate: new Date().toISOString().split('T')[0],
+      stars: 0,
+      completedHomeworkTaskIds: [],
+      avatar: studentData.avatar || KAKAOTALK_SVG_AVATARS.ryan,
+      honorNickname: '🥇 Ngôi Sao Chăm Chỉ 👑',
+      status: 'active',
+    };
+    students.push(newStudent);
+    this.saveStudents(students);
+
+    // Auto-create student user account for login
+    const users = this.getUsers() || [];
+    const existingUser = users.find((u) => u.email === newStudent.email);
+    if (!existingUser) {
+      const newUser: User = {
+        uid: `u_${newId}`,
+        email: newStudent.email,
+        password: newStudent.phone || 'hocvien123',
+        displayName: newStudent.name,
+        role: 'student',
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      users.push(newUser);
+      this.saveUsers(users);
+    }
+
+    return newStudent;
+  },
+  updateStudent(student: Student) {
+    const students = this.getStudents() || [];
+    const idx = students.findIndex((s) => s && s.id === student.id);
+    if (idx !== -1) {
+      students[idx] = student;
+      this.saveStudents(students);
+    }
+  },
+  deleteStudent(id: string) {
+    const students = this.getStudents() || [];
+    const updated = students.filter((s) => s && s.id !== id);
+    this.saveStudents(updated);
   },
 
   getClasses(): Class[] {
@@ -146,7 +221,39 @@ export const StorageEngine = {
   },
   saveClasses(classes: Class[]) {
     setItem(STORAGE_KEYS.CLASSES, classes);
-    syncCollectionToCloud('classes', classes);
+    this.syncAllToCloud();
+  },
+  addClass(classData: Partial<Class>): Class {
+    const classes = this.getClasses() || [];
+    const newId = classData.id || `cls_${Date.now()}`;
+    const newClass: Class = {
+      id: newId,
+      className: classData.className || 'Lớp Mới',
+      code: classData.code || `CLASS-${Date.now()}`,
+      teacherName: classData.teacherName || 'Ms. Vy',
+      teacherId: classData.teacherId || 'u_admin',
+      schedule: classData.schedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
+      courseName: classData.courseName || 'Tiếng Anh Giao Tiếp',
+      zoomLink: classData.zoomLink || '',
+      startSessionNumber: Number(classData.startSessionNumber) || 1,
+      resourceLinks: classData.resourceLinks || [],
+    };
+    classes.push(newClass);
+    this.saveClasses(classes);
+    return newClass;
+  },
+  updateClass(cls: Class) {
+    const classes = this.getClasses() || [];
+    const idx = classes.findIndex((c) => c && c.id === cls.id);
+    if (idx !== -1) {
+      classes[idx] = cls;
+      this.saveClasses(classes);
+    }
+  },
+  deleteClass(id: string) {
+    const classes = this.getClasses() || [];
+    const updated = classes.filter((c) => c && c.id !== id);
+    this.saveClasses(updated);
   },
 
   getSessions(): Session[] {
@@ -154,7 +261,7 @@ export const StorageEngine = {
   },
   saveSessions(sessions: Session[]) {
     setItem(STORAGE_KEYS.SESSIONS, sessions);
-    syncCollectionToCloud('sessions', sessions);
+    this.syncAllToCloud();
   },
 
   getHomeworkTasks(): HomeworkTask[] {
@@ -162,7 +269,7 @@ export const StorageEngine = {
   },
   saveHomeworkTasks(tasks: HomeworkTask[]) {
     setItem(STORAGE_KEYS.HOMEWORK_TASKS, tasks);
-    syncCollectionToCloud('homework_tasks', tasks);
+    this.syncAllToCloud();
   },
 
   getHomeworkSubmissions(): HomeworkSubmission[] {
@@ -170,7 +277,7 @@ export const StorageEngine = {
   },
   saveHomeworkSubmissions(subs: HomeworkSubmission[]) {
     setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, subs);
-    syncCollectionToCloud('homework_submissions', subs);
+    this.syncAllToCloud();
   },
 
   getNotifications(): AppNotification[] {
@@ -178,15 +285,7 @@ export const StorageEngine = {
   },
   saveNotifications(notifications: AppNotification[]) {
     setItem(STORAGE_KEYS.NOTIFICATIONS, notifications);
-    syncCollectionToCloud('notifications', notifications);
-  },
-  markNotificationAsRead(id: string) {
-    const notifs = this.getNotifications() || [];
-    const target = notifs.find((n) => n.id === id);
-    if (target) {
-      target.isRead = true;
-      this.saveNotifications(notifs);
-    }
+    this.syncAllToCloud();
   },
 
   getInvoices(): Invoice[] {
@@ -194,7 +293,72 @@ export const StorageEngine = {
   },
   saveInvoices(invoices: Invoice[]) {
     setItem(STORAGE_KEYS.INVOICES, invoices);
-    syncCollectionToCloud('invoices', invoices);
+    this.syncAllToCloud();
+  },
+  addInvoice(invData: Partial<Invoice>): Invoice {
+    const invoices = this.getInvoices() || [];
+    const newId = invData.id || `inv_${Date.now()}`;
+    const newInvoice: Invoice = {
+      id: newId,
+      code: invData.code || `VY-REC-${Date.now().toString().slice(-6)}`,
+      studentId: invData.studentId || '',
+      studentName: invData.studentName || 'Học viên',
+      studentPhone: invData.studentPhone || '',
+      amount: Number(invData.amount) || 2000000,
+      sessionsPurchased: Number(invData.sessionsPurchased) || 8,
+      status: invData.status || 'pending',
+      dueDate: invData.dueDate || new Date().toISOString().split('T')[0],
+      createdDate: new Date().toISOString().split('T')[0],
+      qrContent: invData.qrContent || '',
+      bankId: invData.bankId || 'MB',
+      accountNo: invData.accountNo || '0355176317',
+      accountName: invData.accountName || 'MS. VY ENGLISH - MS VY',
+    };
+    invoices.unshift(newInvoice);
+    this.saveInvoices(invoices);
+
+    // If initial status is paid, immediately credit student
+    if (newInvoice.status === 'paid') {
+      const students = this.getStudents() || [];
+      const std = students.find((s) => s && s.id === newInvoice.studentId);
+      if (std) {
+        std.remainingSessions = (std.remainingSessions || 0) + newInvoice.sessionsPurchased;
+        std.totalPaidSessions = (std.totalPaidSessions || 0) + newInvoice.sessionsPurchased;
+        this.saveStudents(students);
+      }
+    }
+
+    return newInvoice;
+  },
+  markInvoiceAsPaid(invoiceId: string) {
+    const invoices = this.getInvoices() || [];
+    const inv = invoices.find((i) => i && i.id === invoiceId);
+    if (!inv || inv.status === 'paid') return false;
+
+    inv.status = 'paid';
+    inv.paidDate = new Date().toISOString().split('T')[0];
+    this.saveInvoices(invoices);
+
+    // Add sessionsPurchased to student
+    const students = this.getStudents() || [];
+    const std = students.find((s) => s && s.id === inv.studentId);
+    if (std) {
+      std.remainingSessions = (std.remainingSessions || 0) + (inv.sessionsPurchased || 8);
+      std.totalPaidSessions = (std.totalPaidSessions || 0) + (inv.sessionsPurchased || 8);
+      this.saveStudents(students);
+    }
+
+    return {
+      success: true,
+      studentName: std?.name || inv.studentName,
+      addedSessions: inv.sessionsPurchased || 8,
+      amount: inv.amount,
+    };
+  },
+  deleteInvoice(id: string) {
+    const invoices = this.getInvoices() || [];
+    const updated = invoices.filter((i) => i && i.id !== id);
+    this.saveInvoices(updated);
   },
 
   getBankConfig(): BankConfig {
@@ -202,7 +366,7 @@ export const StorageEngine = {
   },
   saveBankConfig(config: BankConfig) {
     setItem(STORAGE_KEYS.BANK_CONFIG, config);
-    syncCollectionToCloud('bank_config', [config]);
+    this.syncAllToCloud();
   },
 
   resetDatabase() {
@@ -359,6 +523,7 @@ export const StorageEngine = {
       sub.feedbackByUserId = teacherUser?.uid || 'admin';
       sub.feedbackByUserName = teacherUser?.displayName || 'Giáo Viên';
       this.saveHomeworkSubmissions(subs);
+      this.markNotificationBySubmissionAsRead(submissionId);
 
       const students = this.getStudents() || [];
       const std = students.find((s) => s && s.id === sub.studentId);
@@ -515,5 +680,37 @@ export const StorageEngine = {
       totalRevenue,
       studentBreakdown,
     };
+  },
+
+  // NOTIFICATION MANAGEMENT FUNCTIONS
+  markNotificationAsRead(notifId: string) {
+    const notifs = this.getNotifications() || [];
+    const target = notifs.find((n) => n && n.id === notifId);
+    if (target) {
+      target.isRead = true;
+      this.saveNotifications(notifs);
+    }
+  },
+
+  markAllNotificationsAsRead() {
+    const notifs = this.getNotifications() || [];
+    notifs.forEach((n) => {
+      if (n) n.isRead = true;
+    });
+    this.saveNotifications(notifs);
+  },
+
+  markNotificationBySubmissionAsRead(submissionId: string) {
+    const notifs = this.getNotifications() || [];
+    let updated = false;
+    notifs.forEach((n) => {
+      if (n && n.submissionId === submissionId) {
+        n.isRead = true;
+        updated = true;
+      }
+    });
+    if (updated) {
+      this.saveNotifications(notifs);
+    }
   },
 };

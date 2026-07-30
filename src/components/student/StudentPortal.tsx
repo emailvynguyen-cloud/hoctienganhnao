@@ -414,67 +414,94 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
-      {/* 1. GENERAL INFO CARD WITH VIBRANT CUTE PASTEL BACKGROUND */}
-      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-sky-100/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200 dark:border-slate-800 p-6 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5">
+      {/* 1. GENERAL INFO CARD - BALANCED, BEAUTIFUL & CLEAR TYPOGRAPHY */}
+      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-sky-100/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-7 shadow-sm relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
           
-          {/* Avatar with Camera Overlay */}
-          <div className="relative group shrink-0">
-            <img
-              src={studentAvatarSrc}
-              alt={currentStudent.name}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-              }}
-              className="w-20 h-20 rounded-3xl object-cover border-4 border-white shadow-sm transition group-hover:scale-105"
-            />
-            <button
-              onClick={() => setIsAvatarModalOpen(true)}
-              className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-pink-400 text-white shadow-xs hover:bg-pink-500 transition flex items-center justify-center border-2 border-white cursor-pointer"
-              title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
-            >
-              <Camera className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="flex-1 text-center sm:text-left space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-wrap">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                {currentStudent.name}
-              </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-xs inline-block">
-                {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
-              </span>
-            </div>
-
-            <div className="text-xs text-slate-800 dark:text-slate-200 font-bold space-y-0.5">
-              <p><strong>Lớp học:</strong> {primaryClass?.className || 'Lớp Ms. Vy English'}</p>
-              <p><strong>Giáo viên phụ trách:</strong> {primaryClass?.teacherName || 'Giáo viên'}</p>
-              <p><strong>Giáo trình:</strong> {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}</p>
-              <p><strong>Lịch học:</strong> {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}</p>
-            </div>
-          </div>
-
-          {/* 3-TIER CENTERED MINI STATISTIC CARD: SỐ BUỔI CÒN LẠI */}
-          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 text-pink-950 px-6 py-5 rounded-3xl shadow-xs border-2 border-pink-300 min-w-[180px] sm:min-w-[200px] min-h-[150px] sm:min-h-[160px] shrink-0 flex flex-col items-center justify-center text-center self-center sm:self-auto gap-3">
+          {/* LEFT & CENTER: AVATAR & DETAILED INFO */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 flex-1 w-full text-center sm:text-left">
             
-            {/* Tier 1 — Title */}
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-pink-900/90 text-center block">
+            {/* Avatar with Camera Overlay */}
+            <div className="relative group shrink-0">
+              <img
+                src={studentAvatarSrc}
+                alt={currentStudent.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                }}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-md transition group-hover:scale-105"
+              />
+              <button
+                onClick={() => setIsAvatarModalOpen(true)}
+                className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-pink-500 text-white shadow-md hover:bg-pink-600 transition flex items-center justify-center border-2 border-white cursor-pointer"
+                title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Student Details */}
+            <div className="space-y-2.5 flex-1 w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-2 flex-wrap">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {currentStudent.name}
+                </h2>
+                <span className="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 text-white shadow-xs inline-block">
+                  {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
+                </span>
+              </div>
+
+              {/* 2x2 Grid Info Box with Clear Typography */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold bg-white/80 dark:bg-slate-800/80 p-4 rounded-2xl border border-pink-200/80 shadow-2xs">
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-pink-600 font-black shrink-0">🎓 Lớp học:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                    {primaryClass?.className || 'Lớp Ms. Vy English'}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-pink-600 font-black shrink-0">👩‍🏫 Giáo viên:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                    {primaryClass?.teacherName || 'Ms. Vy'}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-pink-600 font-black shrink-0">📚 Giáo trình:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                    {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-pink-600 font-black shrink-0">⏰ Lịch học:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                    {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI) */}
+          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800 text-pink-950 dark:text-white px-7 py-6 rounded-3xl shadow-sm border-2 border-pink-300 dark:border-slate-700 min-w-[200px] sm:min-w-[220px] shrink-0 flex flex-col items-center justify-center text-center gap-2.5 w-full lg:w-auto">
+            
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-900 dark:text-pink-300">
               SỐ BUỔI CÒN LẠI
             </span>
 
-            {/* Tier 2 — Main Number & Unit on Same Baseline */}
             <div className="flex items-baseline justify-center gap-1.5">
-              <span className="text-3xl font-black text-pink-950 font-mono leading-none tracking-tight">
+              <span className="text-4xl sm:text-5xl font-black text-pink-950 dark:text-white font-mono leading-none tracking-tight">
                 {currentStudent.remainingSessions}
               </span>
-              <span className="text-sm sm:text-base font-bold text-pink-900 leading-none">
+              <span className="text-base sm:text-lg font-extrabold text-pink-900 dark:text-pink-200 leading-none">
                 Buổi
               </span>
             </div>
 
-            {/* Tier 3 — Package Info */}
-            <span className="text-[11px] sm:text-xs font-medium text-pink-800/90 text-center block">
+            <span className="text-xs font-bold text-pink-800/90 dark:text-pink-300 bg-white/70 dark:bg-slate-900/70 px-3 py-1 rounded-full border border-pink-200">
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
 

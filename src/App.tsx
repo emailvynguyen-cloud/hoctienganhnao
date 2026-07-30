@@ -88,8 +88,21 @@ export default function App() {
     setCurrentUser(StorageEngine.getCurrentUser());
   };
 
+import { CloudSyncEngine } from './lib/cloudSync';
+
   useEffect(() => {
     loadData();
+
+    // Pull initial cloud data on launch & subscribe to real-time updates across all devices
+    CloudSyncEngine.pullInitialCloudData().then(() => {
+      loadData();
+    });
+
+    const unsubscribe = CloudSyncEngine.subscribeToCloudData(() => {
+      loadData();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Listen to hash changes in URL
