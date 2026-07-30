@@ -104,16 +104,10 @@ export default function App() {
     };
 
     window.addEventListener('focus', handleFocus);
-    const syncInterval = setInterval(() => {
-      CloudSyncEngine.pullInitialCloudData().then(() => {
-        loadData();
-      });
-    }, 5000);
 
     return () => {
       unsubscribe();
       window.removeEventListener('focus', handleFocus);
-      clearInterval(syncInterval);
     };
   }, []);
 

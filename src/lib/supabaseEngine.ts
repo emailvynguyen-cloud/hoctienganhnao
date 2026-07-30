@@ -1,4 +1,4 @@
-// SUPABASE REALTIME CLOUD DATABASE ENGINE FOR MS. VY ENGLISH
+// SUPABASE REALTIME CLIENT ENGINE FOR MS. VY ENGLISH
 // Supabase Project URL: https://qbzmamuahgmaruwcqfyl.supabase.co
 
 export const SUPABASE_URL = 'https://qbzmamuahgmaruwcqfyl.supabase.co';
@@ -50,5 +50,84 @@ export async function supabaseFetch<T = any>(
   } catch (err: any) {
     console.warn('Supabase fetch error:', err?.message || err);
     return { ok: false, status: 0, data: null, error: err?.message || 'Network error' };
+  }
+}
+
+// REALTIME WEBSOCKET SUBSCRIPTION CHANNEL WITH AUTO-RECONNECT
+export class SupabaseRealtimeChannel {
+  private ws: WebSocket | null = null;
+  private channelName: string;
+  private onDataChangeCallback: (payload: any) => void;
+  private isClosedManually = false;
+  private reconnectTimer: any = null;
+
+  constructor(channelName: string, onDataChangeCallback: (payload: any) => void) {
+    this.channelName = channelName;
+    this.onDataChangeCallback = onDataChangeCallback;
+    this.connect();
+  }
+
+  private connect() {
+    if (this.isClosedManually) return;
+    const wsUrl = `wss://qbzmamuahgmaruwcqfyl.supabase.co/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`;
+
+    try {
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        // Join topic for postgres_changes on schema 'public' (matches supabase.channel(...).on('postgres_changes', ...))
+        const joinMsg = {
+          topic: `realtime:${this.channelName}`,
+          event: 'phx_join',
+          payload: {
+            config: {
+              postgres_changes: [
+                { event: '*', schema: 'public' }
+              ]
+            }
+          },
+          ref: Date.now().toString()
+        };
+        this.ws?.send(JSON.stringify(joinMsg));
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && (data.event === 'postgres_changes' || data.event === 'INSERT' || data.event === 'UPDATE' || data.event === 'DELETE' || (data.payload && data.payload.data))) {
+            const changePayload = data.payload?.data || data.payload;
+            this.onDataChangeCallback(changePayload);
+          }
+        } catch (e) {}
+      };
+
+      this.ws.onerror = () => {
+        this.scheduleReconnect();
+      };
+
+      this.ws.onclose = () => {
+        this.scheduleReconnect();
+      };
+    } catch (e) {
+      this.scheduleReconnect();
+    }
+  }
+
+  private scheduleReconnect() {
+    if (this.isClosedManually || this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, 2000);
+  }
+
+  public unsubscribe() {
+    this.isClosedManually = true;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch (e) {}
+    }
   }
 }

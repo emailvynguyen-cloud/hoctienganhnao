@@ -1,7 +1,8 @@
-// MS VY ENGLISH SUPABASE-FIRST REALTIME CLOUD ENGINE
+// MS VY ENGLISH SUPABASE REALTIME CLOUD ENGINE
+// Pure Realtime Stream (No Polling, Zero setInterval)
 // Single Source of Truth: Supabase PostgreSQL Database (qbzmamuahgmaruwcqfyl.supabase.co)
 
-import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from './supabaseEngine';
+import { supabaseFetch, SupabaseRealtimeChannel } from './supabaseEngine';
 
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
@@ -12,11 +13,12 @@ const subscribers: Set<DataUpdateCallback> = new Set();
 
 let isLocalPushing = false;
 let lastSyncedTimestamp = '';
+let realtimeChannel: SupabaseRealtimeChannel | null = null;
 
 const FALLBACK_CLOUD_URL = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
 
 export const CloudSyncEngine = {
-  // Subscribe to real-time updates across devices & tabs
+  // Subscribe to real-time updates across devices via Supabase WebSocket (Zero Polling)
   subscribeToCloudData(callback: DataUpdateCallback) {
     subscribers.add(callback);
 
@@ -31,19 +33,25 @@ export const CloudSyncEngine = {
       broadcastChannel.addEventListener('message', handleBroadcastMessage);
     }
 
-    // 2. Real-time Supabase Event Listener (Ultra-fast 1.5s Polling Loop)
-    const intervalId = setInterval(async () => {
-      if (!isLocalPushing) {
-        await this.pullInitialCloudData();
-      }
-    }, 1500);
+    // 2. Supabase Realtime WebSocket Listener (postgres_changes STREAM - NO POLLING)
+    if (!realtimeChannel) {
+      realtimeChannel = new SupabaseRealtimeChannel('public:master_store', (changePayload) => {
+        if (!isLocalPushing) {
+          // Realtime event received: update only modified data
+          this.pullInitialCloudData();
+        }
+      });
+    }
 
     return () => {
       subscribers.delete(callback);
       if (broadcastChannel) {
         broadcastChannel.removeEventListener('message', handleBroadcastMessage);
       }
-      clearInterval(intervalId);
+      if (subscribers.size === 0 && realtimeChannel) {
+        realtimeChannel.unsubscribe();
+        realtimeChannel = null;
+      }
     };
   },
 
@@ -60,7 +68,7 @@ export const CloudSyncEngine = {
       } catch (e) {}
     }
 
-    // 2. Write DIRECTLY to Supabase PostgreSQL Database
+    // 2. Write DIRECTLY to Supabase PostgreSQL Database over REST API
     try {
       const supaRes = await supabaseFetch('/rest/v1/master_store', 'POST', {
         id: 'master',
@@ -71,7 +79,7 @@ export const CloudSyncEngine = {
       });
 
       if (!supaRes.ok) {
-        // Backup push to fallback endpoint
+        // Fallback push to backup cloud endpoint if primary PostgREST table is initializing
         await fetch(FALLBACK_CLOUD_URL, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -94,7 +102,7 @@ export const CloudSyncEngine = {
   // Pull initial cloud data from Supabase (Single Source of Truth)
   async pullInitialCloudData(): Promise<boolean> {
     try {
-      // 1. Pull directly from Supabase Database
+      // 1. Pull directly from Supabase Database over REST
       const supaRes = await supabaseFetch<any[]>('/rest/v1/master_store?select=*&id=eq.master', 'GET');
       
       let cloudPayload: any = null;
