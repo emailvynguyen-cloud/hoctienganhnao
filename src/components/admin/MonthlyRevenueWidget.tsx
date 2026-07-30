@@ -1,17 +1,56 @@
 import React, { useState } from 'react';
 import { StorageEngine } from '../../lib/storage';
-import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2, Flame, Sparkles } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
 
 export const MonthlyRevenueWidget: React.FC = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('2025-07');
+  // Get current date string in Vietnam time (YYYY-MM-DD)
+  const getTodayDateStr = () => {
+    const now = new Date();
+    try {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      };
+      const formatted = new Intl.DateTimeFormat('en-CA', options).format(now);
+      return formatted; // "YYYY-MM-DD"
+    } catch (e) {
+      return now.toISOString().split('T')[0];
+    }
+  };
+
+  const todayDateStr = getTodayDateStr();
+  const currentMonthStr = todayDateStr.substring(0, 7); // "YYYY-MM"
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
 
   const revenueReport = StorageEngine.calculateMonthlyRevenue(selectedMonth);
 
-  // CALCULATE DAILY REVENUE BREAKDOWN
   const sessions = StorageEngine.getSessions() || [];
   const students = StorageEngine.getStudents() || [];
 
+  // 1. CALCULATE TODAY'S REVENUE
+  const todaySessions = sessions.filter((s) => s && s.date === todayDateStr);
+  let todayRevenue = 0;
+  let todayStudentCount = 0;
+
+  todaySessions.forEach((sess) => {
+    const classStudents = students.filter(
+      (s) => s && s.status !== 'soft_deleted' && s.classIds?.includes(sess.classId)
+    );
+    todayStudentCount += classStudents.length;
+
+    classStudents.forEach((std) => {
+      const pkgPrice = std.tuitionPackagePrice || 2000000;
+      const pkgSessions = std.packageSessionCount || 8;
+      const perSession = pkgPrice / pkgSessions;
+      todayRevenue += perSession;
+    });
+  });
+
+  // 2. CALCULATE DAILY REVENUE BREAKDOWN FOR SELECTED MONTH
   const monthSessions = sessions.filter((s) => s && s.date && s.date.startsWith(selectedMonth));
 
   const dailyMap: Record<string, { date: string; sessionCount: number; revenue: number; details: string[] }> = {};
@@ -39,6 +78,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
   });
 
   const dailyList = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+  const formattedToday = todayDateStr.split('-').reverse().join('/');
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6">
@@ -49,11 +89,11 @@ export const MonthlyRevenueWidget: React.FC = () => {
           <div className="flex items-center space-x-2">
             <DollarSign className="w-6 h-6 text-emerald-600 animate-pulse" />
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
-              Tổng Quan Doanh Thu Học Phí Phân Bổ Theo Tháng
+              Tổng Quan Doanh Thu Học Phí (Ngày & Tháng)
             </h3>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Doanh thu thực tế tính từ các buổi học đã diễn ra trong tháng
+            Doanh thu thực tế tính từ các buổi học đã diễn ra trong ngày và tháng
           </p>
         </div>
 
@@ -66,21 +106,44 @@ export const MonthlyRevenueWidget: React.FC = () => {
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="bg-white dark:bg-slate-900 text-xs font-black text-pink-950 dark:text-white px-3 py-1 rounded-xl border border-pink-200 focus:outline-none"
           >
+            <option value="2026-07">Tháng 07 / 2026</option>
+            <option value="2026-06">Tháng 06 / 2026</option>
+            <option value="2026-05">Tháng 05 / 2026</option>
+            <option value="2026-08">Tháng 08 / 2026</option>
             <option value="2025-07">Tháng 07 / 2025</option>
-            <option value="2025-06">Tháng 06 / 2025</option>
-            <option value="2025-05">Tháng 05 / 2025</option>
-            <option value="2025-08">Tháng 08 / 2025</option>
           </select>
         </div>
       </div>
 
-      {/* Revenue Result Display Box */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* 3-COLUMN KPI STATS CARDS: TODAY'S REVENUE, MONTHLY REVENUE, ACTIVE STUDENTS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        {/* CARD 1: TODAY'S REVENUE (HIGHLIGHTED) */}
+        <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-100 text-amber-950 shadow-sm border-2 border-amber-300 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center">
+              <Flame className="w-4 h-4 mr-1 text-amber-600 animate-bounce" /> Doanh Thu Ngày Hôm Nay ({formattedToday})
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-amber-950 animate-pulse">
+              HÔM NAY
+            </span>
+          </div>
+          <h4 className="text-2xl sm:text-3xl font-black text-amber-950 font-mono">
+            +{formatVND(todayRevenue)}
+          </h4>
+          <p className="text-[11px] text-amber-900 font-semibold">
+            {todaySessions.length > 0
+              ? `${todaySessions.length} ca dạy hôm nay • ${todayStudentCount} lượt học viên`
+              : 'Hôm nay chưa có ca dạy nào'}
+          </p>
+        </div>
+
+        {/* CARD 2: MONTHLY TOTAL REVENUE */}
         <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-100 text-emerald-950 shadow-xs border-2 border-emerald-300 space-y-2">
           <span className="text-xs font-extrabold uppercase text-emerald-900">
             Tổng Doanh Thu Tháng {selectedMonth.split('-')[1]}
           </span>
-          <h4 className="text-2xl sm:text-3xl font-black text-emerald-950">
+          <h4 className="text-2xl sm:text-3xl font-black text-emerald-950 font-mono">
             {formatVND(revenueReport.totalRevenue)}
           </h4>
           <p className="text-[11px] text-emerald-800 font-medium">
@@ -88,6 +151,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
           </p>
         </div>
 
+        {/* CARD 3: ACTIVE STUDENTS COUNT */}
         <div className="p-5 rounded-3xl bg-pink-50 dark:bg-slate-800 border border-pink-200 space-y-2">
           <span className="text-xs font-bold uppercase text-pink-800 dark:text-pink-300">
             Số Học Viên Đang Học
@@ -99,9 +163,10 @@ export const MonthlyRevenueWidget: React.FC = () => {
             Tham gia các lớp trực thuộc trung tâm
           </p>
         </div>
+
       </div>
 
-      {/* MỤC MỚI: DOANH THU MỖI NGÀY TRONG THÁNG */}
+      {/* MỤC CHI TIẾT: DOANH THU MỖI NGÀY TRONG THÁNG */}
       <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-pink-50/50 border border-emerald-200 dark:bg-slate-900 space-y-4 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -117,32 +182,45 @@ export const MonthlyRevenueWidget: React.FC = () => {
 
         {dailyList.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {dailyList.map((dayItem) => (
-              <div
-                key={dayItem.date}
-                className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-100 shadow-xs space-y-1.5 hover:border-emerald-300 transition"
-              >
-                <div className="flex items-center justify-between border-b border-emerald-100 pb-1.5">
-                  <span className="text-xs font-black text-pink-950 dark:text-slate-200">
-                    🗓️ Ngày {dayItem.date.split('-').reverse().join('/')}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 bg-pink-50 px-2 py-0.5 rounded-md">
-                    {dayItem.sessionCount} Ca Dạy
-                  </span>
-                </div>
+            {dailyList.map((dayItem) => {
+              const isTodayItem = dayItem.date === todayDateStr;
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-slate-500 font-medium">Doanh thu ngày:</span>
-                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                    +{formatVND(dayItem.revenue)}
-                  </span>
-                </div>
+              return (
+                <div
+                  key={dayItem.date}
+                  className={`p-4 rounded-2xl border shadow-xs space-y-1.5 transition ${
+                    isTodayItem
+                      ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-300'
+                      : 'bg-white dark:bg-slate-800 border-emerald-100 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b border-emerald-100 pb-1.5">
+                    <span className="text-xs font-black text-pink-950 dark:text-slate-200 flex items-center">
+                      🗓️ Ngày {dayItem.date.split('-').reverse().join('/')}
+                      {isTodayItem && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-400 text-amber-950">
+                          Hôm Nay
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-pink-50 px-2 py-0.5 rounded-md">
+                      {dayItem.sessionCount} Ca Dạy
+                    </span>
+                  </div>
 
-                <div className="text-[10px] text-slate-400 font-medium truncate">
-                  {dayItem.details.join(' • ')}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-slate-500 font-medium">Doanh thu ngày:</span>
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                      +{formatVND(dayItem.revenue)}
+                    </span>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 font-medium truncate">
+                    {dayItem.details.join(' • ')}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="p-6 text-center bg-white/80 rounded-2xl text-xs text-slate-500 italic">

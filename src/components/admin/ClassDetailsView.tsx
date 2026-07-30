@@ -32,6 +32,7 @@ interface ClassDetailsViewProps {
   bankConfig?: BankConfig;
   onBack: () => void;
   onOpenAddSession: (classId: string) => void;
+  onOpenEditSession?: (session: Session) => void;
   onOpenPublicStudentLink?: (hash: string) => void;
 }
 
@@ -42,6 +43,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   homeworkSubmissions,
   onBack,
   onOpenAddSession,
+  onOpenEditSession,
   onOpenPublicStudentLink,
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
@@ -313,8 +315,8 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                 key={session.id}
                 className={`rounded-3xl border p-6 shadow-xs space-y-4 hover:shadow-md transition duration-200 ${bgStyle}`}
               >
-                {/* Session Header: Number & Date */}
-                <div className="flex items-center justify-between border-b border-pink-200/60 pb-3">
+                {/* Session Header: Number, Date, Edit Button & Action Links */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-pink-200/60 pb-3 gap-3">
                   <div className="flex items-center space-x-3">
                     <span className="w-10 h-10 rounded-2xl bg-pink-400 text-white font-black text-sm flex items-center justify-center shadow-xs">
                       #{session.sessionNumber}
@@ -329,16 +331,42 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     </div>
                   </div>
 
-                  {session.recordLink && (
-                    <a
-                      href={session.recordLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
-                    >
-                      <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
-                    </a>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* EDIT SESSION BUTTON FOR ADMIN / SUPER ADMIN */}
+                    {onOpenEditSession && (
+                      <button
+                        onClick={() => onOpenEditSession(session)}
+                        className="px-3.5 py-1.5 rounded-xl bg-pink-200 hover:bg-pink-300 text-pink-950 border border-pink-300 text-xs font-extrabold transition flex items-center shadow-2xs"
+                        title="Chỉnh sửa chi tiết buổi học này"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 mr-1 text-pink-700" /> ✏️ Chỉnh Sửa Buổi Học
+                      </button>
+                    )}
+
+                    {/* QUIZLET LINK BUTTON */}
+                    {session.quizletUrl && (
+                      <a
+                        href={session.quizletUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white border border-indigo-200 text-xs font-black hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-xs"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 mr-1" /> 🎴 Link Quizlet ↗
+                      </a>
+                    )}
+
+                    {/* RECORD LINK BUTTON */}
+                    {session.recordLink && (
+                      <a
+                        href={session.recordLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
+                      >
+                        <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {/* Lesson Content */}

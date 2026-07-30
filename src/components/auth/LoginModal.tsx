@@ -91,37 +91,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </p>
         </div>
 
-        {/* Quick Demo Login Buttons */}
-        <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-black text-purple-900 dark:text-purple-300 uppercase tracking-wider block text-center">
-            ⚡ Đăng Nhập Nhanh Theo Vai Trò Demo:
-          </span>
-          <div className="grid grid-cols-3 gap-2 text-[11px] font-extrabold">
-            <button
-              onClick={() => handleQuickLogin('superadmin@msvyenglish.edu.vn', 'admin123')}
-              className="p-2 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 border border-pink-300 transition flex flex-col items-center text-center shadow-2xs"
-            >
-              <Crown className="w-4 h-4 text-amber-500 mb-0.5" />
-              <span>Super Admin</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickLogin('admin@msvyenglish.edu.vn', 'admin123')}
-              className="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-950 border border-rose-300 transition flex flex-col items-center text-center shadow-2xs"
-            >
-              <Shield className="w-4 h-4 text-pink-600 mb-0.5" />
-              <span>Admin</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickLogin('alex.smith@msvyenglish.edu.vn', 'teacher123')}
-              className="p-2 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-950 border border-sky-300 transition flex flex-col items-center text-center shadow-2xs"
-            >
-              <UserCheck className="w-4 h-4 text-sky-600 mb-0.5" />
-              <span>Giáo Viên</span>
-            </button>
-          </div>
-        </div>
 
         {/* Error Message */}
         {errorMsg && (

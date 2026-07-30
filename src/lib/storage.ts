@@ -398,6 +398,7 @@ export const StorageEngine = {
     homeworkItems?: HomeworkTaskItem[];
     studentFeedbacks?: Record<string, StudentFeedback>;
     recordLink?: string;
+    quizletUrl?: string;
     sessionMaterials?: ResourceLink[];
     attendanceList: AttendanceRecord[];
   }): Session {
@@ -422,6 +423,7 @@ export const StorageEngine = {
       homeworkItems: sessionData.homeworkItems || [],
       studentFeedbacks: sessionData.studentFeedbacks || {},
       recordLink: sessionData.recordLink,
+      quizletUrl: sessionData.quizletUrl,
       sessionMaterials: sessionData.sessionMaterials || [],
       createdAt: new Date().toISOString(),
     };
@@ -448,6 +450,21 @@ export const StorageEngine = {
     }
 
     return newSession;
+  },
+
+  // UPDATE AN EXISTING SESSION (FOR SUPER ADMIN & ADMIN)
+  updateSession(sessionId: string, updatedData: Partial<Session>): Session | null {
+    const sessions = this.getSessions() || [];
+    const idx = sessions.findIndex((s) => s && s.id === sessionId);
+    if (idx !== -1) {
+      sessions[idx] = {
+        ...sessions[idx],
+        ...updatedData,
+      };
+      this.saveSessions(sessions);
+      return sessions[idx];
+    }
+    return null;
   },
 
   calculateMonthlyRevenue(yearMonth: string): MonthlyRevenueReport {

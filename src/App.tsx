@@ -55,8 +55,17 @@ export default function App() {
   const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
+  
+  // Session Modal & Edit Session State
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [addSessionClassId, setAddSessionClassId] = useState<string | undefined>(undefined);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+
+  const handleOpenAddOrEditSession = (classId?: string, editSess?: Session) => {
+    setAddSessionClassId(classId);
+    setEditingSession(editSess || null);
+    setIsAddSessionOpen(true);
+  };
 
   // Synchronously initialize datasets from StorageEngine
   const [students, setStudents] = useState<Student[]>(() => StorageEngine.getStudents());
@@ -252,10 +261,7 @@ export default function App() {
               onUpdateStudents={loadData}
               onUpdateClasses={loadData}
               onUpdateInvoices={loadData}
-              onOpenAddSession={(classId) => {
-                setAddSessionClassId(classId);
-                setIsAddSessionOpen(true);
-              }}
+              onOpenAddSession={handleOpenAddOrEditSession}
               onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
               onSetSubViewNavigation={(canBack, onBack, onHome) => {
                 setCanNavigateBack(canBack);
@@ -271,10 +277,7 @@ export default function App() {
               students={students}
               sessions={sessions}
               onRefreshData={loadData}
-              onOpenAddSession={(classId) => {
-                setAddSessionClassId(classId);
-                setIsAddSessionOpen(true);
-              }}
+              onOpenAddSession={handleOpenAddOrEditSession}
               onSetSubViewNavigation={(canBack, onBack, onHome) => {
                 setCanNavigateBack(canBack);
                 setSubViewBackHandler(() => onBack);
@@ -306,10 +309,7 @@ export default function App() {
             onUpdateStudents={loadData}
             onUpdateClasses={loadData}
             onUpdateInvoices={loadData}
-            onOpenAddSession={(classId) => {
-              setAddSessionClassId(classId);
-              setIsAddSessionOpen(true);
-            }}
+            onOpenAddSession={handleOpenAddOrEditSession}
             onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
             onSetSubViewNavigation={(canBack, onBack, onHome) => {
               setCanNavigateBack(canBack);
@@ -325,10 +325,7 @@ export default function App() {
             students={students}
             sessions={sessions}
             onRefreshData={loadData}
-            onOpenAddSession={(classId) => {
-              setAddSessionClassId(classId);
-              setIsAddSessionOpen(true);
-            }}
+            onOpenAddSession={handleOpenAddOrEditSession}
             onSetSubViewNavigation={(canBack, onBack, onHome) => {
               setCanNavigateBack(canBack);
               setSubViewBackHandler(() => onBack);
@@ -397,7 +394,11 @@ export default function App() {
           students={students}
           initialClassId={addSessionClassId}
           defaultClassId={addSessionClassId}
-          onClose={() => setIsAddSessionOpen(false)}
+          editingSession={editingSession}
+          onClose={() => {
+            setIsAddSessionOpen(false);
+            setEditingSession(null);
+          }}
           onSessionAdded={loadData}
         />
       )}

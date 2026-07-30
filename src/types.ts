@@ -93,6 +93,7 @@ export interface Session {
   homeworkItems?: HomeworkTaskItem[]; // Danh sách NỀN NỔI nhiều bài tập về nhà
   studentFeedbacks?: Record<string, StudentFeedback>; // Nhận xét riêng cho từng studentId
   recordLink?: string;
+  quizletUrl?: string; // Link Quizlet Học Từ Vựng Buổi Học
   sessionMaterials?: ResourceLink[];
   createdAt: string;
 }

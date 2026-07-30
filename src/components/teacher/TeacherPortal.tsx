@@ -37,7 +37,7 @@ interface TeacherPortalProps {
   students: Student[];
   sessions: Session[];
   onRefreshData: () => void;
-  onOpenAddSession: (classId?: string) => void;
+  onOpenAddSession: (classId?: string, editingSession?: Session) => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
   targetSubmissionId?: string | null;
 }
@@ -305,6 +305,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
           onBack={() => setInspectedClass(null)}
           onOpenAddSession={onOpenAddSession}
+          onOpenEditSession={(session) => onOpenAddSession(session.classId, session)}
           onOpenPublicStudentLink={(hash) => {
             const foundStd = students.find((s) => s.publicHash === hash);
             if (foundStd) {

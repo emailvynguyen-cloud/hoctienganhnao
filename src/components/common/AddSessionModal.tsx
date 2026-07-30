@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Class, Student, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
+import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3 } from 'lucide-react';
 
 interface AddSessionModalProps {
   isOpen?: boolean;
@@ -10,6 +10,7 @@ interface AddSessionModalProps {
   students: Student[];
   initialClassId?: string;
   defaultClassId?: string;
+  editingSession?: Session | null;
   onSessionAdded: () => void;
 }
 
@@ -20,31 +21,56 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   students,
   initialClassId,
   defaultClassId,
+  editingSession,
   onSessionAdded,
 }) => {
-  const targetClassId = initialClassId || defaultClassId || (classes[0]?.id || '');
+  const targetClassId = editingSession?.classId || initialClassId || defaultClassId || (classes[0]?.id || '');
   const [selectedClassId, setSelectedClassId] = useState<string>(targetClassId);
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [lessonContent, setLessonContent] = useState<string>('');
-  const [recordLink, setRecordLink] = useState<string>('');
+  const [date, setDate] = useState<string>(editingSession?.date || new Date().toISOString().split('T')[0]);
+  const [lessonContent, setLessonContent] = useState<string>(editingSession?.lessonContent || '');
+  const [recordLink, setRecordLink] = useState<string>(editingSession?.recordLink || '');
+  const [quizletUrl, setQuizletUrl] = useState<string>(editingSession?.quizletUrl || '');
 
   useEffect(() => {
-    const cid = initialClassId || defaultClassId;
-    if (cid) {
-      setSelectedClassId(cid);
-    } else if (classes.length > 0) {
-      setSelectedClassId(classes[0].id);
+    if (editingSession) {
+      setSelectedClassId(editingSession.classId);
+      setDate(editingSession.date);
+      setLessonContent(editingSession.lessonContent);
+      setRecordLink(editingSession.recordLink || '');
+      setQuizletUrl(editingSession.quizletUrl || '');
+      setHomeworkItems(editingSession.homeworkItems || [
+        { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
+      ]);
+      setStudentFeedbacks(editingSession.studentFeedbacks || {});
+      setMaterials(editingSession.sessionMaterials || []);
+
+      const attMap: Record<string, 'present' | 'excused' | 'unexcused' | 'late'> = {};
+      (editingSession.attendance || []).forEach((att) => {
+        attMap[att.studentId] = att.status;
+      });
+      setAttendanceMap(attMap);
+    } else {
+      const cid = initialClassId || defaultClassId;
+      if (cid) {
+        setSelectedClassId(cid);
+      } else if (classes.length > 0) {
+        setSelectedClassId(classes[0].id);
+      }
     }
-  }, [initialClassId, defaultClassId, classes]);
+  }, [editingSession, initialClassId, defaultClassId, classes]);
 
   // Multiple Homework Items List
-  const [homeworkItems, setHomeworkItems] = useState<HomeworkTaskItem[]>([
-    { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
-  ]);
+  const [homeworkItems, setHomeworkItems] = useState<HomeworkTaskItem[]>(
+    editingSession?.homeworkItems || [
+      { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
+    ]
+  );
 
   // Per-Student Individual Feedbacks (studentId -> { strengths, improvements })
   const classStudents = students.filter((s) => s.classIds && s.classIds.includes(selectedClassId));
-  const [studentFeedbacks, setStudentFeedbacks] = useState<Record<string, StudentFeedback>>({});
+  const [studentFeedbacks, setStudentFeedbacks] = useState<Record<string, StudentFeedback>>(
+    editingSession?.studentFeedbacks || {}
+  );
 
   // Attendance Map
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'excused' | 'unexcused' | 'late'>>({});
@@ -52,7 +78,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   // Materials List
   const [materialTitle, setMaterialTitle] = useState<string>('');
   const [materialUrl, setMaterialUrl] = useState<string>('');
-  const [materials, setMaterials] = useState<ResourceLink[]>([]);
+  const [materials, setMaterials] = useState<ResourceLink[]>(editingSession?.sessionMaterials || []);
 
   if (!isOpen) return null;
 
@@ -107,27 +133,45 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       status: attendanceMap[std.id] || 'present',
     }));
 
-    StorageEngine.recordBulkSession({
-      classId: selectedClassId,
-      teacherId: currentClass?.teacherId || 'u_teacher_01',
-      teacherName: currentClass?.teacherName || 'Giáo viên',
-      date,
-      lessonContent,
-      homeworkItems,
-      studentFeedbacks,
-      recordLink,
-      sessionMaterials: materials,
-      attendanceList,
-    });
+    if (editingSession) {
+      // EDIT EXISTING SESSION
+      StorageEngine.updateSession(editingSession.id, {
+        classId: selectedClassId,
+        date,
+        lessonContent,
+        homeworkItems,
+        studentFeedbacks,
+        recordLink,
+        quizletUrl,
+        sessionMaterials: materials,
+        attendance: attendanceList,
+      });
+      alert(`Đã cập nhật chỉnh sửa Buổi học #${editingSession.sessionNumber} thành công!`);
+    } else {
+      // RECORD NEW SESSION
+      StorageEngine.recordBulkSession({
+        classId: selectedClassId,
+        teacherId: currentClass?.teacherId || 'u_teacher_01',
+        teacherName: currentClass?.teacherName || 'Giáo viên',
+        date,
+        lessonContent,
+        homeworkItems,
+        studentFeedbacks,
+        recordLink,
+        quizletUrl,
+        sessionMaterials: materials,
+        attendanceList,
+      });
+      alert('Đã tạo buổi học mới thành công!');
+    }
 
-    alert('Đã cập nhật buổi học mới thành công!');
     onSessionAdded();
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative text-slate-800 dark:text-white">
         
         <button
           onClick={onClose}
@@ -138,14 +182,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
 
         <div className="flex items-center space-x-3 border-b border-pink-100 dark:border-slate-800 pb-4">
           <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-700 flex items-center justify-center font-black">
-            <PlusCircle className="w-6 h-6 text-pink-600" />
+            {editingSession ? <Edit3 className="w-6 h-6 text-pink-600" /> : <PlusCircle className="w-6 h-6 text-pink-600" />}
           </div>
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
-              Cập Nhật Buổi Học Mới (Admin & Giáo Viên)
+              {editingSession ? `✏️ Chỉnh Sửa Buổi Học #${editingSession.sessionNumber}` : 'Cập Nhật Buổi Học Mới'}
             </h3>
             <p className="text-xs text-slate-500 font-medium">
-              Nhận xét cá nhân hóa cho từng học viên & tạo danh sách nhiều bài tập về nhà
+              Chỉnh sửa link Quizlet từ vựng, bài tập về nhà, video record & nhận xét học viên
             </p>
           </div>
         </div>
@@ -160,6 +204,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
+                disabled={!!editingSession}
                 className="w-full p-3 rounded-xl border border-pink-200 bg-pink-50/50 font-extrabold text-xs"
               >
                 {classes.map((cls) => (
@@ -194,9 +239,99 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
               value={lessonContent}
               onChange={(e) => setLessonContent(e.target.value)}
-              className="w-full p-3 rounded-xl border border-pink-200 bg-white text-xs font-medium"
+              className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium"
               required
             />
+          </div>
+
+          {/* LINKS SECTION: RECORD LINK & QUIZLET LINK */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200">
+            <div>
+              <label className="block font-black text-sky-900 dark:text-sky-300 uppercase mb-1 flex items-center">
+                📹 Link Video Record Buổi Học
+              </label>
+              <input
+                type="url"
+                placeholder="https://zoom.us/... hoặc Drive"
+                value={recordLink}
+                onChange={(e) => setRecordLink(e.target.value)}
+                className="w-full p-3 rounded-xl border border-sky-200 bg-white dark:bg-slate-800 text-xs font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block font-black text-purple-900 dark:text-purple-300 uppercase mb-1 flex items-center">
+                🎴 Link Quizlet Từ Vựng Buổi Học
+              </label>
+              <input
+                type="url"
+                placeholder="https://quizlet.com/vn/..."
+                value={quizletUrl}
+                onChange={(e) => setQuizletUrl(e.target.value)}
+                className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
+              />
+            </div>
+          </div>
+
+          {/* MULTIPLE HOMEWORK TASKS LIST */}
+          <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-black text-xs text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center">
+                <BookOpen className="w-4 h-4 mr-1 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
+              </h4>
+              <button
+                type="button"
+                onClick={handleAddHomeworkItem}
+                className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Bài Tập
+              </button>
+            </div>
+
+            {homeworkItems.map((item, idx) => (
+              <div key={item.id || idx} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 space-y-2 relative">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-amber-900 dark:text-amber-300">
+                    Bài tập #{idx + 1}
+                  </span>
+                  {homeworkItems.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHomeworkItem(idx)}
+                      className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                      title="Xóa bài tập này"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Tiêu đề bài tập (Ví dụ: Bài 1: Thu âm Speaking Part 2)"
+                  value={item.title}
+                  onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-bold"
+                  required
+                />
+
+                <textarea
+                  rows={2}
+                  placeholder="Nội dung/hướng dẫn chi tiết cho bài tập này..."
+                  value={item.content || ''}
+                  onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
+                />
+
+                <input
+                  type="url"
+                  placeholder="Link file đính kèm/đề bài (nếu có: https://...)"
+                  value={item.attachmentUrl || ''}
+                  onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
+                />
+              </div>
+            ))}
           </div>
 
           {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
@@ -219,28 +354,28 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-emerald-700 mb-1">
-                        💪 Điểm mạnh của {std.name}:
+                      <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+                        🌟 Điểm mạnh riêng hôm nay:
                       </label>
                       <textarea
                         rows={2}
-                        placeholder="Phát âm chuẩn, tương tác hăng hái..."
+                        placeholder="Ví dụ: Phát âm ending sound rất tốt, tự tin trả lời..."
                         value={fb.strengths || ''}
                         onChange={(e) => handleUpdateStudentFeedback(std.id, 'strengths', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/30 text-xs font-medium"
+                        className="w-full p-2.5 rounded-xl border border-emerald-200 text-xs bg-emerald-50/30"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-amber-700 mb-1">
-                        🎯 Điểm cần cải thiện của {std.name}:
+                      <label className="block text-[11px] font-bold text-rose-800 dark:text-rose-300 mb-1">
+                        🎯 Điểm cần cải thiện:
                       </label>
                       <textarea
                         rows={2}
-                        placeholder="Cần chú ý trọng âm 3 âm tiết..."
+                        placeholder="Ví dụ: Chú ý thì quá khứ đơn khi viết essay..."
                         value={fb.improvements || ''}
                         onChange={(e) => handleUpdateStudentFeedback(std.id, 'improvements', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-xs font-medium"
+                        className="w-full p-2.5 rounded-xl border border-rose-200 text-xs bg-rose-50/30"
                       />
                     </div>
                   </div>
@@ -249,139 +384,18 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             })}
           </div>
 
-          {/* MULTIPLE HOMEWORK ITEMS */}
-          <div className="p-4 rounded-3xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-black text-xs text-sky-950 dark:text-sky-300 uppercase tracking-wider">
-                📝 Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
-              </h4>
-
-              <button
-                type="button"
-                onClick={handleAddHomeworkItem}
-                className="px-3.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 border border-sky-300 font-extrabold text-xs hover:bg-sky-300 transition flex items-center shadow-xs"
-              >
-                <Plus className="w-4 h-4 mr-1 text-sky-700" /> + Thêm Bài Tập
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {homeworkItems.map((item, idx) => (
-                <div key={item.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-sky-100 space-y-2 relative">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sky-800 text-[11px]">Bài tập #{idx + 1}</span>
-                    {homeworkItems.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveHomeworkItem(idx)}
-                        className="text-rose-500 font-bold hover:underline"
-                      >
-                        Xóa Bài Tập Này
-                      </button>
-                    )}
-                  </div>
-
-                  <input
-                    type="text"
-                    placeholder="Tiêu đề bài tập (e.g. Bài 1: Ghi âm 2 phút speaking...)"
-                    value={item.title}
-                    onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-sky-200 text-xs font-bold"
-                  />
-
-                  <textarea
-                    rows={2}
-                    placeholder="Mô tả chi tiết yêu cầu làm bài tập..."
-                    value={item.content || ''}
-                    onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-sky-200 text-xs font-medium"
-                  />
-
-                  <input
-                    type="url"
-                    placeholder="Link/Ảnh đính kèm bài tập (Drive/PDF/Image link)"
-                    value={item.attachmentUrl || ''}
-                    onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
-                    className="w-full p-2 rounded-xl border border-sky-200 text-xs font-mono"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Record Link */}
-          <div>
-            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
-              🎬 Link Record Video Buổi Học (Zoom / Drive / Youtube)
-            </label>
-            <input
-              type="url"
-              placeholder="https://zoom.us/rec/play/..."
-              value={recordLink}
-              onChange={(e) => setRecordLink(e.target.value)}
-              className="w-full p-3 rounded-xl border border-pink-200 text-xs font-mono"
-            />
-          </div>
-
-          {/* Attendance Checklist */}
-          <div>
-            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-2">
-              Điểm Danh Học Viên Buổi Học:
-            </label>
-            <div className="space-y-2">
-              {classStudents.map((std) => {
-                const currentAtt = attendanceMap[std.id] || 'present';
-
-                return (
-                  <div key={std.id} className="p-3 rounded-2xl border border-pink-100 bg-pink-50/40 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
-                      <span className="font-extrabold text-xs text-slate-800">{std.name}</span>
-                    </div>
-
-                    <div className="flex items-center space-x-1">
-                      <button
-                        type="button"
-                        onClick={() => setAttendanceMap({ ...attendanceMap, [std.id]: 'present' })}
-                        className={`px-3 py-1 rounded-xl text-xs font-black ${
-                          currentAtt === 'present' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        ✓ Có mặt
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAttendanceMap({ ...attendanceMap, [std.id]: 'excused' })}
-                        className={`px-3 py-1 rounded-xl text-xs font-black ${
-                          currentAtt === 'excused' ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
-                        }`}
-                      >
-                        Vắng có phép
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4 border-t border-pink-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-bold text-xs"
-            >
-              Hủy
-            </button>
+          <div className="pt-2">
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 text-white font-black text-sm shadow-md hover:shadow-lg transition flex items-center justify-center"
             >
-              Lưu Buổi Học Này
+              {editingSession ? <Edit3 className="w-4 h-4 mr-2" /> : <PlusCircle className="w-4 h-4 mr-2" />}
+              {editingSession ? `Lưu Thay Đổi Buổi Học #${editingSession.sessionNumber}` : 'Lưu Buổi Học Mới'}
             </button>
           </div>
 
         </form>
+
       </div>
     </div>
   );

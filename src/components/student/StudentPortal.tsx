@@ -198,16 +198,29 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
           </div>
 
-          {session.recordLink && (
-            <a
-              href={session.recordLink}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
-            >
-              <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {session.quizletUrl && (
+              <a
+                href={session.quizletUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-xs hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-md border border-indigo-200"
+              >
+                <BookOpen className="w-3.5 h-3.5 mr-1" /> 🎴 Học Từ Vựng Quizlet ↗
+              </a>
+            )}
+
+            {session.recordLink && (
+              <a
+                href={session.recordLink}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-xs"
+              >
+                <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Lesson Content */}
@@ -510,77 +523,95 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         )}
       </div>
 
-      {/* 4. REDESIGNED SOFT PASTEL CARD: KHO TÀI LIỆU & GIÁO TRÌNH CHÍNH */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-sm space-y-5">
+      {/* 4. DESIGNED 2-BOX MATERIALS SECTION: TÀI LIỆU TỔNG & TÀI LIỆU HỌC TẬP */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        {/* PHẦN 1: LINK TÀI LIỆU CHÍNH */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <FolderOpen className="w-5 h-5 text-sky-500 animate-pulse" />
-            <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
-              Kho Tài Liệu & Giáo Trình Chính
-            </h3>
+        {/* Ô 1: TÀI LIỆU TỔNG (DẪN TỚI GOOGLE DRIVE) */}
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-sky-100 via-blue-50 to-emerald-100 text-sky-950 shadow-sm border-2 border-sky-200 flex flex-col justify-between space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-white/90 text-sky-600 flex items-center justify-center text-xl shadow-xs border border-sky-200">
+                📁
+              </div>
+              <div>
+                <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
+                  Tài liệu tổng
+                </h3>
+                <span className="text-[11px] font-bold text-sky-800">
+                  Google Drive Thư Mục Chính
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-sky-900 font-medium leading-relaxed">
+              Tổng hợp toàn bộ giáo trình gốc, file âm thanh MP3, slide giảng dạy & kho tài liệu tham khảo chính thức của khóa học.
+            </p>
           </div>
 
-          <div className="p-5 rounded-3xl bg-gradient-to-r from-sky-100 via-blue-50 to-emerald-100 text-sky-950 shadow-xs border-2 border-sky-200">
-            <div className="flex flex-wrap gap-2.5">
-              {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
-                primaryClass.resourceLinks.map((res) => (
-                  <a
-                    key={res.id}
-                    href={res.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2.5 rounded-2xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center shrink-0 border border-sky-200"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2 text-sky-600" />
-                    {res.title}
-                  </a>
-                ))
-              ) : (
+          {/* Direct Action Link Buttons */}
+          <div className="pt-2 flex flex-col space-y-2">
+            {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
+              primaryClass.resourceLinks.map((res) => (
                 <a
-                  href="https://drive.google.com"
+                  key={res.id}
+                  href={res.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2.5 rounded-2xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center border border-sky-200"
+                  className="px-4 py-3 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-extrabold text-xs transition shadow-xs flex items-center justify-between border border-sky-300 group"
                 >
-                  <ExternalLink className="w-4 h-4 mr-2 text-sky-600" />
-                  Mở Thư Mục Giáo Trình Chính
+                  <span className="flex items-center truncate mr-2">
+                    <ExternalLink className="w-4 h-4 mr-2 text-sky-600 shrink-0" />
+                    <span className="truncate">{res.title}</span>
+                  </span>
+                  <span className="text-[10px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full shrink-0 group-hover:bg-sky-200 transition">
+                    Mở GG Drive ↗
+                  </span>
                 </a>
-              )}
-            </div>
+              ))
+            ) : (
+              <a
+                href="https://drive.google.com"
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-3 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-extrabold text-xs transition shadow-xs flex items-center justify-between border border-sky-300 group"
+              >
+                <span className="flex items-center">
+                  <ExternalLink className="w-4 h-4 mr-2 text-sky-600 shrink-0" />
+                  Mở Thư Mục Google Drive Tài Liệu Tổng
+                </span>
+                <span className="text-[10px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full shrink-0 group-hover:bg-sky-200 transition">
+                  Mở GG Drive ↗
+                </span>
+              </a>
+            )}
           </div>
         </div>
 
-        {/* PHẦN 2: SEARCHABLE / COLLAPSIBLE SESSION MATERIALS */}
-        <div className="pt-2 border-t border-pink-100 dark:border-slate-800 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              📎 Tài Liệu Theo Từng Buổi Học ({allSessionMaterials.length} File)
-            </span>
-
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-56">
-                <Search className="w-3.5 h-3.5 text-pink-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Tìm tài liệu buổi học..."
-                  value={materialSearchQuery}
-                  onChange={(e) => {
-                    setMaterialSearchQuery(e.target.value);
-                    if (!isExtraMaterialsOpen) setIsExtraMaterialsOpen(true);
-                  }}
-                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-pink-200 text-xs bg-pink-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
-                />
+        {/* Ô 2: TÀI LIỆU HỌC TẬP (CÓ THỂ MỞ RA ĐÓNG VÀO ĐƯỢC) */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-sm border-2 border-pink-200 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-pink-100 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl shadow-xs border border-pink-200">
+                  📚
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
+                    Tài liệu học tập
+                  </h3>
+                  <span className="text-[11px] font-bold text-pink-600">
+                    {allSessionMaterials.length} File bài học theo từng buổi
+                  </span>
+                </div>
               </div>
 
+              {/* TOGGLE OPEN / CLOSE BUTTON */}
               <button
                 onClick={() => setIsExtraMaterialsOpen(!isExtraMaterialsOpen)}
-                className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 text-xs font-extrabold transition flex items-center shrink-0 border border-pink-200"
+                className="px-3 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition border border-pink-300 flex items-center shrink-0 shadow-2xs"
               >
                 {isExtraMaterialsOpen ? (
                   <>
-                    <ChevronUp className="w-4 h-4 mr-1 text-pink-600" /> Thu Gọn
+                    <ChevronUp className="w-4 h-4 mr-1 text-pink-600" /> Đóng Lại
                   </>
                 ) : (
                   <>
@@ -589,38 +620,57 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 )}
               </button>
             </div>
-          </div>
 
-          {/* Search-Filtered Materials List */}
-          {isExtraMaterialsOpen && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fadeIn">
-              {filteredSessionMaterials.length > 0 ? (
-                filteredSessionMaterials.map((mat) => (
-                  <a
-                    key={mat.id}
-                    href={mat.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-3.5 rounded-2xl border border-pink-100 bg-pink-50/40 hover:border-pink-300 transition flex items-center space-x-3 group"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h5 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition">
-                        Buổi {mat.sessionNum}: {mat.title}
-                      </h5>
-                      <span className="text-[10px] text-pink-600 font-bold underline">
-                        Bấm để xem / tải về →
-                      </span>
-                    </div>
-                  </a>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 italic col-span-2">Không tìm thấy tài liệu phù hợp từ khóa.</p>
-              )}
-            </div>
-          )}
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+              Các file bài học đính kèm, slide thuyết trình & đề luyện tập được giáo viên cập nhật chi tiết theo từng ca học.
+            </p>
+
+            {/* EXPANDABLE LIST WITH SEARCH */}
+            {isExtraMaterialsOpen && (
+              <div className="space-y-3 pt-2 animate-fadeIn border-t border-pink-100">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-pink-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên file hoặc số buổi..."
+                    value={materialSearchQuery}
+                    onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-pink-200 text-xs bg-pink-50/50 font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
+                  />
+                </div>
+
+                {/* Materials List */}
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {filteredSessionMaterials.length > 0 ? (
+                    filteredSessionMaterials.map((mat) => (
+                      <a
+                        key={mat.id}
+                        href={mat.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-3 rounded-2xl border border-pink-100 bg-pink-50/40 hover:border-pink-300 transition flex items-center justify-between space-x-2 group text-xs"
+                      >
+                        <div className="flex items-center space-x-2 truncate">
+                          <FileText className="w-4 h-4 text-pink-500 shrink-0" />
+                          <span className="font-extrabold text-slate-900 dark:text-white truncate group-hover:text-pink-600 transition">
+                            Buổi {mat.sessionNum}: {mat.title}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-pink-600 underline shrink-0">
+                          Tải về →
+                        </span>
+                      </a>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 italic text-center py-2">
+                      Chưa tìm thấy tài liệu phù hợp.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
