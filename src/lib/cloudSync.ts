@@ -45,21 +45,17 @@ export const CloudSyncEngine = {
           (payload: any) => {
             console.log("SUPER ADMIN RECEIVED REALTIME", payload);
 
-            // Extract payload from payload.new.payload
+            // 1. Immediately extract and write payload from payload.new.payload if available
             const cloudPayload = payload?.new?.payload || payload?.record?.payload;
             if (cloudPayload) {
-              // 1. Write updated data directly into RAM Memory Store
               Object.keys(cloudPayload).forEach((key) => {
                 updateLiveMemoryStore(key, cloudPayload[key]);
               });
-              // 2. Notify all React component subscribers to update React State immediately
               subscribers.forEach((cb) => cb(cloudPayload));
-            } else {
-              // Fallback: Pull initial cloud data and notify subscribers
-              this.pullInitialCloudData().then(() => {
-                subscribers.forEach((cb) => cb());
-              });
             }
+
+            // 2. Always pull latest payload from Supabase DB to guarantee 100% fresh data sync
+            this.pullInitialCloudData();
           }
         )
         .subscribe((status: string) => {
@@ -170,19 +166,14 @@ export const CloudSyncEngine = {
       if (cloudPayload) {
         lastSyncedTimestamp = cloudTimestamp || new Date().toISOString();
 
-        let hasNewChanges = false;
         Object.keys(cloudPayload).forEach((key) => {
           try {
             const cloudVal = cloudPayload[key];
             updateLiveMemoryStore(key, cloudVal);
-            hasNewChanges = true;
           } catch (e) {}
         });
 
-        if (hasNewChanges) {
-          subscribers.forEach((cb) => cb());
-        }
-
+        subscribers.forEach((cb) => cb(cloudPayload));
         return true;
       }
     } catch (e) {
