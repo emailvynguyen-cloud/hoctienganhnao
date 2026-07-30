@@ -12,6 +12,7 @@ import { AccountManagementModal } from './components/auth/AccountManagementModal
 import { LeaderboardWidget } from './components/common/LeaderboardWidget';
 import { AddSessionModal } from './components/common/AddSessionModal';
 import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
+import { CloudSyncEngine } from './lib/cloudSync';
 import { Crown, Shield, UserCheck, GraduationCap, Eye, LogIn, Trophy } from 'lucide-react';
 
 const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
@@ -86,10 +87,6 @@ export default function App() {
     setInvoices(StorageEngine.getInvoices());
     setBankConfig(StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
     setCurrentUser(StorageEngine.getCurrentUser());
-  };
-
-import { CloudSyncEngine } from './lib/cloudSync';
-
   useEffect(() => {
     loadData();
 
