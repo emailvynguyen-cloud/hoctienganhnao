@@ -394,13 +394,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           : 'bg-gradient-to-r from-pink-100 via-rose-50 to-sky-100 text-pink-950 border-pink-200'
       }`}>
         <div className="flex items-center space-x-2">
-          {isSuperAdmin ? <Crown className="w-5 h-5 text-amber-600" /> : <ShieldAlert className="w-5 h-5 text-pink-600" />}
+          {isSuperAdmin ? <Crown className="w-5 h-5 text-amber-600 shrink-0" /> : <ShieldAlert className="w-5 h-5 text-pink-600 shrink-0" />}
           <span>
             {isSuperAdmin
               ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Quản lý thời khóa biểu Ms. Vy, theo dõi đội ngũ giáo viên, học viên, học phí & doanh thu.'
               : 'Bạn đang ở phân hệ QUẢN TRỊ VIÊN (Admin): Theo dõi lịch học, danh sách lớp học, học viên & Chấm bài tập về nhà.'}
           </span>
         </div>
+
+        {isSuperAdmin && (
+          <button
+            onClick={() => StorageEngine.downloadDatabaseBackupFile()}
+            className="px-3.5 py-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-md flex items-center shrink-0 border border-emerald-500 cursor-pointer"
+            title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
+          >
+            💾 Sao Lưu Dữ Liệu Thực (.json)
+          </button>
+        )}
       </div>
 
       {/* Tabs Navigation Bar */}
@@ -600,7 +610,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA TÀI KHOẢN giáo viên "${teacher.name}" khỏi hệ thống?`)) {
-                              StorageEngine.deleteUser(teacher.id);
+                              StorageEngine.deleteTeacher(teacher.id);
                               onUpdateClasses();
                             }
                           }}

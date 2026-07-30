@@ -148,9 +148,35 @@ export const StorageEngine = {
     }
   },
   deleteUser(uid: string) {
+    this.deleteTeacher(uid);
+  },
+  deleteTeacher(teacherIdOrName: string) {
     const users = this.getUsers() || [];
-    const updated = users.filter((u) => u && u.uid !== uid);
-    this.saveUsers(updated);
+    const targetUser = users.find((u) => u && (u.uid === teacherIdOrName || u.displayName === teacherIdOrName));
+    const teacherName = targetUser ? targetUser.displayName : teacherIdOrName;
+
+    // 1. Delete user account
+    const updatedUsers = users.filter((u) => u && u.uid !== teacherIdOrName && u.displayName !== teacherIdOrName);
+    this.saveUsers(updatedUsers);
+
+    // 2. Unassign from all classes (reassign to Ms. Vy)
+    const classes = this.getClasses() || [];
+    let classUpdated = false;
+    classes.forEach((c) => {
+      if (
+        c &&
+        (c.teacherId === teacherIdOrName ||
+          c.teacherName === teacherName ||
+          (c.teacherName && c.teacherName.toLowerCase() === teacherName.toLowerCase()))
+      ) {
+        c.teacherId = 'u_super_admin';
+        c.teacherName = 'Ms. Vy';
+        classUpdated = true;
+      }
+    });
+    if (classUpdated) {
+      this.saveClasses(classes);
+    }
   },
 
   getStudents(): Student[] {
@@ -286,11 +312,61 @@ export const StorageEngine = {
     }
   },
 
+  sortAndReindexSessions(sessions: Session[]): Session[] {
+    if (!sessions || !Array.isArray(sessions)) return [];
+    const classes = this.getClasses() || [];
+    const classMap = new Map<string, Class>();
+    classes.forEach((c) => {
+      if (c && c.id) classMap.set(c.id, c);
+    });
+
+    const classSessionsMap = new Map<string, Session[]>();
+    const otherSessions: Session[] = [];
+
+    sessions.forEach((s) => {
+      if (s && s.classId) {
+        if (!classSessionsMap.has(s.classId)) {
+          classSessionsMap.set(s.classId, []);
+        }
+        classSessionsMap.get(s.classId)!.push(s);
+      } else if (s) {
+        otherSessions.push(s);
+      }
+    });
+
+    const reindexedAll: Session[] = [...otherSessions];
+
+    classSessionsMap.forEach((classSessions, classId) => {
+      const cls = classMap.get(classId);
+      const startNum = cls?.startSessionNumber || 1;
+
+      // Sort chronologically ascending by date (YYYY-MM-DD)
+      classSessions.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        return (a.id || '').localeCompare(b.id || '');
+      });
+
+      // Re-index sessionNumber dynamically based on chronological date order
+      classSessions.forEach((s, idx) => {
+        s.sessionNumber = startNum + idx;
+        reindexedAll.push(s);
+      });
+    });
+
+    return reindexedAll;
+  },
+
   getSessions(): Session[] {
-    return getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
+    const rawSessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
+    return this.sortAndReindexSessions(rawSessions);
   },
   saveSessions(sessions: Session[]) {
-    setItem(STORAGE_KEYS.SESSIONS, sessions);
+    const sorted = this.sortAndReindexSessions(sessions);
+    setItem(STORAGE_KEYS.SESSIONS, sorted);
     this.syncAllToCloud();
   },
 
@@ -399,21 +475,70 @@ export const StorageEngine = {
     this.syncAllToCloud();
   },
 
+  // EXPORT & DOWNLOAD FULL PRODUCTION DATABASE BACKUP (.JSON)
+  exportFullDatabaseBackup() {
+    return {
+      version: '4.0_PRODUCTION',
+      exportedAt: new Date().toISOString(),
+      students: this.getStudents(),
+      classes: this.getClasses(),
+      sessions: this.getSessions(),
+      homeworkTasks: this.getHomeworkTasks(),
+      homeworkSubmissions: this.getHomeworkSubmissions(),
+      invoices: this.getInvoices(),
+      users: this.getUsers(),
+      bankConfig: this.getBankConfig(),
+      notifications: this.getNotifications(),
+    };
+  },
+
+  downloadDatabaseBackupFile() {
+    const backup = this.exportFullDatabaseBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `MS_VY_ENGLISH_DATA_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+
+  // RESTORE DATABASE FROM BACKUP FILE
+  restoreDatabaseFromBackup(backupData: any) {
+    if (!backupData) return false;
+    if (backupData.students) setItem(STORAGE_KEYS.STUDENTS, backupData.students);
+    if (backupData.classes) setItem(STORAGE_KEYS.CLASSES, backupData.classes);
+    if (backupData.sessions) setItem(STORAGE_KEYS.SESSIONS, backupData.sessions);
+    if (backupData.homeworkTasks) setItem(STORAGE_KEYS.HOMEWORK_TASKS, backupData.homeworkTasks);
+    if (backupData.homeworkSubmissions) setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, backupData.homeworkSubmissions);
+    if (backupData.invoices) setItem(STORAGE_KEYS.INVOICES, backupData.invoices);
+    if (backupData.users) setItem(STORAGE_KEYS.USERS, backupData.users);
+    if (backupData.bankConfig) setItem(STORAGE_KEYS.BANK_CONFIG, backupData.bankConfig);
+    if (backupData.notifications) setItem(STORAGE_KEYS.NOTIFICATIONS, backupData.notifications);
+    this.syncAllToCloud();
+    return true;
+  },
+
+  // PROTECTED RESET DATABASE (SAFEGUARDED AGAINST ACCIDENTAL WIPES)
   resetDatabase() {
-    localStorage.clear();
-    setItem(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
-    setItem(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
-    setItem(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
-    setItem(STORAGE_KEYS.HOMEWORK_TASKS, INITIAL_HOMEWORK_TASKS);
-    setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, INITIAL_HOMEWORK_SUBMISSIONS);
-    setItem(STORAGE_KEYS.NOTIFICATIONS, []);
-    setItem(STORAGE_KEYS.INVOICES, INITIAL_INVOICES);
-    setItem(STORAGE_KEYS.USERS, INITIAL_USERS);
-    setItem(STORAGE_KEYS.BANK_CONFIG, INITIAL_BANK_CONFIG);
-    setItem(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
-    syncCollectionToCloud('students', INITIAL_STUDENTS);
-    syncCollectionToCloud('classes', INITIAL_CLASSES);
-    syncCollectionToCloud('sessions', INITIAL_SESSIONS);
+    const confirmCode = prompt('CẢNH BÁO: Việc này sẽ xóa toàn bộ dữ liệu thực! Nhập mã "CONFIRM_RESET_DATA" để thực hiện:');
+    if (confirmCode === 'CONFIRM_RESET_DATA') {
+      localStorage.clear();
+      setItem(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+      setItem(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
+      setItem(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
+      setItem(STORAGE_KEYS.HOMEWORK_TASKS, INITIAL_HOMEWORK_TASKS);
+      setItem(STORAGE_KEYS.HOMEWORK_SUBMISSIONS, INITIAL_HOMEWORK_SUBMISSIONS);
+      setItem(STORAGE_KEYS.NOTIFICATIONS, []);
+      setItem(STORAGE_KEYS.INVOICES, INITIAL_INVOICES);
+      setItem(STORAGE_KEYS.USERS, INITIAL_USERS);
+      setItem(STORAGE_KEYS.BANK_CONFIG, INITIAL_BANK_CONFIG);
+      setItem(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]);
+      this.syncAllToCloud();
+      alert('Đã khôi phục dữ liệu mẫu ban đầu!');
+    }
   },
 
   addStudent(studentData: Omit<Student, 'id' | 'publicHash' | 'createdAt' | 'status' | 'stars' | 'badges'>): Student {
