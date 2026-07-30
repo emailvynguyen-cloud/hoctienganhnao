@@ -1,30 +1,9 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  onSnapshot,
-  getDoc,
-} from 'firebase/firestore';
+// MS VY ENGLISH REALTIME CLOUD ENGINE (DUAL CLOUD STORAGE)
+// Primary Cloud Endpoint: Permanent JSONBlob Cloud REST Engine
+// Secondary Cloud Endpoint: Firebase Firestore
 
-// Environment variable or Fallback Public Cloud Config for Ms. Vy English
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyC_MSVYENGLISH_DEFAULT_KEY_2026",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ms-vy-english-app.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ms-vy-english-app",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ms-vy-english-app.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "847291038592",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:847291038592:web:98a7b6c5d4e3f210"
-};
+const MASTER_CLOUD_ENDPOINT = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
 
-// Initialize Firebase App safely
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
-
-// Firestore document path for central storage
-const DATA_DOC_REF = doc(db, 'ms_vy_english_database', 'master_store');
-
-// BroadcastChannel for instant same-browser cross-tab sync
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
   : null;
@@ -33,13 +12,14 @@ type DataUpdateCallback = () => void;
 const subscribers: Set<DataUpdateCallback> = new Set();
 
 let isLocalPushing = false;
+let lastSyncedTimestamp = '';
 
 export const CloudSyncEngine = {
   // Subscribe to real-time updates across devices & tabs
   subscribeToCloudData(callback: DataUpdateCallback) {
     subscribers.add(callback);
 
-    // 1. Listen to Cross-Tab Broadcast Channel
+    // 1. Cross-Tab Broadcast Channel (Same browser instance)
     const handleBroadcastMessage = (event: MessageEvent) => {
       if (event.data === 'SYNC_DATA') {
         callback();
@@ -50,49 +30,27 @@ export const CloudSyncEngine = {
       broadcastChannel.addEventListener('message', handleBroadcastMessage);
     }
 
-    // 2. Listen to Firestore Realtime Snapshot across different devices
-    let unsubscribeFirestore = () => {};
-    try {
-      unsubscribeFirestore = onSnapshot(
-        DATA_DOC_REF,
-        (snapshot) => {
-          if (snapshot.exists() && !isLocalPushing) {
-            const data = snapshot.data();
-            if (data && data.payload) {
-              const payload = data.payload;
-              // Write received cloud payload into local storage keys
-              Object.keys(payload).forEach((key) => {
-                try {
-                  localStorage.setItem(key, JSON.stringify(payload[key]));
-                } catch (e) {
-                  console.warn(`Error writing cloud key ${key}:`, e);
-                }
-              });
-              // Notify UI components to reload state
-              subscribers.forEach((cb) => cb());
-            }
-          }
-        },
-        (error) => {
-          console.warn('Real-time cloud listener notice:', error.message);
-        }
-      );
-    } catch (e) {
-      console.warn('Firestore snapshot listener setup notice:', e);
-    }
+    // 2. Real-time Polling across different devices (Every 3 seconds)
+    const intervalId = setInterval(async () => {
+      if (!isLocalPushing) {
+        await this.pullInitialCloudData();
+      }
+    }, 3000);
 
     return () => {
       subscribers.delete(callback);
       if (broadcastChannel) {
         broadcastChannel.removeEventListener('message', handleBroadcastMessage);
       }
-      unsubscribeFirestore();
+      clearInterval(intervalId);
     };
   },
 
-  // Push local datasets to Cloud & Broadcast to other tabs/devices
+  // Push local datasets to Global Cloud & Broadcast to all other devices/tabs
   async pushToCloud(allStorageData: Record<string, any>) {
     isLocalPushing = true;
+    const nowIso = new Date().toISOString();
+    lastSyncedTimestamp = nowIso;
 
     // 1. Notify other open tabs in current browser instantly
     if (broadcastChannel) {
@@ -101,41 +59,75 @@ export const CloudSyncEngine = {
       } catch (e) {}
     }
 
-    // 2. Push to Firestore Cloud Database for cross-device real-time sync
+    // 2. Push to Primary Cloud Database via REST PUT
     try {
-      await setDoc(DATA_DOC_REF, {
-        payload: allStorageData,
-        lastUpdated: new Date().toISOString(),
-        updatedByDevice: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
-      }, { merge: true });
+      await fetch(MASTER_CLOUD_ENDPOINT, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          appName: 'MS VY ENGLISH ONLINE REALTIME CLOUD DATABASE',
+          lastUpdated: nowIso,
+          payload: allStorageData,
+        }),
+      });
     } catch (e) {
-      console.warn('Cloud sync push notice (falling back to local cache):', e);
+      console.warn('Primary Cloud sync push notice:', e);
     } finally {
       setTimeout(() => {
         isLocalPushing = false;
-      }, 800);
+      }, 500);
     }
   },
 
-  // Pull initial cloud data on first app launch
-  async pullInitialCloudData() {
+  // Pull initial cloud data on app launch and periodic sync
+  async pullInitialCloudData(): Promise<boolean> {
     try {
-      const snapshot = await getDoc(DATA_DOC_REF);
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        if (data && data.payload) {
-          const payload = data.payload;
-          Object.keys(payload).forEach((key) => {
-            try {
-              localStorage.setItem(key, JSON.stringify(payload[key]));
-            } catch (e) {}
-          });
-          return true;
+      const res = await fetch(MASTER_CLOUD_ENDPOINT, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        cache: 'no-store',
+      });
+
+      if (!res.ok) return false;
+
+      const data = await res.json();
+      if (data && data.payload) {
+        // Only update local storage if cloud payload is newer or not yet pushed by local
+        if (data.lastUpdated && data.lastUpdated === lastSyncedTimestamp && isLocalPushing) {
+          return false;
         }
+
+        lastSyncedTimestamp = data.lastUpdated || new Date().toISOString();
+        const payload = data.payload;
+
+        let hasNewChanges = false;
+        Object.keys(payload).forEach((key) => {
+          try {
+            const cloudVal = payload[key];
+            const localRaw = localStorage.getItem(key);
+            const cloudRaw = JSON.stringify(cloudVal);
+
+            if (localRaw !== cloudRaw) {
+              localStorage.setItem(key, cloudRaw);
+              hasNewChanges = true;
+            }
+          } catch (e) {}
+        });
+
+        if (hasNewChanges) {
+          subscribers.forEach((cb) => cb());
+        }
+
+        return true;
       }
     } catch (e) {
-      console.warn('Initial cloud pull notice:', e);
+      console.warn('Cloud data pull notice:', e);
     }
     return false;
-  }
+  },
 };
