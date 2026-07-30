@@ -93,8 +93,11 @@ export default function App() {
         setIsCloudLoading(false);
       });
 
-    const unsubscribe = CloudSyncEngine.subscribeToCloudData(() => {
-      loadData();
+    const unsubscribe = CloudSyncEngine.subscribeToCloudData((payload) => {
+      console.log("SUPER ADMIN RECEIVED REALTIME", payload);
+      CloudSyncEngine.pullInitialCloudData().then(() => {
+        loadData();
+      });
     });
 
     const handleFocus = () => {

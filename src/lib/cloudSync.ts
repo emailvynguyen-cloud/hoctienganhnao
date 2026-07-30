@@ -8,7 +8,7 @@ const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in 
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
   : null;
 
-type DataUpdateCallback = () => void;
+type DataUpdateCallback = (payload?: any) => void;
 const subscribers: Set<DataUpdateCallback> = new Set();
 
 let lastSyncedTimestamp = '';
@@ -43,17 +43,21 @@ export const CloudSyncEngine = {
             schema: 'public',
           },
           (payload: any) => {
-            console.log('[SUPABASE REALTIME EVENT]', payload);
+            console.log("SUPER ADMIN RECEIVED REALTIME", payload);
+
             const record = payload?.new || payload?.record;
             if (record && record.payload) {
               const cloudPayload = record.payload;
               Object.keys(cloudPayload).forEach((key) => {
                 updateLiveMemoryStore(key, cloudPayload[key]);
               });
-              subscribers.forEach((cb) => cb());
-            } else {
-              this.pullInitialCloudData();
+              subscribers.forEach((cb) => cb(payload));
             }
+
+            // Always pull fresh initial data from Supabase REST endpoint to guarantee 100% dataset sync
+            this.pullInitialCloudData().then(() => {
+              subscribers.forEach((cb) => cb(payload));
+            });
           }
         )
         .subscribe((status: string) => {
