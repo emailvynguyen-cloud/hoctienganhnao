@@ -1,8 +1,7 @@
-// MS VY ENGLISH SUPABASE REALTIME CLOUD ENGINE
-// Pure Realtime Stream (No Polling, Zero setInterval)
+// MS VY ENGLISH OFFICIAL SUPABASE REALTIME CLOUD ENGINE
 // Single Source of Truth: Supabase PostgreSQL Database (qbzmamuahgmaruwcqfyl.supabase.co)
 
-import { supabaseFetch, SupabaseRealtimeChannel } from './supabaseEngine';
+import { supabase, SUPABASE_URL, SUPABASE_KEY } from './supabaseEngine';
 import { updateLiveMemoryStore } from './storage';
 
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
@@ -12,14 +11,13 @@ const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in 
 type DataUpdateCallback = () => void;
 const subscribers: Set<DataUpdateCallback> = new Set();
 
-let isLocalPushing = false;
 let lastSyncedTimestamp = '';
-let realtimeChannel: SupabaseRealtimeChannel | null = null;
+let realtimeChannel: any = null;
 
 const FALLBACK_CLOUD_URL = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
 
 export const CloudSyncEngine = {
-  // Subscribe to real-time updates across devices via Supabase WebSocket (Zero Polling)
+  // Subscribe to real-time updates across devices via Official Supabase SDK Channel
   subscribeToCloudData(callback: DataUpdateCallback) {
     subscribers.add(callback);
 
@@ -34,26 +32,33 @@ export const CloudSyncEngine = {
       broadcastChannel.addEventListener('message', handleBroadcastMessage);
     }
 
-    // 2. Supabase Realtime WebSocket Listener (postgres_changes STREAM - NO POLLING)
+    // 2. Official Supabase Realtime Subscription Channel
     if (!realtimeChannel) {
-      realtimeChannel = new SupabaseRealtimeChannel('public:master_store', (changePayload) => {
-        // Realtime event received over WebSocket: Update memory store directly and notify React components!
-        if (changePayload && changePayload.record && changePayload.record.payload) {
-          const cloudPayload = changePayload.record.payload;
-          Object.keys(cloudPayload).forEach((key) => {
-            updateLiveMemoryStore(key, cloudPayload[key]);
-          });
-          subscribers.forEach((cb) => cb());
-        } else if (changePayload && changePayload.payload) {
-          const cloudPayload = changePayload.payload;
-          Object.keys(cloudPayload).forEach((key) => {
-            updateLiveMemoryStore(key, cloudPayload[key]);
-          });
-          subscribers.forEach((cb) => cb());
-        } else {
-          this.pullInitialCloudData();
-        }
-      });
+      realtimeChannel = supabase
+        .channel('database-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+          },
+          (payload: any) => {
+            console.log('[SUPABASE REALTIME EVENT]', payload);
+            const record = payload?.new || payload?.record;
+            if (record && record.payload) {
+              const cloudPayload = record.payload;
+              Object.keys(cloudPayload).forEach((key) => {
+                updateLiveMemoryStore(key, cloudPayload[key]);
+              });
+              subscribers.forEach((cb) => cb());
+            } else {
+              this.pullInitialCloudData();
+            }
+          }
+        )
+        .subscribe((status: string) => {
+          console.log('[SUPABASE REALTIME SUBSCRIPTION STATUS]:', status);
+        });
     }
 
     return () => {
@@ -62,7 +67,7 @@ export const CloudSyncEngine = {
         broadcastChannel.removeEventListener('message', handleBroadcastMessage);
       }
       if (subscribers.size === 0 && realtimeChannel) {
-        realtimeChannel.unsubscribe();
+        supabase.removeChannel(realtimeChannel);
         realtimeChannel = null;
       }
     };
@@ -70,7 +75,6 @@ export const CloudSyncEngine = {
 
   // Push local datasets to Supabase Cloud Database (Single Source of Truth)
   async pushToCloud(allStorageData: Record<string, any>) {
-    isLocalPushing = true;
     const nowIso = new Date().toISOString();
     lastSyncedTimestamp = nowIso;
 
@@ -86,52 +90,60 @@ export const CloudSyncEngine = {
       } catch (e) {}
     }
 
-    // 2. Write DIRECTLY to Supabase PostgreSQL Database over REST API
+    // 2. Write DIRECTLY to Supabase PostgreSQL Database over Official Supabase SDK / REST API
     try {
-      const supaRes = await supabaseFetch('/rest/v1/master_store', 'POST', {
-        id: 'master',
-        last_updated: nowIso,
-        payload: allStorageData,
-      }, {
-        'Prefer': 'resolution=merge-duplicates',
-      });
+      const { error } = await supabase
+        .from('master_store')
+        .upsert(
+          {
+            id: 'master',
+            last_updated: nowIso,
+            payload: allStorageData,
+          },
+          { onConflict: 'id' }
+        );
 
-      if (!supaRes.ok) {
-        // Fallback push to backup cloud endpoint if primary PostgREST table is initializing
-        await fetch(FALLBACK_CLOUD_URL, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      if (error) {
+        console.warn('Supabase SDK upsert fallback notice:', error.message);
+        // Fallback REST endpoint upsert
+        await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates',
+          },
           body: JSON.stringify({
-            appName: 'MS VY ENGLISH ONLINE SUPABASE CLOUD DATABASE',
-            lastUpdated: nowIso,
+            id: 'master',
+            last_updated: nowIso,
             payload: allStorageData,
           }),
         });
       }
     } catch (e) {
       console.warn('Supabase Direct Push notice:', e);
-    } finally {
-      setTimeout(() => {
-        isLocalPushing = false;
-      }, 300);
     }
   },
 
   // Pull initial cloud data from Supabase (Single Source of Truth)
   async pullInitialCloudData(): Promise<boolean> {
     try {
-      // 1. Pull directly from Supabase Database over REST
-      const supaRes = await supabaseFetch<any[]>('/rest/v1/master_store?select=*&id=eq.master', 'GET');
-      
+      // 1. Pull directly from Supabase Database using official SDK
+      const { data, error } = await supabase
+        .from('master_store')
+        .select('*')
+        .eq('id', 'master');
+
       let cloudPayload: any = null;
       let cloudTimestamp: string = '';
 
-      if (supaRes.ok && supaRes.data && supaRes.data.length > 0) {
-        const record = supaRes.data[0];
+      if (!error && data && data.length > 0) {
+        const record = data[0];
         cloudPayload = record.payload;
         cloudTimestamp = record.last_updated || record.lastUpdated || '';
       } else {
-        // Fallback fetch if Supabase table is waiting for SQL initialization
+        // Fallback fetch if PostgREST table is initializing
         const fbRes = await fetch(`${FALLBACK_CLOUD_URL}?_t=${Date.now()}`, {
           headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
           cache: 'no-store',
@@ -144,10 +156,6 @@ export const CloudSyncEngine = {
       }
 
       if (cloudPayload) {
-        if (cloudTimestamp && cloudTimestamp === lastSyncedTimestamp && isLocalPushing) {
-          return false;
-        }
-
         lastSyncedTimestamp = cloudTimestamp || new Date().toISOString();
 
         let hasNewChanges = false;
