@@ -70,6 +70,8 @@ export default function App() {
   const [invoices, setInvoices] = useState<Invoice[]>(() => StorageEngine.getInvoices());
   const [bankConfig, setBankConfig] = useState<BankConfig>(() => StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
 
+  const [isCloudLoading, setIsCloudLoading] = useState<boolean>(true);
+
   const loadData = () => {
     setStudents(StorageEngine.getStudents());
     setClasses(StorageEngine.getClasses());
@@ -82,11 +84,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadData();
-
-    CloudSyncEngine.pullInitialCloudData().then(() => {
-      loadData();
-    });
+    // CLOUD-FIRST INITIAL LOAD: Always pull fresh cloud payload before unlocking UI
+    CloudSyncEngine.pullInitialCloudData()
+      .then(() => {
+        loadData();
+      })
+      .finally(() => {
+        setIsCloudLoading(false);
+      });
 
     const unsubscribe = CloudSyncEngine.subscribeToCloudData(() => {
       loadData();
@@ -134,6 +139,25 @@ export default function App() {
     setCurrentUser(null);
     setIsLoginOpen(true);
   };
+
+  if (isCloudLoading) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center space-y-4 text-slate-800 dark:text-white z-50">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-400 to-rose-500 text-white flex items-center justify-center font-black text-2xl shadow-xl animate-bounce">
+          🌸
+        </div>
+        <div className="text-center space-y-1.5">
+          <h2 className="text-lg font-black tracking-tight text-pink-950 dark:text-pink-300">
+            THEO DÕI HỌC TẬP ONLINE - MS. VY ENGLISH
+          </h2>
+          <p className="text-xs font-extrabold text-slate-600 dark:text-slate-300 flex items-center justify-center">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping mr-2"></span>
+            Đang đồng bộ dữ liệu thời gian thực từ Đám Mây Cloud...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const renderMainContent = () => {
     if (activePublicHash) {
