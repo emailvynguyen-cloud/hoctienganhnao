@@ -428,13 +428,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {isSuperAdmin && (
-          <button
-            onClick={() => StorageEngine.downloadDatabaseBackupFile()}
-            className="px-3.5 py-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-md flex items-center shrink-0 border border-emerald-500 cursor-pointer"
-            title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
-          >
-            💾 Sao Lưu Dữ Liệu Thực (.json)
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              onClick={() => {
+                StorageEngine.syncAllToCloud();
+                alert('Đã đồng bộ toàn bộ dữ liệu hiện tại sang Supabase Cloud Database!');
+              }}
+              className="px-3.5 py-1.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs transition shadow-md flex items-center border border-sky-500 cursor-pointer"
+              title="Đẩy toàn bộ dữ liệu hiện tại lên Supabase Database"
+            >
+              ⚡ Đồng Bộ Sang Supabase
+            </button>
+            <button
+              onClick={() => StorageEngine.downloadDatabaseBackupFile()}
+              className="px-3.5 py-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-md flex items-center border border-emerald-500 cursor-pointer"
+              title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
+            >
+              💾 Sao Lưu Dữ Liệu (.json)
+            </button>
+          </div>
         )}
       </div>
 

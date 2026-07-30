@@ -1,8 +1,7 @@
-// MS VY ENGLISH REALTIME CLOUD ENGINE (DUAL CLOUD STORAGE)
-// Primary Cloud Endpoint: Permanent JSONBlob Cloud REST Engine
-// Secondary Cloud Endpoint: Firebase Firestore
+// MS VY ENGLISH REALTIME CLOUD ENGINE - SUPABASE CLOUD DATABASE
+// Project URL: https://qbzmamuahgmaruwcqfyl.supabase.co
 
-const MASTER_CLOUD_ENDPOINT = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
+import { supabaseFetch } from './supabaseEngine';
 
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
@@ -13,6 +12,9 @@ const subscribers: Set<DataUpdateCallback> = new Set();
 
 let isLocalPushing = false;
 let lastSyncedTimestamp = '';
+
+// Secondary fallback REST endpoint for continuous guarantee
+const FALLBACK_CLOUD_URL = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
 
 export const CloudSyncEngine = {
   // Subscribe to real-time updates across devices & tabs
@@ -46,7 +48,7 @@ export const CloudSyncEngine = {
     };
   },
 
-  // Push local datasets to Global Cloud & Broadcast to all other devices/tabs
+  // Push local datasets to Supabase Cloud Database & Broadcast to all other devices
   async pushToCloud(allStorageData: Record<string, any>) {
     isLocalPushing = true;
     const nowIso = new Date().toISOString();
@@ -59,22 +61,30 @@ export const CloudSyncEngine = {
       } catch (e) {}
     }
 
-    // 2. Push to Primary Cloud Database via REST PUT
+    // 2. Push to Supabase PostgREST Database
     try {
-      await fetch(MASTER_CLOUD_ENDPOINT, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          appName: 'MS VY ENGLISH ONLINE REALTIME CLOUD DATABASE',
-          lastUpdated: nowIso,
-          payload: allStorageData,
-        }),
+      const supaRes = await supabaseFetch('/rest/v1/master_store', 'POST', {
+        id: 'master',
+        last_updated: nowIso,
+        payload: allStorageData,
+      }, {
+        'Prefer': 'resolution=merge-duplicates',
       });
+
+      if (!supaRes.ok) {
+        // Backup push to fallback cloud endpoint
+        await fetch(FALLBACK_CLOUD_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            appName: 'MS VY ENGLISH ONLINE SUPABASE CLOUD DATABASE',
+            lastUpdated: nowIso,
+            payload: allStorageData,
+          }),
+        });
+      }
     } catch (e) {
-      console.warn('Primary Cloud sync push notice:', e);
+      console.warn('Supabase Cloud Sync push notice:', e);
     } finally {
       setTimeout(() => {
         isLocalPushing = false;
@@ -82,33 +92,43 @@ export const CloudSyncEngine = {
     }
   },
 
-  // Pull initial cloud data on app launch and periodic sync
+  // Pull initial cloud data on app launch and periodic sync from Supabase
   async pullInitialCloudData(): Promise<boolean> {
     try {
-      const res = await fetch(MASTER_CLOUD_ENDPOINT, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        cache: 'no-store',
-      });
+      // 1. Pull from Supabase
+      const supaRes = await supabaseFetch<any[]>('/rest/v1/master_store?select=*&id=eq.master', 'GET');
+      
+      let cloudPayload: any = null;
+      let cloudTimestamp: string = '';
 
-      if (!res.ok) return false;
+      if (supaRes.ok && supaRes.data && supaRes.data.length > 0) {
+        const record = supaRes.data[0];
+        cloudPayload = record.payload;
+        cloudTimestamp = record.last_updated || record.lastUpdated || '';
+      } else {
+        // Fallback fetch if Supabase table is not yet initialized
+        const fbRes = await fetch(`${FALLBACK_CLOUD_URL}?_t=${Date.now()}`, {
+          headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
+          cache: 'no-store',
+        });
+        if (fbRes.ok) {
+          const fbData = await fbRes.json();
+          cloudPayload = fbData.payload;
+          cloudTimestamp = fbData.lastUpdated || '';
+        }
+      }
 
-      const data = await res.json();
-      if (data && data.payload) {
-        // Only update local storage if cloud payload is newer or not yet pushed by local
-        if (data.lastUpdated && data.lastUpdated === lastSyncedTimestamp && isLocalPushing) {
+      if (cloudPayload) {
+        if (cloudTimestamp && cloudTimestamp === lastSyncedTimestamp && isLocalPushing) {
           return false;
         }
 
-        lastSyncedTimestamp = data.lastUpdated || new Date().toISOString();
-        const payload = data.payload;
+        lastSyncedTimestamp = cloudTimestamp || new Date().toISOString();
 
         let hasNewChanges = false;
-        Object.keys(payload).forEach((key) => {
+        Object.keys(cloudPayload).forEach((key) => {
           try {
-            const cloudVal = payload[key];
+            const cloudVal = cloudPayload[key];
             const localRaw = localStorage.getItem(key);
             const cloudRaw = JSON.stringify(cloudVal);
 
