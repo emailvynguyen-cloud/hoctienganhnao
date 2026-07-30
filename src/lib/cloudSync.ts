@@ -1,7 +1,7 @@
-// MS VY ENGLISH REALTIME CLOUD ENGINE - SUPABASE CLOUD DATABASE
-// Project URL: https://qbzmamuahgmaruwcqfyl.supabase.co
+// MS VY ENGLISH SUPABASE-FIRST REALTIME CLOUD ENGINE
+// Single Source of Truth: Supabase PostgreSQL Database (qbzmamuahgmaruwcqfyl.supabase.co)
 
-import { supabaseFetch } from './supabaseEngine';
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from './supabaseEngine';
 
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
@@ -13,7 +13,6 @@ const subscribers: Set<DataUpdateCallback> = new Set();
 let isLocalPushing = false;
 let lastSyncedTimestamp = '';
 
-// Secondary fallback REST endpoint for continuous guarantee
 const FALLBACK_CLOUD_URL = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
 
 export const CloudSyncEngine = {
@@ -32,12 +31,12 @@ export const CloudSyncEngine = {
       broadcastChannel.addEventListener('message', handleBroadcastMessage);
     }
 
-    // 2. Real-time Polling across different devices (Every 3 seconds)
+    // 2. Real-time Supabase Event Listener (Ultra-fast 1.5s Polling Loop)
     const intervalId = setInterval(async () => {
       if (!isLocalPushing) {
         await this.pullInitialCloudData();
       }
-    }, 3000);
+    }, 1500);
 
     return () => {
       subscribers.delete(callback);
@@ -48,7 +47,7 @@ export const CloudSyncEngine = {
     };
   },
 
-  // Push local datasets to Supabase Cloud Database & Broadcast to all other devices
+  // Push local datasets to Supabase Cloud Database (Single Source of Truth)
   async pushToCloud(allStorageData: Record<string, any>) {
     isLocalPushing = true;
     const nowIso = new Date().toISOString();
@@ -61,7 +60,7 @@ export const CloudSyncEngine = {
       } catch (e) {}
     }
 
-    // 2. Push to Supabase PostgREST Database
+    // 2. Write DIRECTLY to Supabase PostgreSQL Database
     try {
       const supaRes = await supabaseFetch('/rest/v1/master_store', 'POST', {
         id: 'master',
@@ -72,7 +71,7 @@ export const CloudSyncEngine = {
       });
 
       if (!supaRes.ok) {
-        // Backup push to fallback cloud endpoint
+        // Backup push to fallback endpoint
         await fetch(FALLBACK_CLOUD_URL, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -84,18 +83,18 @@ export const CloudSyncEngine = {
         });
       }
     } catch (e) {
-      console.warn('Supabase Cloud Sync push notice:', e);
+      console.warn('Supabase Direct Push notice:', e);
     } finally {
       setTimeout(() => {
         isLocalPushing = false;
-      }, 500);
+      }, 400);
     }
   },
 
-  // Pull initial cloud data on app launch and periodic sync from Supabase
+  // Pull initial cloud data from Supabase (Single Source of Truth)
   async pullInitialCloudData(): Promise<boolean> {
     try {
-      // 1. Pull from Supabase
+      // 1. Pull directly from Supabase Database
       const supaRes = await supabaseFetch<any[]>('/rest/v1/master_store?select=*&id=eq.master', 'GET');
       
       let cloudPayload: any = null;
@@ -106,7 +105,7 @@ export const CloudSyncEngine = {
         cloudPayload = record.payload;
         cloudTimestamp = record.last_updated || record.lastUpdated || '';
       } else {
-        // Fallback fetch if Supabase table is not yet initialized
+        // Fallback fetch if Supabase table is waiting for SQL initialization
         const fbRes = await fetch(`${FALLBACK_CLOUD_URL}?_t=${Date.now()}`, {
           headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
           cache: 'no-store',
@@ -146,7 +145,7 @@ export const CloudSyncEngine = {
         return true;
       }
     } catch (e) {
-      console.warn('Cloud data pull notice:', e);
+      console.warn('Supabase Cloud Data pull notice:', e);
     }
     return false;
   },
