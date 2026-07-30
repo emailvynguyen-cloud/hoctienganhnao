@@ -90,9 +90,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [targetSubmissionId]);
 
-  // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact)
-  const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
-  const [inspectedStudent, setInspectedStudent] = useState<Student | null>(null);
+  // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact & Syncs 100% with Props)
+  const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
+  const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
+
+  const activeInspectedStudent = inspectedStudentId
+    ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
+    : null;
+
+  const activeInspectedClass = inspectedClassId
+    ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
+    : null;
 
   // Selected Student for Receipt Generator Tool
   const [selectedStudentForReceipt, setSelectedStudentForReceipt] = useState<Student | null>(null);
@@ -294,13 +302,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // IF INSPECTING A STUDENT LEARNING PAGE (MANAGER PORTAL CONTEXT INTACT)
-  if (inspectedStudent) {
+  if (activeInspectedStudent) {
     return (
       <div className="space-y-4">
         {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
-            onClick={() => setInspectedStudent(null)}
+            onClick={() => setInspectedStudentId(null)}
             className="px-4 py-2 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Trang Quản Lý
@@ -308,7 +316,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="text-center">
             <span className="text-xs font-black text-pink-950 dark:text-slate-200 block">
-              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{inspectedStudent.name}</strong>
+              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{activeInspectedStudent.name}</strong>
             </span>
             <span className="text-[10px] text-slate-500 font-bold uppercase">
               (Bạn vẫn đang ở Quyền {isSuperAdmin ? 'Super Admin' : 'Admin'} Management Portal)
@@ -317,8 +325,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             onClick={() => {
-              setInspectedStudent(null);
-              setInspectedClass(null);
+              setInspectedStudentId(null);
+              setInspectedClassId(null);
               setActiveTab('timetable');
             }}
             className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center shrink-0 border border-slate-300"
@@ -328,7 +336,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <StudentPortal
-          currentStudent={inspectedStudent}
+          currentStudent={activeInspectedStudent}
           classes={safeClasses}
           sessions={sessions}
           homeworkTasks={StorageEngine.getHomeworkTasks()}
@@ -342,23 +350,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }
 
   // IF INSPECTING A CLASS DETAILS VIEW (MANAGER PORTAL CONTEXT INTACT)
-  if (inspectedClass) {
+  if (activeInspectedClass) {
     return (
       <div className="space-y-4">
         {/* SUB-VIEW BREADCRUMB & BACK / HOME NAVIGATION BAR */}
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
-            onClick={() => setInspectedClass(null)}
+            onClick={() => setInspectedClassId(null)}
             className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Quản Lý
           </button>
           <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
-            Đang Xem Chi Tiết Lớp: {inspectedClass.className}
+            Đang Xem Chi Tiết Lớp: {activeInspectedClass.className}
           </span>
           <button
             onClick={() => {
-              setInspectedClass(null);
+              setInspectedClassId(null);
               setActiveTab('timetable');
             }}
             className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0 border border-slate-300"
@@ -368,25 +376,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <ClassDetailsView
-          selectedClass={inspectedClass}
+          selectedClass={activeInspectedClass}
           students={safeStudents}
           sessions={sessions}
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
           currentUser={currentUser}
-          onBack={() => setInspectedClass(null)}
+          onBack={() => setInspectedClassId(null)}
           onOpenAddSession={onOpenAddSession}
           onOpenEditSession={(session) => onOpenAddSession(session.classId, session)}
           onOpenPublicStudentLink={(hash) => {
             const foundStd = safeStudents.find((s) => s.publicHash === hash);
             if (foundStd) {
-              setInspectedStudent(foundStd);
+              setInspectedStudentId(foundStd.id);
             }
           }}
           onDeleteClass={(classId) => {
             StorageEngine.deleteClass(classId);
             onUpdateClasses();
             onUpdateStudents();
-            setInspectedClass(null);
+            setInspectedClassId(null);
           }}
           onRemoveStudentFromClass={(studentId, classId) => {
             StorageEngine.removeStudentFromClass(studentId, classId);
@@ -816,7 +824,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               .map((cls) => (
                 <div
                   key={cls.id}
-                  onClick={() => setInspectedClass(cls)}
+                  onClick={() => setInspectedClassId(cls.id)}
                   className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 group shadow-xs relative"
                 >
                   <div className="flex items-center justify-between border-b border-pink-100 pb-2">
@@ -928,7 +936,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setInspectedStudent(std)}
+                    onClick={() => setInspectedStudentId(std.id)}
                     className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center"
                   >
                     <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
