@@ -453,30 +453,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
               {/* 2x2 Grid Info Box with Clear Typography */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold bg-white/80 dark:bg-slate-800/80 p-4 rounded-2xl border border-pink-200/80 shadow-2xs">
-                <div className="flex items-center space-x-1.5 truncate">
+                <div className="flex items-center space-x-1.5">
                   <span className="text-pink-600 font-black shrink-0">🎓 Lớp học:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
                     {primaryClass?.className || 'Lớp Ms. Vy English'}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-1.5 truncate">
+                <div className="flex items-center space-x-1.5">
                   <span className="text-pink-600 font-black shrink-0">👩‍🏫 Giáo viên:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
                     {primaryClass?.teacherName || 'Ms. Vy'}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-1.5 truncate">
+                <div className="flex items-center space-x-1.5">
                   <span className="text-pink-600 font-black shrink-0">📚 Giáo trình:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
                     {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-1.5 truncate">
+                <div className="flex items-start space-x-1.5 col-span-1 sm:col-span-2">
                   <span className="text-pink-600 font-black shrink-0">⏰ Lịch học:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                  <span className="font-extrabold text-slate-900 dark:text-white break-words leading-relaxed">
                     {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
                   </span>
                 </div>

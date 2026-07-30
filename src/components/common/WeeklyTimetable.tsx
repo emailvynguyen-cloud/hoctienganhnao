@@ -1,333 +1,613 @@
 import React, { useState } from 'react';
-import { Class, Student, Session } from '../../types';
-import { Calendar, Clock, Video, User, PlusCircle, BookOpen, ExternalLink, X, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { Class, Student, Session, HomeworkSubmission, User } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import {
+  Calendar,
+  Clock,
+  Video,
+  User as UserIcon,
+  PlusCircle,
+  BookOpen,
+  X,
+  Sparkles,
+  AlertTriangle,
+  Award,
+  Crown,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Trash2,
+  Check,
+  Plus,
+} from 'lucide-react';
 
 interface WeeklyTimetableProps {
   classes: Class[];
   students: Student[];
   sessions: Session[];
+  homeworkSubmissions?: HomeworkSubmission[];
+  currentUser?: User | null;
+  effectiveRole?: string;
   onOpenAddSession: (classId?: string) => void;
+  onSelectClass?: (cls: Class) => void;
+  onSelectStudent?: (std: Student) => void;
+  onUpdateClassSchedule?: (classId: string, newSchedule: string) => void;
+}
+
+// DEFAULT TIME SLOTS (CAN BE EDITED / ADDED MANUALLY)
+const DEFAULT_TIME_SLOTS = [
+  '05:00-07:00',
+  '07:00-08:30',
+  '08:30-09:30',
+  '09:30-10:30',
+  '10:30-12:00',
+  '12:00-14:00',
+  '14:00-15:00',
+  '15:00-16:30',
+  '16:30-18:00',
+  '18:00-19:30',
+  '19:30-21:00',
+];
+
+const DAYS_OF_WEEK = [
+  { key: 'T2', name: 'Thứ 2', full: 'Thứ Hai', bg: 'from-pink-500/10 to-rose-500/5', badge: 'bg-pink-100 text-pink-900 border-pink-200' },
+  { key: 'T3', name: 'Thứ 3', full: 'Thứ Ba', bg: 'from-amber-500/10 to-yellow-500/5', badge: 'bg-amber-100 text-amber-900 border-amber-200' },
+  { key: 'T4', name: 'Thứ 4', full: 'Thứ Tư', bg: 'from-emerald-500/10 to-teal-500/5', badge: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
+  { key: 'T5', name: 'Thứ 5', full: 'Thứ Năm', bg: 'from-sky-500/10 to-blue-500/5', badge: 'bg-sky-100 text-sky-900 border-sky-200' },
+  { key: 'T6', name: 'Thứ 6', full: 'Thứ Sáu', bg: 'from-purple-500/10 to-indigo-500/5', badge: 'bg-purple-100 text-purple-900 border-purple-200' },
+  { key: 'T7', name: 'Thứ 7', full: 'Thứ Bảy', bg: 'from-indigo-500/10 to-violet-500/5', badge: 'bg-indigo-100 text-indigo-900 border-indigo-200' },
+  { key: 'CN', name: 'Chủ Nhật', full: 'Chủ Nhật', bg: 'from-rose-500/10 to-red-500/5', badge: 'bg-rose-100 text-rose-900 border-rose-200' },
+];
+
+// TIME RANGE PARSER & EXACT OVERLAP CONFLICT DETECTOR
+// Interval A [startA, endA] and B [startB, endB] conflict IF AND ONLY IF (startA < endB && startB < endA).
+// If endA === startB (e.g. 08:00-09:00 and 09:00-10:00), they touch at 09:00 -> NO CONFLICT!
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr) return 0;
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return 0;
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  return h * 60 + m;
+}
+
+function parseScheduleTimeRange(scheduleStr: string): { startMin: number; endMin: number; label: string } | null {
+  if (!scheduleStr) return null;
+  // Match HH:MM - HH:MM or HH:MM-HH:MM pattern inside parentheses or raw
+  const match = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  if (!match) return null;
+
+  const startStr = match[1];
+  const endStr = match[2];
+  const startMin = parseTimeToMinutes(startStr);
+  const endMin = parseTimeToMinutes(endStr);
+
+  return {
+    startMin,
+    endMin,
+    label: `${startStr} - ${endStr}`,
+  };
+}
+
+function checkTimeConflict(rangeA: { startMin: number; endMin: number }, rangeB: { startMin: number; endMin: number }): boolean {
+  // Overlap condition: startA < endB AND startB < endA
+  return rangeA.startMin < rangeB.endMin && rangeB.startMin < rangeA.endMin;
 }
 
 export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
   classes,
   students,
   sessions,
+  homeworkSubmissions = [],
+  currentUser,
+  effectiveRole,
   onOpenAddSession,
+  onSelectClass,
+  onSelectStudent,
+  onUpdateClassSchedule,
 }) => {
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin' && effectiveRole !== 'teacher' && effectiveRole !== 'student';
+  const isAdmin = currentUser?.role === 'admin' || (currentUser?.role === 'super_admin' && effectiveRole === 'admin');
+  const isTeacher = currentUser?.role === 'teacher' || effectiveRole === 'teacher';
 
-  // 7 DISTINCT SOFT PASTEL THEMES FOR EACH DAY OF THE WEEK
-  const daysOfWeek = [
-    {
-      key: 'T2',
-      name: 'Thứ 2',
-      dayBg: 'bg-pink-50/80 dark:bg-slate-900/90 border-pink-200 dark:border-pink-900/50',
-      headerBg: 'bg-pink-100 text-pink-950 border border-pink-200',
-      badgeColor: 'text-pink-700 bg-pink-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-pink-200 hover:border-pink-400 shadow-2xs',
-      cardTitleColor: 'text-pink-950 dark:text-pink-300 group-hover:text-pink-600 underline decoration-pink-300',
-    },
-    {
-      key: 'T3',
-      name: 'Thứ 3',
-      dayBg: 'bg-amber-50/80 dark:bg-slate-900/90 border-amber-200 dark:border-amber-900/50',
-      headerBg: 'bg-amber-100 text-amber-950 border border-amber-200',
-      badgeColor: 'text-amber-800 bg-amber-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-amber-200 hover:border-amber-400 shadow-2xs',
-      cardTitleColor: 'text-amber-950 dark:text-amber-300 group-hover:text-amber-600 underline decoration-amber-300',
-    },
-    {
-      key: 'T4',
-      name: 'Thứ 4',
-      dayBg: 'bg-emerald-50/80 dark:bg-slate-900/90 border-emerald-200 dark:border-emerald-900/50',
-      headerBg: 'bg-emerald-100 text-emerald-950 border border-emerald-200',
-      badgeColor: 'text-emerald-800 bg-emerald-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-emerald-200 hover:border-emerald-400 shadow-2xs',
-      cardTitleColor: 'text-emerald-950 dark:text-emerald-300 group-hover:text-emerald-600 underline decoration-emerald-300',
-    },
-    {
-      key: 'T5',
-      name: 'Thứ 5',
-      dayBg: 'bg-sky-50/80 dark:bg-slate-900/90 border-sky-200 dark:border-sky-900/50',
-      headerBg: 'bg-sky-100 text-sky-950 border border-sky-200',
-      badgeColor: 'text-sky-800 bg-sky-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-sky-200 hover:border-sky-400 shadow-2xs',
-      cardTitleColor: 'text-sky-950 dark:text-sky-300 group-hover:text-sky-600 underline decoration-sky-300',
-    },
-    {
-      key: 'T6',
-      name: 'Thứ 6',
-      dayBg: 'bg-purple-50/80 dark:bg-slate-900/90 border-purple-200 dark:border-purple-900/50',
-      headerBg: 'bg-purple-100 text-purple-950 border border-purple-200',
-      badgeColor: 'text-purple-800 bg-purple-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-purple-200 hover:border-purple-400 shadow-2xs',
-      cardTitleColor: 'text-purple-950 dark:text-purple-300 group-hover:text-purple-600 underline decoration-purple-300',
-    },
-    {
-      key: 'T7',
-      name: 'Thứ 7',
-      dayBg: 'bg-indigo-50/80 dark:bg-slate-900/90 border-indigo-200 dark:border-indigo-900/50',
-      headerBg: 'bg-indigo-100 text-indigo-950 border border-indigo-200',
-      badgeColor: 'text-indigo-800 bg-indigo-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-indigo-200 hover:border-indigo-400 shadow-2xs',
-      cardTitleColor: 'text-indigo-950 dark:text-indigo-300 group-hover:text-indigo-600 underline decoration-indigo-300',
-    },
-    {
-      key: 'CN',
-      name: 'Chủ Nhật',
-      dayBg: 'bg-rose-50/80 dark:bg-slate-900/90 border-rose-200 dark:border-rose-900/50',
-      headerBg: 'bg-rose-100 text-rose-950 border border-rose-200',
-      badgeColor: 'text-rose-800 bg-rose-100/80',
-      cardBg: 'bg-white/95 dark:bg-slate-800/90 border-rose-200 hover:border-rose-400 shadow-2xs',
-      cardTitleColor: 'text-rose-950 dark:text-rose-300 group-hover:text-rose-600 underline decoration-rose-300',
-    },
-  ];
+  const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
+  const [newSlotInput, setNewSlotInput] = useState<string>('');
+  const [isAddingSlot, setIsAddingSlot] = useState<boolean>(false);
+  const [editingClassForSchedule, setEditingClassForSchedule] = useState<Class | null>(null);
+  const [customScheduleInput, setCustomScheduleInput] = useState<string>('');
 
-  // Helper to map schedule text to days
-  const getClassesForDay = (dayKey: string) => {
-    return (classes || []).filter((cls) => {
+  // EXTRACT TEACHERS FOR TABS
+  // Filter active (non-archived) classes
+  const activeClasses = (classes || []).filter((c) => c && c.status !== 'archived');
+  const archivedClasses = (classes || []).filter((c) => c && c.status === 'archived');
+
+  const teacherMap = new Map<string, { id: string; name: string }>();
+  // Always ensure Ms. Vy is the first teacher tab
+  teacherMap.set('u_super_admin', { id: 'u_super_admin', name: 'Ms. Vy' });
+
+  activeClasses.forEach((cls) => {
+    if (cls.teacherName && !cls.teacherName.toLowerCase().includes('vy')) {
+      const key = cls.teacherId || cls.teacherName;
+      if (!teacherMap.has(key)) {
+        teacherMap.set(key, { id: key, name: cls.teacherName });
+      }
+    }
+  });
+
+  const teacherTabs = Array.from(teacherMap.values());
+
+  // Determine active teacher tab
+  const [activeTeacherId, setActiveTeacherId] = useState<string>('u_super_admin');
+
+  // If currentUser is teacher, force active tab to teacher's own schedule
+  const effectiveTeacherTab = isTeacher
+    ? (teacherTabs.find((t) => t.name === currentUser?.displayName || t.id === currentUser?.uid)?.id || 'u_super_admin')
+    : activeTeacherId;
+
+  const currentTeacherObj = teacherTabs.find((t) => t.id === effectiveTeacherTab) || teacherTabs[0];
+
+  // Filter classes for the active teacher tab
+  const teacherClasses = activeClasses.filter((c) => {
+    if (currentTeacherObj.id === 'u_super_admin' || currentTeacherObj.name.toLowerCase().includes('vy')) {
+      return !c.teacherName || c.teacherName.toLowerCase().includes('vy') || c.teacherId === 'u_super_admin';
+    }
+    return c.teacherId === currentTeacherObj.id || c.teacherName === currentTeacherObj.name;
+  });
+
+  // HELPER: Map classes to specific Day & Time Slot
+  const getClassesForSlotAndDay = (dayKey: string, slotStr: string) => {
+    const slotRange = parseScheduleTimeRange(slotStr);
+    if (!slotRange) return [];
+
+    return teacherClasses.filter((cls) => {
       if (!cls || !cls.schedule) return false;
-      const sched = (cls.schedule || '').toUpperCase();
-      if (dayKey === 'T2') return sched.includes('T2') || sched.includes('THỨ 2');
-      if (dayKey === 'T3') return sched.includes('T3') || sched.includes('THỨ 3');
-      if (dayKey === 'T4') return sched.includes('T4') || sched.includes('THỨ 4');
-      if (dayKey === 'T5') return sched.includes('T5') || sched.includes('THỨ 5');
-      if (dayKey === 'T6') return sched.includes('T6') || sched.includes('THỨ 6');
-      if (dayKey === 'T7') return sched.includes('T7') || sched.includes('THỨ 7');
-      if (dayKey === 'CN') return sched.includes('CN') || sched.includes('CHỦ NHẬT');
-      return false;
+      const schedUpper = cls.schedule.toUpperCase();
+      const matchesDay =
+        (dayKey === 'T2' && (schedUpper.includes('T2') || schedUpper.includes('THỨ 2') || schedUpper.includes('THỨ HAI'))) ||
+        (dayKey === 'T3' && (schedUpper.includes('T3') || schedUpper.includes('THỨ 3') || schedUpper.includes('THỨ BA'))) ||
+        (dayKey === 'T4' && (schedUpper.includes('T4') || schedUpper.includes('THỨ 4') || schedUpper.includes('THỨ TƯ'))) ||
+        (dayKey === 'T5' && (schedUpper.includes('T5') || schedUpper.includes('THỨ 5') || schedUpper.includes('THỨ NĂM'))) ||
+        (dayKey === 'T6' && (schedUpper.includes('T6') || schedUpper.includes('THỨ 6') || schedUpper.includes('THỨ SÁU'))) ||
+        (dayKey === 'T7' && (schedUpper.includes('T7') || schedUpper.includes('THỨ 7') || schedUpper.includes('THỨ BẢY'))) ||
+        (dayKey === 'CN' && (schedUpper.includes('CN') || schedUpper.includes('CHỦ NHẬT')));
+
+      if (!matchesDay) return false;
+
+      const clsRange = parseScheduleTimeRange(cls.schedule);
+      if (!clsRange) return true; // If time not specified, show in slot
+
+      return checkTimeConflict(slotRange, clsRange);
     });
   };
 
+  // CHECK FOR CONFLICTS IN A SPECIFIC DAY FOR ACTIVE TEACHER
+  const getConflictsForDay = (dayKey: string) => {
+    const dayClasses = teacherClasses.filter((cls) => {
+      if (!cls || !cls.schedule) return false;
+      const schedUpper = cls.schedule.toUpperCase();
+      return (
+        (dayKey === 'T2' && (schedUpper.includes('T2') || schedUpper.includes('THỨ 2'))) ||
+        (dayKey === 'T3' && (schedUpper.includes('T3') || schedUpper.includes('THỨ 3'))) ||
+        (dayKey === 'T4' && (schedUpper.includes('T4') || schedUpper.includes('THỨ 4'))) ||
+        (dayKey === 'T5' && (schedUpper.includes('T5') || schedUpper.includes('THỨ 5'))) ||
+        (dayKey === 'T6' && (schedUpper.includes('T6') || schedUpper.includes('THỨ 6'))) ||
+        (dayKey === 'T7' && (schedUpper.includes('T7') || schedUpper.includes('THỨ 7'))) ||
+        (dayKey === 'CN' && (schedUpper.includes('CN') || schedUpper.includes('CHỦ NHẬT')))
+      );
+    });
+
+    const conflicts: { classA: Class; classB: Class }[] = [];
+    for (let i = 0; i < dayClasses.length; i++) {
+      for (let j = i + 1; j < dayClasses.length; j++) {
+        const rangeA = parseScheduleTimeRange(dayClasses[i].schedule);
+        const rangeB = parseScheduleTimeRange(dayClasses[j].schedule);
+        if (rangeA && rangeB && checkTimeConflict(rangeA, rangeB)) {
+          conflicts.push({ classA: dayClasses[i], classB: dayClasses[j] });
+        }
+      }
+    }
+    return conflicts;
+  };
+
+  // CALCULATE STATUS BADGES FOR A CLASS CARD
+  const getClassStatusBadges = (cls: Class) => {
+    const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
+    const classSubs = (homeworkSubmissions || []).filter((s) => s && s.classId === cls.id);
+    const pendingSubs = classSubs.filter((s) => !s.isTeacherFeedbackChecked && s.feedbackStatus !== 'COMPLETED');
+
+    const badges = [];
+
+    // 1. Pending Homework Submissions
+    if (pendingSubs.length > 0) {
+      badges.push({
+        icon: '📚',
+        tooltip: `Có ${pendingSubs.length} bài tập về nhà chưa chấm`,
+        color: 'bg-rose-100 text-rose-800 border-rose-200',
+      });
+    }
+
+    // 2. Unpaid Tuition or 0 remaining sessions
+    const unpaidStudents = classStudents.filter((s) => (s.remainingSessions || 0) <= 0);
+    if (unpaidStudents.length > 0) {
+      badges.push({
+        icon: '💰',
+        tooltip: `${unpaidStudents.length} học viên hết/chưa đóng học phí`,
+        color: 'bg-amber-100 text-amber-800 border-amber-200',
+      });
+    }
+
+    // 3. Low Remaining Sessions (<= 2)
+    const lowSessionStudents = classStudents.filter((s) => (s.remainingSessions || 0) > 0 && (s.remainingSessions || 0) <= 2);
+    if (lowSessionStudents.length > 0) {
+      badges.push({
+        icon: '⚠️',
+        tooltip: `${lowSessionStudents.length} học viên sắp hết số buổi học (<= 2 buổi)`,
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      });
+    }
+
+    // 4. Archived / Paused Class
+    if (cls.status === 'archived' || cls.status === 'paused') {
+      badges.push({
+        icon: '⏸️',
+        tooltip: 'Lớp học đang bảo lưu / lưu trữ',
+        color: 'bg-slate-100 text-slate-800 border-slate-200',
+      });
+    }
+
+    // 5. No Active Students
+    if (classStudents.length === 0) {
+      badges.push({
+        icon: '❌',
+        tooltip: 'Lớp học chưa có học viên đăng ký',
+        color: 'bg-red-100 text-red-800 border-red-200',
+      });
+    }
+
+    // 6. Top Diligent Stars
+    const topStarsCount = classStudents.filter((s) => (s.stars || 0) >= 15).length;
+    if (topStarsCount > 0) {
+      badges.push({
+        icon: '⭐',
+        tooltip: `Lớp có ${topStarsCount} học viên đạt Top chăm chỉ tuần`,
+        color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      });
+    }
+
+    return badges;
+  };
+
+  const handleAddSlot = () => {
+    if (newSlotInput && !timeSlots.includes(newSlotInput)) {
+      setTimeSlots([...timeSlots, newSlotInput]);
+      setNewSlotInput('');
+      setIsAddingSlot(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      
-      {/* Timetable Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-200 dark:border-slate-800 shadow-sm">
+    <div className="space-y-6 animate-fadeIn">
+
+      {/* HEADER BAR WITH NOTION / GOOGLE CALENDAR AESTHETICS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm">
         <div>
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-6 h-6 text-pink-500 animate-pulse" />
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
-              Bảng Thời Khóa Biểu Lịch Dạy Học Trong Tuần
-            </h3>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 to-rose-400 text-white flex items-center justify-center shadow-md">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                Thời Khóa Biểu Lịch Học Theo Tuần
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Thiết kế dạng Grid trực quan • Phân chia theo từng Giáo viên phụ trách
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            Ấn vào tên Lớp để xem thông tin chi tiết • Ấn vào tên Học viên để xem quá trình học
-          </p>
         </div>
 
-        <button
-          onClick={() => onOpenAddSession()}
-          className="px-5 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 transition shadow-xs flex items-center justify-center shrink-0"
-        >
-          <PlusCircle className="w-4 h-4 mr-2" /> + Thêm buổi học
-        </button>
+        {/* Action Controls */}
+        <div className="flex items-center space-x-2">
+          {(isSuperAdmin || isAdmin) && (
+            <button
+              onClick={() => setIsAddingSlot(!isAddingSlot)}
+              className="px-4 py-2.5 rounded-2xl bg-pink-100 text-pink-950 border border-pink-200 hover:bg-pink-200 font-extrabold text-xs transition flex items-center shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> + Khung Giờ
+            </button>
+          )}
+
+          <button
+            onClick={() => onOpenAddSession()}
+            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" /> + Thêm Buổi Học
+          </button>
+        </div>
       </div>
 
-      {/* Timetable Grid with 7 Distinct Soft Pastel Backgrounds */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-        {daysOfWeek.map((day) => {
-          const dayClasses = getClassesForDay(day.key);
+      {/* ADD CUSTOM TIME SLOT INPUT POPUP */}
+      {isAddingSlot && (
+        <div className="p-4 rounded-2xl bg-pink-50 border border-pink-200 flex items-center space-x-3 text-xs font-semibold animate-fadeIn">
+          <span>Nhập khung giờ mới (VD: 11:30-13:00):</span>
+          <input
+            type="text"
+            placeholder="HH:MM-HH:MM"
+            value={newSlotInput}
+            onChange={(e) => setNewSlotInput(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border border-pink-200 bg-white focus:outline-none text-slate-900"
+          />
+          <button
+            onClick={handleAddSlot}
+            className="px-3.5 py-1.5 rounded-xl bg-pink-400 text-white font-bold hover:bg-pink-500"
+          >
+            Thêm
+          </button>
+          <button
+            onClick={() => setIsAddingSlot(false)}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-          return (
-            <div
-              key={day.key}
-              className={`rounded-3xl border p-3.5 space-y-3 flex flex-col justify-between shadow-xs hover:shadow-md transition ${day.dayBg}`}
-            >
-              {/* Day Header Pill */}
-              <div className="pb-2 text-center border-b border-pink-100/60 dark:border-slate-800">
-                <span className={`px-3 py-1 rounded-2xl font-black text-xs uppercase tracking-wider inline-block ${day.headerBg}`}>
-                  {day.name}
-                </span>
-                <span className={`text-[10px] font-extrabold block mt-1 ${day.badgeColor}`}>
-                  {dayClasses.length} Ca Dạy
-                </span>
-              </div>
+      {/* TEACHER TABS NAVIGATION BAR (SUPER ADMIN & ADMIN CAN TOGGLE) */}
+      {!isTeacher && (
+        <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
+          {teacherTabs.map((t) => {
+            const isMsVy = t.id === 'u_super_admin' || t.name.toLowerCase().includes('vy');
+            const isActive = effectiveTeacherTab === t.id;
 
-              {/* Class Cards List */}
-              <div className="space-y-2.5 flex-1">
-                {dayClasses.length > 0 ? (
-                  dayClasses.map((cls) => {
-                    const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
-                    const timePart = cls.schedule ? (cls.schedule.split('(')[1]?.replace(')', '') || cls.schedule) : 'Chưa xếp giờ';
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTeacherId(t.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center space-x-1.5 cursor-pointer ${
+                  isActive
+                    ? 'bg-gradient-to-r from-pink-400 via-rose-400 to-amber-300 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {isMsVy ? <Crown className="w-4 h-4 text-amber-200 shrink-0" /> : <UserIcon className="w-3.5 h-3.5 shrink-0" />}
+                <span>{isMsVy ? '👑 Lịch Ms. Vy (Super Admin)' : `👩‍🏫 ${t.name}`}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TEACHER ROLE NOTICE */}
+      {isTeacher && (
+        <div className="p-3.5 rounded-2xl bg-pink-50 border border-pink-200 text-xs font-bold text-pink-950 flex items-center justify-between">
+          <span className="flex items-center">
+            <Sparkles className="w-4 h-4 mr-2 text-pink-500" />
+            Đang hiển thị lịch giảng dạy cá nhân của <strong>{currentUser?.displayName || 'Giáo Viên'}</strong>
+          </span>
+        </div>
+      )}
+
+      {/* CONFLICT WARNING BANNER IF ANY OVERLAPS EXIST */}
+      {DAYS_OF_WEEK.map((day) => {
+        const conflicts = getConflictsForDay(day.key);
+        if (conflicts.length === 0) return null;
+        return (
+          <div key={`conflict_${day.key}`} className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-extrabold flex items-center space-x-2 shadow-xs">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <p>⚠️ Cảnh báo xung đột lịch vào {day.full}:</p>
+              {conflicts.map((c, i) => (
+                <p key={i} className="font-semibold text-amber-800">
+                  • Lớp "{c.classA.className}" ({c.classA.schedule}) đang bị trùng thời gian thực tế với Lớp "{c.classB.className}" ({c.classB.schedule})
+                </p>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* MAIN NOTION / APPLE STYLE GRID TIMETABLE */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto min-w-[900px]">
+          
+          <table className="w-full border-collapse">
+            
+            {/* GRID COLUMNS HEADER: DAYS OF WEEK */}
+            <thead>
+              <tr className="border-b border-pink-100 dark:border-slate-800 bg-pink-50/50 dark:bg-slate-800/50">
+                <th className="p-4 text-left font-black text-xs text-slate-500 uppercase tracking-wider w-36 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-pink-50/90 dark:bg-slate-800 z-10">
+                  <div className="flex items-center space-x-1.5">
+                    <Clock className="w-4 h-4 text-pink-500" />
+                    <span>Khung Giờ</span>
+                  </div>
+                </th>
+
+                {DAYS_OF_WEEK.map((day) => (
+                  <th key={day.key} className="p-4 text-center font-black text-xs text-slate-800 dark:text-slate-200 border-r border-pink-100 dark:border-slate-800 min-w-[120px]">
+                    <div className="space-y-1">
+                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold border ${day.badge} inline-block`}>
+                        {day.name}
+                      </span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            {/* GRID ROWS: TIME SLOTS */}
+            <tbody className="divide-y divide-pink-100 dark:divide-slate-800 text-xs">
+              {timeSlots.map((slot, slotIdx) => (
+                <tr key={slotIdx} className="hover:bg-pink-50/20 dark:hover:bg-slate-800/30 transition">
+                  
+                  {/* TIME SLOT LABEL COLUMN (STICKY LEFT ON MOBILE SCROLL) */}
+                  <td className="p-3.5 font-extrabold text-slate-700 dark:text-slate-300 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-white dark:bg-slate-900 z-10 shadow-xs whitespace-nowrap">
+                    <div className="flex items-center space-x-1.5 text-pink-600 font-mono">
+                      <span className="w-2 h-2 rounded-full bg-pink-400 inline-block shrink-0"></span>
+                      <span>{slot}</span>
+                    </div>
+                  </td>
+
+                  {/* 7 DAYS COLUMNS */}
+                  {DAYS_OF_WEEK.map((day) => {
+                    const slotClasses = getClassesForSlotAndDay(day.key, slot);
 
                     return (
-                      <div
-                        key={cls.id}
-                        className={`p-3 rounded-2xl transition space-y-2 text-left group cursor-pointer ${day.cardBg}`}
-                        onClick={() => setSelectedClass(cls)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className={`font-black text-xs ${day.cardTitleColor}`}>
-                            {cls.className || 'Lớp Học'}
-                          </span>
-                        </div>
+                      <td key={day.key} className="p-2 border-r border-pink-100 dark:border-slate-800 vertical-top h-24 align-top">
+                        {slotClasses.length > 0 ? (
+                          <div className="space-y-2">
+                            {slotClasses.map((cls) => {
+                              const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
+                              const statusBadges = getClassStatusBadges(cls);
+                              const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || slot;
 
-                        <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium space-y-0.5">
-                          <p className="flex items-center">
-                            <Clock className="w-3 h-3 mr-1 text-pink-500 shrink-0" />
-                            {timePart}
-                          </p>
-                          <p className="flex items-center text-slate-500">
-                            <User className="w-3 h-3 mr-1 text-sky-500 shrink-0" />
-                            {cls.teacherName || 'Giáo viên'}
-                          </p>
-                        </div>
+                              return (
+                                <div
+                                  key={cls.id}
+                                  onClick={() => onSelectClass && onSelectClass(cls)}
+                                  className="p-3 rounded-2xl bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-900 border border-pink-200/80 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
+                                >
+                                  {/* Top Header: Class Name & Micro Status Badges */}
+                                  <div className="flex items-start justify-between gap-1">
+                                    <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
+                                      {cls.className}
+                                    </h4>
 
-                        {/* Quick Students Avatars */}
-                        <div className="pt-1.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                          <div className="flex -space-x-1.5 overflow-hidden">
-                            {classStudents.map((std) => (
-                              <img
-                                key={std.id}
-                                src={resolveAvatarUrl(std.avatar)}
-                                alt={std.name || 'Học viên'}
-                                title={`Học viên: ${std.name || ''}`}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedStudent(std);
-                                }}
-                                className="inline-block h-6 w-6 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
-                              />
-                            ))}
+                                    {/* Status Badges with Tooltips */}
+                                    <div className="flex items-center space-x-1 shrink-0">
+                                      {statusBadges.map((badge, bIdx) => (
+                                        <span
+                                          key={bIdx}
+                                          title={badge.tooltip}
+                                          className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border shadow-2xs ${badge.color}`}
+                                        >
+                                          {badge.icon}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Time & Teacher Badge */}
+                                  <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-white/70 dark:bg-slate-800/70 p-1.5 rounded-xl border border-pink-100">
+                                    <Clock className="w-3 h-3 text-pink-500 shrink-0" />
+                                    <span>{parsedTime}</span>
+                                  </div>
+
+                                  {/* Student Avatars Preview Strip */}
+                                  <div className="flex items-center justify-between pt-1 border-t border-pink-100/60 dark:border-slate-800">
+                                    <div className="flex -space-x-1.5 overflow-hidden">
+                                      {classStudents.slice(0, 4).map((std) => (
+                                        <img
+                                          key={std.id}
+                                          src={resolveAvatarUrl(std.avatar)}
+                                          alt={std.name}
+                                          title={`Học viên: ${std.name}`}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onSelectStudent) onSelectStudent(std);
+                                          }}
+                                          className="inline-block h-5 w-5 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
+                                        />
+                                      ))}
+                                      {classStudents.length > 4 && (
+                                        <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 font-bold text-[9px] flex items-center justify-center border border-white">
+                                          +{classStudents.length - 4}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {(isSuperAdmin || isAdmin) && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingClassForSchedule(cls);
+                                          setCustomScheduleInput(cls.schedule);
+                                        }}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-100 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        title="Sửa nhanh lịch học lớp này"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-
-                          {cls.zoomLink && (
-                            <a
-                              href={cls.zoomLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 rounded-xl bg-sky-100 text-sky-950 hover:bg-sky-200 text-[10px] font-bold flex items-center shadow-2xs border border-sky-200"
-                              title="Vào lớp Zoom"
-                            >
-                              <Video className="w-3 h-3 text-sky-600" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
+                        ) : (
+                          <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-[10px] text-slate-300 dark:text-slate-700 italic">
+                            Trống ca
+                          </div>
+                        )}
+                      </td>
                     );
-                  })
-                ) : (
-                  <div className="py-6 text-center text-slate-400 text-xs font-extrabold italic">
-                    Không có ca dạy
-                  </div>
-                )}
-              </div>
+                  })}
+                </tr>
+              ))}
+            </tbody>
 
-            </div>
-          );
-        })}
+          </table>
+
+        </div>
       </div>
 
-      {/* MODAL: Class Inspection */}
-      {selectedClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 space-y-5 relative">
+      {/* QUICK SCHEDULE EDIT MODAL FOR SUPER ADMIN & ADMIN */}
+      {editingClassForSchedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-800 dark:text-white relative">
             <button
-              onClick={() => setSelectedClass(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+              onClick={() => setEditingClassForSchedule(null)}
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-700 flex items-center justify-center font-black">
-                <BookOpen className="w-6 h-6 text-pink-600" />
+            <div className="flex items-center space-x-3 border-b border-pink-100 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center font-black">
+                <Edit2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {selectedClass.className}
-                </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-pink-200 text-pink-950 uppercase">
-                  Mã Lớp: {selectedClass.code}
-                </span>
+                <h4 className="font-black text-sm text-slate-900 dark:text-white">Chỉnh Sửa Lịch Học Thủ Công</h4>
+                <p className="text-xs text-slate-500 font-medium">Lớp: {editingClassForSchedule.className}</p>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-100 text-xs space-y-2">
-              <p><strong>Giáo viên phụ trách:</strong> {selectedClass.teacherName}</p>
-              <p><strong>Lịch học:</strong> {selectedClass.schedule}</p>
-              <p><strong>Giáo trình:</strong> {selectedClass.courseName}</p>
-              <p><strong>Phòng học:</strong> {selectedClass.room || 'Online Zoom'}</p>
-              {selectedClass.zoomLink && (
-                <p className="flex items-center text-sky-700 font-bold">
-                  <Video className="w-4 h-4 mr-1 text-sky-600" />
-                  Link Zoom: <a href={selectedClass.zoomLink} target="_blank" rel="noreferrer" className="underline ml-1 truncate">{selectedClass.zoomLink}</a>
-                </p>
-              )}
+            <div className="space-y-2 text-xs font-semibold">
+              <label className="text-slate-700 dark:text-slate-300 block">Lịch học hàng tuần:</label>
+              <input
+                type="text"
+                value={customScheduleInput}
+                onChange={(e) => setCustomScheduleInput(e.target.value)}
+                placeholder="Ví dụ: T2 - T4 - T6 (18:00 - 19:30)"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 text-slate-900 dark:text-white font-extrabold"
+              />
+              <p className="text-[11px] text-slate-500 italic">
+                Hệ thống tự động đọc thứ (T2, T3, T4, T5, T6, T7, CN) và khung giờ thực tế (HH:MM - HH:MM).
+              </p>
             </div>
 
-            {/* Students List in Class */}
-            <div>
-              <h4 className="font-extrabold text-xs text-pink-950 dark:text-pink-300 uppercase mb-2">
-                Danh Sách Học Viên Trực Thuộc
-              </h4>
-              <div className="space-y-2">
-                {(students || [])
-                  .filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id))
-                  .map((std) => (
-                    <div
-                      key={std.id}
-                      onClick={() => {
-                        setSelectedClass(null);
-                        setSelectedStudent(std);
-                      }}
-                      className="p-3 rounded-2xl border border-pink-100 dark:border-slate-800 bg-white dark:bg-slate-800 flex items-center justify-between hover:border-pink-300 transition cursor-pointer"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={resolveAvatarUrl(std.avatar)}
-                          alt={std.name}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                          }}
-                          className="w-9 h-9 rounded-xl object-cover"
-                        />
-                        <div>
-                          <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                            {std.name}
-                          </p>
-                          <span className="text-[10px] text-pink-600 font-bold">
-                            {std.honorNickname || 'Học viên active'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-xl">
-                        Xem Học Tập →
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-2">
+            <div className="flex items-center justify-end space-x-2 pt-2">
+              <button
+                onClick={() => setEditingClassForSchedule(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200"
+              >
+                Hủy Bỏ
+              </button>
               <button
                 onClick={() => {
-                  const targetId = selectedClass.id;
-                  setSelectedClass(null);
-                  onOpenAddSession(targetId);
+                  if (onUpdateClassSchedule && editingClassForSchedule) {
+                    onUpdateClassSchedule(editingClassForSchedule.id, customScheduleInput);
+                    alert(`Đã cập nhật lịch học cho lớp "${editingClassForSchedule.className}"!`);
+                    setEditingClassForSchedule(null);
+                  }
                 }}
-                className="px-4 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 transition flex items-center"
+                className="px-4 py-2 rounded-xl bg-pink-400 hover:bg-pink-500 text-white font-black shadow-md"
               >
-                <PlusCircle className="w-4 h-4 mr-1.5" /> + Thêm buổi học cho lớp này
-              </button>
-
-              <button
-                onClick={() => setSelectedClass(null)}
-                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs"
-              >
-                Đóng Lại
+                💾 Lưu Lịch Học
               </button>
             </div>
-
           </div>
         </div>
       )}

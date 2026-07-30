@@ -65,7 +65,7 @@ export interface Class {
   room: string;
   courseName: string;
   totalStudents: number;
-  status: 'active' | 'completed' | 'paused';
+  status: 'active' | 'completed' | 'paused' | 'archived';
   startSessionNumber?: number; // Số thứ tự buổi học bắt đầu khi tạo lớp (mặc định 1)
   zoomLink?: string;
   resourceLinks?: ResourceLink[];

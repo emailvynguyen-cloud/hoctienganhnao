@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Class, Student, Session, HomeworkSubmission, BankConfig } from '../../types';
+import { Class, Student, Session, HomeworkSubmission, BankConfig, User } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import {
   ArrowLeft,
   BookOpen,
   Video,
-  User,
   Clock,
   PlusCircle,
   Calendar,
@@ -24,7 +23,11 @@ import {
   BarChart2,
   Trash2,
   UserX,
+  Archive,
+  RotateCcw,
+  Box,
 } from 'lucide-react';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 
 interface ClassDetailsViewProps {
   selectedClass: Class;
@@ -39,6 +42,8 @@ interface ClassDetailsViewProps {
   onOpenPublicStudentLink?: (hash: string) => void;
   onDeleteClass?: (classId: string) => void;
   onRemoveStudentFromClass?: (studentId: string, classId: string) => void;
+  onArchiveClass?: (classId: string) => void;
+  onRestoreClass?: (classId: string) => void;
 }
 
 export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
@@ -53,9 +58,18 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   onOpenPublicStudentLink,
   onDeleteClass,
   onRemoveStudentFromClass,
+  onArchiveClass,
+  onRestoreClass,
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
+  const [deleteTargetModal, setDeleteTargetModal] = useState<{
+    isOpen: boolean;
+    type: 'class' | 'student_from_class';
+    name: string;
+    detail?: string;
+    studentId?: string;
+  }>({ isOpen: false, type: 'class', name: '' });
 
   // Filter students in this class
   const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
@@ -139,19 +153,52 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
             )}
 
             {currentUser?.role === 'super_admin' && (
-              <button
-                onClick={() => {
-                  if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA LỚP HỌC "${selectedClass.className}" (${selectedClass.code})? Toàn bộ phân công của lớp sẽ bị hủy!`)) {
-                    if (onDeleteClass) {
-                      onDeleteClass(selectedClass.id);
-                    }
-                  }
-                }}
-                className="px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition shadow-md flex items-center shrink-0 cursor-pointer"
-                title="Quyền Super Admin: Xóa lớp học này"
-              >
-                <Trash2 className="w-4 h-4 mr-1.5" /> 🗑️ Xóa Lớp Học Này
-              </button>
+              <div className="flex items-center space-x-2">
+                {selectedClass.status === 'archived' ? (
+                  <button
+                    onClick={() => {
+                      if (onRestoreClass) {
+                        onRestoreClass(selectedClass.id);
+                        alert(`Đã khôi phục lớp học "${selectedClass.className}" về trạng thái hoạt động!`);
+                      }
+                    }}
+                    className="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-md flex items-center shrink-0 cursor-pointer"
+                    title="Quyền Super Admin: Khôi phục lớp học về trạng thái active"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1.5" /> 🔄 Khôi Phục Lớp Học
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Bạn có muốn LƯU TRỮ LỚP HỌC "${selectedClass.className}"? Lớp học sẽ được chuyển sang mục Lớp Học Đã Lưu Trữ (Bảo lưu/Tạm ngưng).`)) {
+                        if (onArchiveClass) {
+                          onArchiveClass(selectedClass.id);
+                          alert(`Đã chuyển lớp học "${selectedClass.className}" vào mục lưu trữ an toàn!`);
+                        }
+                      }
+                    }}
+                    className="px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition shadow-md flex items-center shrink-0 cursor-pointer"
+                    title="Quyền Super Admin: Chuyển lớp học vào mục lưu trữ / bảo lưu / tạm ngưng"
+                  >
+                    <Archive className="w-4 h-4 mr-1.5" /> 📦 Lưu Trữ Lớp (Bảo Lưu)
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setDeleteTargetModal({
+                      isOpen: true,
+                      type: 'class',
+                      name: selectedClass.className,
+                      detail: `Mã lớp: ${selectedClass.code} • Giáo viên: ${selectedClass.teacherName}`,
+                    });
+                  }}
+                  className="px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition shadow-md flex items-center shrink-0 cursor-pointer"
+                  title="Quyền Super Admin: Xóa lớp học này"
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" /> 🗑️ Xóa Lớp Học Này
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -202,11 +249,13 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(`Bạn có chắc chắn muốn XÓA HỌC VIÊN ${std.name} ra khỏi lớp học ${selectedClass.className}?`)) {
-                        if (onRemoveStudentFromClass) {
-                          onRemoveStudentFromClass(std.id, selectedClass.id);
-                        }
-                      }
+                      setDeleteTargetModal({
+                        isOpen: true,
+                        type: 'student_from_class',
+                        name: std.name,
+                        detail: `Gỡ khỏi lớp: ${selectedClass.className} (${selectedClass.code})`,
+                        studentId: std.id,
+                      });
                     }}
                     className="p-2 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition text-xs font-bold cursor-pointer"
                     title="Quyền Super Admin: Xóa học viên này ra khỏi lớp"
@@ -553,6 +602,21 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteTargetModal.isOpen}
+        itemType={deleteTargetModal.type}
+        itemName={deleteTargetModal.name}
+        itemDetail={deleteTargetModal.detail}
+        onClose={() => setDeleteTargetModal({ ...deleteTargetModal, isOpen: false })}
+        onConfirm={() => {
+          if (deleteTargetModal.type === 'class' && onDeleteClass) {
+            onDeleteClass(selectedClass.id);
+          } else if (deleteTargetModal.type === 'student_from_class' && onRemoveStudentFromClass && deleteTargetModal.studentId) {
+            onRemoveStudentFromClass(deleteTargetModal.studentId, selectedClass.id);
+          }
+        }}
+      />
 
     </div>
   );

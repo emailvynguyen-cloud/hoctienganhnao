@@ -259,6 +259,14 @@ export const StorageEngine = {
       this.saveStudents(students);
     }
   },
+  updateStudent(student: Student) {
+    const students = this.getStudents() || [];
+    const idx = students.findIndex((s) => s && s.id === student.id);
+    if (idx !== -1) {
+      students[idx] = { ...students[idx], ...student };
+      this.saveStudents(students);
+    }
+  },
 
   getClasses(): Class[] {
     return getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
@@ -291,6 +299,22 @@ export const StorageEngine = {
     const idx = classes.findIndex((c) => c && c.id === cls.id);
     if (idx !== -1) {
       classes[idx] = cls;
+      this.saveClasses(classes);
+    }
+  },
+  archiveClass(classId: string) {
+    const classes = this.getClasses() || [];
+    const cls = classes.find((c) => c && c.id === classId);
+    if (cls) {
+      cls.status = 'archived';
+      this.saveClasses(classes);
+    }
+  },
+  restoreClass(classId: string) {
+    const classes = this.getClasses() || [];
+    const cls = classes.find((c) => c && c.id === classId);
+    if (cls) {
+      cls.status = 'active';
       this.saveClasses(classes);
     }
   },

@@ -9,6 +9,9 @@ import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { EditClassModal } from './EditClassModal';
+import { EditStudentModal } from './EditStudentModal';
 import {
   Users,
   BookOpen,
@@ -102,10 +105,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
 
+  // Custom Delete Confirm Modal State
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    itemType: 'class' | 'student' | 'teacher';
+    itemName: string;
+    itemDetail?: string;
+    targetId?: string;
+  }>({
+    isOpen: false,
+    itemType: 'class',
+    itemName: '',
+  });
+
+  // Super Admin Edit Modals State
+  const [editingClassModal, setEditingClassModal] = useState<Class | null>(null);
+  const [editingStudentModal, setEditingStudentModal] = useState<Student | null>(null);
+  const [classStatusFilter, setClassStatusFilter] = useState<'active' | 'archived'>('active');
+
   // New Class Form State
   const [newClassName, setNewClassName] = useState('');
   const [newClassCode, setNewClassCode] = useState('');
-  const [newTeacherName, setNewTeacherName] = useState('Teacher Alex Smith');
+  const [newTeacherName, setNewTeacherName] = useState('Ms. Vy');
   const [newSchedule, setNewSchedule] = useState('T2 - T4 - T6 (18:00 - 19:30)');
   const [newCourseName, setNewCourseName] = useState('IELTS Breakthrough');
   const [newZoomLink, setNewZoomLink] = useState('');
@@ -245,8 +266,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    if (!newStudentName || !newStudentPhone) {
-      alert('Vui lòng điền tên học viên và số điện thoại!');
+    if (!newStudentName) {
+      alert('Vui lòng điền Họ và tên học viên!');
       return;
     }
 
@@ -613,10 +634,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA TÀI KHOẢN giáo viên "${teacher.name}" khỏi hệ thống?`)) {
-                              StorageEngine.deleteTeacher(teacher.id);
-                              onUpdateClasses();
-                            }
+                            setDeleteModalState({
+                              isOpen: true,
+                              itemType: 'teacher',
+                              itemName: teacher.name,
+                              itemDetail: `Email: ${teacher.email || 'N/A'} • Đang phụ trách: ${teacherClasses.length} lớp`,
+                              targetId: teacher.id,
+                            });
                           }}
                           className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white font-bold text-xs transition flex items-center shrink-0 cursor-pointer"
                           title="Quyền Super Admin: Xóa tài khoản giáo viên này"
@@ -686,11 +710,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   {isSuperAdmin && (
                                     <button
                                       onClick={() => {
-                                        if (window.confirm(`CẢNH BÁO: Bạn có chắc chắn muốn XÓA LỚP HỌC "${cls.className}" (${cls.code})?`)) {
-                                          StorageEngine.deleteClass(cls.id);
-                                          onUpdateClasses();
-                                          onUpdateStudents();
-                                        }
+                                        setDeleteModalState({
+                                          isOpen: true,
+                                          itemType: 'class',
+                                          itemName: cls.className,
+                                          itemDetail: `Mã lớp: ${cls.code} • Giáo viên: ${cls.teacherName}`,
+                                          targetId: cls.id,
+                                        });
                                       }}
                                       className="p-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white transition text-xs font-bold cursor-pointer"
                                       title="Quyền Super Admin: Xóa lớp học"
@@ -724,70 +750,128 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* TAB 5: CLASSES LIST */}
       {activeTab === 'classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
-              <BookOpen className="w-5 h-5 mr-2 text-pink-500" /> Danh Sách Các Lớp Học
-            </h3>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
+                <BookOpen className="w-5 h-5 mr-2 text-pink-500" /> Danh Sách Các Lớp Học
+              </h3>
 
-            {/* SEARCH BAR FOR CLASSES */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                placeholder="Tìm tên lớp, mã lớp, giáo viên..."
-                value={classSearchQuery}
-                onChange={(e) => setClassSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300"
-              />
+              {/* ACTIVE VS ARCHIVED TOGGLE */}
+              <div className="flex items-center p-1 bg-pink-50 dark:bg-slate-800 rounded-2xl border border-pink-100 dark:border-slate-700 text-xs font-extrabold">
+                <button
+                  onClick={() => setClassStatusFilter('active')}
+                  className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                    classStatusFilter === 'active'
+                      ? 'bg-pink-400 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-pink-600'
+                  }`}
+                >
+                  🟢 Đang Hoạt Động ({safeClasses.filter(c => c && c.status !== 'archived').length})
+                </button>
+                <button
+                  onClick={() => setClassStatusFilter('archived')}
+                  className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                    classStatusFilter === 'archived'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-amber-600'
+                  }`}
+                >
+                  📦 Đã Lưu Trữ / Bảo Lưu ({safeClasses.filter(c => c && c.status === 'archived').length})
+                </button>
+              </div>
             </div>
 
-            {isSuperAdmin && (
-              <button
-                onClick={() => setIsAddClassOpen(!isAddClassOpen)}
-                className="px-4 py-2.5 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" /> Thêm Lớp Học Mới
-              </button>
-            )}
+            <div className="flex items-center space-x-2">
+              {/* SEARCH BAR FOR CLASSES */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên lớp, mã lớp, giáo viên..."
+                  value={classSearchQuery}
+                  onChange={(e) => setClassSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                />
+              </div>
+
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setIsAddClassOpen(!isAddClassOpen)}
+                  className="px-4 py-2 rounded-2xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Thêm Lớp Học Mới
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredClasses.map((cls) => (
-              <div
-                key={cls.id}
-                onClick={() => setInspectedClass(cls)}
-                className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 group shadow-xs"
-              >
-                <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
-                    {cls.code}
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
-                </div>
+            {safeClasses
+              .filter((cls) => cls && (classStatusFilter === 'archived' ? cls.status === 'archived' : cls.status !== 'archived'))
+              .filter((cls) => (
+                (cls.className || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+                (cls.code || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+                (cls.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
+              ))
+              .map((cls) => (
+                <div
+                  key={cls.id}
+                  onClick={() => setInspectedClass(cls)}
+                  className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 group shadow-xs relative"
+                >
+                  <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
+                        {cls.code}
+                      </span>
+                      {cls.status === 'archived' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 border border-amber-300">
+                          📦 Đã Lưu Trữ
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
+                  </div>
 
-                <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
-                    {cls.className}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">GV: {cls.teacherName}</p>
-                </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
+                      {cls.className}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">GV phụ trách: {cls.teacherName}</p>
+                  </div>
 
-                <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
-                    Mở Xem Chi Tiết Lớp Học & Bài Học →
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenAddSession(cls.id);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
-                  </button>
+                  <div className="pt-2 border-t border-pink-100 flex items-center justify-between gap-1.5">
+                    <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
+                      Mở Xem Chi Tiết →
+                    </span>
+
+                    <div className="flex items-center space-x-1">
+                      {isSuperAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingClassModal(cls);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-sky-100 text-sky-900 hover:bg-sky-200 transition text-xs font-bold flex items-center cursor-pointer"
+                          title="Quyền Super Admin: Chỉnh sửa thông tin lớp học"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Lớp
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenAddSession(cls.id);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}
@@ -852,11 +936,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   {isSuperAdmin && (
                     <button
+                      onClick={() => setEditingStudentModal(std)}
+                      className="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-950 border border-sky-300 font-extrabold text-xs hover:bg-sky-200 transition shadow-xs flex items-center shrink-0 cursor-pointer"
+                      title="Quyền Super Admin: Sửa thông tin & điều chỉnh gói học phí hiện tại"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Học Viên / Học Phí
+                    </button>
+                  )}
+
+                  {isSuperAdmin && (
+                    <button
                       onClick={() => {
-                        if (window.confirm(`CẢNH BÁO NGUY HIỂM: Bạn có chắc chắn muốn XÓA VĨNH VIỄN học viên ${std.name}? Toàn bộ lịch sử bài tập & học phí của học viên này sẽ bị xóa khỏi hệ thống!`)) {
-                          StorageEngine.deleteStudentPermanently(std.id);
-                          onUpdateStudents();
-                        }
+                        setDeleteModalState({
+                          isOpen: true,
+                          itemType: 'student',
+                          itemName: std.name,
+                          itemDetail: `SĐT: ${std.phone || 'Chưa có'} • Số buổi còn lại: ${std.remainingSessions} buổi`,
+                          targetId: std.id,
+                        });
                       }}
                       className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white font-extrabold text-xs transition shadow-xs flex items-center cursor-pointer"
                       title="Quyền Super Admin: Xóa học viên vĩnh viễn"
@@ -1241,11 +1338,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Điện Thoại (*)</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Điện Thoại (Tùy chọn)</label>
                   <input
                     type="text"
-                    required
-                    placeholder="0912345678"
+                    placeholder="0912345678 (Tùy chọn)"
                     value={newStudentPhone}
                     onChange={(e) => setNewStudentPhone(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
@@ -1322,6 +1418,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* EDIT CLASS MODAL FOR SUPER ADMIN */}
+      {editingClassModal && (
+        <EditClassModal
+          isOpen={!!editingClassModal}
+          onClose={() => setEditingClassModal(null)}
+          targetClass={editingClassModal}
+          otherTeachersList={otherTeachersList}
+          onRefreshData={onUpdateClasses}
+        />
+      )}
+
+      {/* EDIT STUDENT & TUITION PACKAGE MODAL FOR SUPER ADMIN */}
+      {editingStudentModal && (
+        <EditStudentModal
+          isOpen={!!editingStudentModal}
+          onClose={() => setEditingStudentModal(null)}
+          student={editingStudentModal}
+          classes={safeClasses}
+          onRefreshData={onUpdateStudents}
+        />
+      )}
+
+      {/* CUSTOM DELETE CONFIRMATION MODAL FOR SUPER ADMIN */}
+      <DeleteConfirmModal
+        isOpen={deleteModalState.isOpen}
+        itemType={deleteModalState.itemType}
+        itemName={deleteModalState.itemName}
+        itemDetail={deleteModalState.itemDetail}
+        onClose={() => setDeleteModalState({ ...deleteModalState, isOpen: false })}
+        onConfirm={() => {
+          if (!deleteModalState.targetId) return;
+          if (deleteModalState.itemType === 'teacher') {
+            StorageEngine.deleteTeacher(deleteModalState.targetId);
+            onUpdateClasses();
+          } else if (deleteModalState.itemType === 'class') {
+            StorageEngine.deleteClass(deleteModalState.targetId);
+            onUpdateClasses();
+            onUpdateStudents();
+          } else if (deleteModalState.itemType === 'student') {
+            StorageEngine.deleteStudentPermanently(deleteModalState.targetId);
+            onUpdateStudents();
+          }
+        }}
+      />
 
     </div>
   );
