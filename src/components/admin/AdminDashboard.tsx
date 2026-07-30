@@ -464,7 +464,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="p-3.5 rounded-2xl bg-pink-100/80 text-pink-950 border border-pink-200 text-xs font-bold flex items-center justify-between shadow-2xs">
               <span className="flex items-center">
                 <Sparkles className="w-4 h-4 mr-2 text-pink-500 animate-pulse" />
-                Lịch dạy cá nhân của <strong>Ms. Vy</strong> (Đã được tinh gọn để quản lý cá nhân & trung tâm cùng lúc).
+                Lịch dạy cá nhân của <strong className="ml-1">Ms. Vy</strong>
               </span>
               <button
                 onClick={() => setActiveTab('teachers')}
