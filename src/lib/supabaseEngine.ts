@@ -53,13 +53,14 @@ export async function supabaseFetch<T = any>(
   }
 }
 
-// REALTIME WEBSOCKET SUBSCRIPTION CHANNEL WITH AUTO-RECONNECT
+// REALTIME WEBSOCKET SUBSCRIPTION CHANNEL WITH PHOENIX HEARTBEAT & AUTO-RECONNECT
 export class SupabaseRealtimeChannel {
   private ws: WebSocket | null = null;
   private channelName: string;
   private onDataChangeCallback: (payload: any) => void;
   private isClosedManually = false;
   private reconnectTimer: any = null;
+  private heartbeatInterval: any = null;
 
   constructor(channelName: string, onDataChangeCallback: (payload: any) => void) {
     this.channelName = channelName;
@@ -77,14 +78,19 @@ export class SupabaseRealtimeChannel {
 
       this.ws.onopen = () => {
         console.log('[SUPABASE REALTIME DEBUG] 2. WebSocket opened successfully');
-        // Join topic for postgres_changes on schema 'public' (matches supabase.channel(...).on('postgres_changes', ...))
+        
+        // Start Phoenix heartbeat every 25 seconds to keep connection alive
+        this.startHeartbeat();
+
+        // Join topic with exact postgres_changes configuration for table master_store and master
         const joinMsg = {
           topic: `realtime:${this.channelName}`,
           event: 'phx_join',
           payload: {
             config: {
               postgres_changes: [
-                { event: '*', schema: 'public' }
+                { event: '*', schema: 'public', table: 'master_store' },
+                { event: '*', schema: 'public', table: 'master' }
               ]
             }
           },
@@ -107,16 +113,17 @@ export class SupabaseRealtimeChannel {
             });
           }
 
-          if (data && data.event === 'postgres_changes') {
-            console.log('[SUPABASE REALTIME DEBUG] 7. postgres_changes details:', {
+          if (data && (data.event === 'postgres_changes' || data.event === 'INSERT' || data.event === 'UPDATE' || data.event === 'DELETE')) {
+            console.log('[SUPABASE REALTIME DEBUG] 7. postgres_changes event triggered:', {
               schema: data.payload?.schema || data.payload?.data?.schema,
               table: data.payload?.table || data.payload?.data?.table,
               eventType: data.payload?.type || data.payload?.data?.type || data.event,
               payload: data.payload,
             });
-          }
-
-          if (data && (data.event === 'postgres_changes' || data.event === 'INSERT' || data.event === 'UPDATE' || data.event === 'DELETE' || (data.payload && data.payload.data))) {
+            const changePayload = data.payload?.data || data.payload;
+            this.onDataChangeCallback(changePayload);
+          } else if (data && data.payload && (data.payload.record || data.payload.data)) {
+            // Callback for custom payload updates
             const changePayload = data.payload?.data || data.payload;
             this.onDataChangeCallback(changePayload);
           }
@@ -125,16 +132,41 @@ export class SupabaseRealtimeChannel {
 
       this.ws.onerror = (err) => {
         console.error('[SUPABASE REALTIME DEBUG] 8. WebSocket error encountered:', err);
+        this.stopHeartbeat();
         this.scheduleReconnect();
       };
 
       this.ws.onclose = (event) => {
         console.log('[SUPABASE REALTIME DEBUG] 9. WebSocket closed:', { code: event?.code, reason: event?.reason });
+        this.stopHeartbeat();
         this.scheduleReconnect();
       };
     } catch (e) {
       console.error('[SUPABASE REALTIME DEBUG] WebSocket connection exception:', e);
+      this.stopHeartbeat();
       this.scheduleReconnect();
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const hbMsg = {
+          topic: 'phoenix',
+          event: 'phx_heartbeat',
+          payload: {},
+          ref: `hb_${Date.now()}`
+        };
+        this.ws.send(JSON.stringify(hbMsg));
+      }
+    }, 25000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
     }
   }
 
@@ -149,6 +181,7 @@ export class SupabaseRealtimeChannel {
 
   public unsubscribe() {
     this.isClosedManually = true;
+    this.stopHeartbeat();
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.ws) {
       try {

@@ -37,17 +37,21 @@ export const CloudSyncEngine = {
     // 2. Supabase Realtime WebSocket Listener (postgres_changes STREAM - NO POLLING)
     if (!realtimeChannel) {
       realtimeChannel = new SupabaseRealtimeChannel('public:master_store', (changePayload) => {
-        if (!isLocalPushing) {
-          // Realtime event received over WebSocket: Update memory store directly and notify React components!
-          if (changePayload && changePayload.record && changePayload.record.payload) {
-            const cloudPayload = changePayload.record.payload;
-            Object.keys(cloudPayload).forEach((key) => {
-              updateLiveMemoryStore(key, cloudPayload[key]);
-            });
-            subscribers.forEach((cb) => cb());
-          } else {
-            this.pullInitialCloudData();
-          }
+        // Realtime event received over WebSocket: Update memory store directly and notify React components!
+        if (changePayload && changePayload.record && changePayload.record.payload) {
+          const cloudPayload = changePayload.record.payload;
+          Object.keys(cloudPayload).forEach((key) => {
+            updateLiveMemoryStore(key, cloudPayload[key]);
+          });
+          subscribers.forEach((cb) => cb());
+        } else if (changePayload && changePayload.payload) {
+          const cloudPayload = changePayload.payload;
+          Object.keys(cloudPayload).forEach((key) => {
+            updateLiveMemoryStore(key, cloudPayload[key]);
+          });
+          subscribers.forEach((cb) => cb());
+        } else {
+          this.pullInitialCloudData();
         }
       });
     }
