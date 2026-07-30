@@ -91,8 +91,10 @@ export const CloudSyncEngine = {
     }
 
     // 2. Write DIRECTLY to Supabase PostgreSQL Database over Official Supabase SDK / REST API
+    console.log("Saving to Supabase...", { timestamp: nowIso, entityKeys: Object.keys(allStorageData) });
+
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from('master_store')
         .upsert(
           {
@@ -103,10 +105,19 @@ export const CloudSyncEngine = {
           { onConflict: 'id' }
         );
 
-      if (error) {
-        console.warn('Supabase SDK upsert fallback notice:', error.message);
+      console.log("Supabase save result:", result);
+
+      if (result.error) {
+        console.error("Supabase SDK upsert failed:", {
+          status: result.status || result.error.code,
+          error: result.error.message,
+          details: result.error.details,
+          hint: result.error.hint,
+        });
+
         // Fallback REST endpoint upsert
-        await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
+        console.log("Attempting Supabase REST fetch fallback...");
+        const restResponse = await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
@@ -120,9 +131,19 @@ export const CloudSyncEngine = {
             payload: allStorageData,
           }),
         });
+
+        const responseText = await restResponse.text();
+        console.log("Supabase REST fallback response:", {
+          status: restResponse.status,
+          statusText: restResponse.statusText,
+          body: responseText,
+        });
       }
-    } catch (e) {
-      console.warn('Supabase Direct Push notice:', e);
+    } catch (e: any) {
+      console.error("Supabase Direct Push exception:", {
+        message: e?.message || e,
+        stack: e?.stack,
+      });
     }
   },
 
