@@ -3,6 +3,7 @@
 // Single Source of Truth: Supabase PostgreSQL Database (qbzmamuahgmaruwcqfyl.supabase.co)
 
 import { supabaseFetch, SupabaseRealtimeChannel } from './supabaseEngine';
+import { updateLiveMemoryStore } from './storage';
 
 const broadcastChannel = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('ms_vy_english_realtime_channel')
@@ -37,8 +38,16 @@ export const CloudSyncEngine = {
     if (!realtimeChannel) {
       realtimeChannel = new SupabaseRealtimeChannel('public:master_store', (changePayload) => {
         if (!isLocalPushing) {
-          // Realtime event received: update only modified data
-          this.pullInitialCloudData();
+          // Realtime event received over WebSocket: Update memory store directly and notify React components!
+          if (changePayload && changePayload.record && changePayload.record.payload) {
+            const cloudPayload = changePayload.record.payload;
+            Object.keys(cloudPayload).forEach((key) => {
+              updateLiveMemoryStore(key, cloudPayload[key]);
+            });
+            subscribers.forEach((cb) => cb());
+          } else {
+            this.pullInitialCloudData();
+          }
         }
       });
     }
@@ -60,6 +69,11 @@ export const CloudSyncEngine = {
     isLocalPushing = true;
     const nowIso = new Date().toISOString();
     lastSyncedTimestamp = nowIso;
+
+    // Update in-memory store immediately
+    Object.keys(allStorageData).forEach((key) => {
+      updateLiveMemoryStore(key, allStorageData[key]);
+    });
 
     // 1. Notify other open tabs in current browser instantly
     if (broadcastChannel) {
@@ -95,7 +109,7 @@ export const CloudSyncEngine = {
     } finally {
       setTimeout(() => {
         isLocalPushing = false;
-      }, 400);
+      }, 300);
     }
   },
 
@@ -136,13 +150,8 @@ export const CloudSyncEngine = {
         Object.keys(cloudPayload).forEach((key) => {
           try {
             const cloudVal = cloudPayload[key];
-            const localRaw = localStorage.getItem(key);
-            const cloudRaw = JSON.stringify(cloudVal);
-
-            if (localRaw !== cloudRaw) {
-              localStorage.setItem(key, cloudRaw);
-              hasNewChanges = true;
-            }
+            updateLiveMemoryStore(key, cloudVal);
+            hasNewChanges = true;
           } catch (e) {}
         });
 

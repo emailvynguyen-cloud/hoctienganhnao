@@ -42,12 +42,27 @@ const STORAGE_KEYS = {
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
 };
 
+const liveMemoryStore: Record<string, any> = {};
+
+export function updateLiveMemoryStore(key: string, value: any) {
+  liveMemoryStore[key] = value;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {}
+}
+
 function getItem<T>(key: string, defaultValue: T): T {
+  if (key in liveMemoryStore && liveMemoryStore[key] !== undefined && liveMemoryStore[key] !== null) {
+    return liveMemoryStore[key] as T;
+  }
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed !== undefined && parsed !== null) return parsed;
+      if (parsed !== undefined && parsed !== null) {
+        liveMemoryStore[key] = parsed;
+        return parsed;
+      }
     }
   } catch (e) {
     console.error(`Error reading ${key} from storage:`, e);
@@ -56,6 +71,7 @@ function getItem<T>(key: string, defaultValue: T): T {
 }
 
 function setItem<T>(key: string, value: T): void {
+  liveMemoryStore[key] = value;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
