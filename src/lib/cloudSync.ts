@@ -45,19 +45,21 @@ export const CloudSyncEngine = {
           (payload: any) => {
             console.log("SUPER ADMIN RECEIVED REALTIME", payload);
 
-            const record = payload?.new || payload?.record;
-            if (record && record.payload) {
-              const cloudPayload = record.payload;
+            // Extract payload from payload.new.payload
+            const cloudPayload = payload?.new?.payload || payload?.record?.payload;
+            if (cloudPayload) {
+              // 1. Write updated data directly into RAM Memory Store
               Object.keys(cloudPayload).forEach((key) => {
                 updateLiveMemoryStore(key, cloudPayload[key]);
               });
-              subscribers.forEach((cb) => cb(payload));
+              // 2. Notify all React component subscribers to update React State immediately
+              subscribers.forEach((cb) => cb(cloudPayload));
+            } else {
+              // Fallback: Pull initial cloud data and notify subscribers
+              this.pullInitialCloudData().then(() => {
+                subscribers.forEach((cb) => cb());
+              });
             }
-
-            // Always pull fresh initial data from Supabase REST endpoint to guarantee 100% dataset sync
-            this.pullInitialCloudData().then(() => {
-              subscribers.forEach((cb) => cb(payload));
-            });
           }
         )
         .subscribe((status: string) => {
@@ -95,7 +97,7 @@ export const CloudSyncEngine = {
     }
 
     // 2. Write DIRECTLY to Supabase PostgreSQL Database over Official Supabase SDK / REST API
-    console.log("Saving to Supabase...", { timestamp: nowIso, entityKeys: Object.keys(allStorageData) });
+    console.log("PAYLOAD", allStorageData);
 
     try {
       const result = await supabase
@@ -109,19 +111,12 @@ export const CloudSyncEngine = {
           { onConflict: 'id' }
         );
 
-      console.log("Supabase save result:", result);
+      console.log(result);
 
       if (result.error) {
-        console.error("Supabase SDK upsert failed:", {
-          status: result.status || result.error.code,
-          error: result.error.message,
-          details: result.error.details,
-          hint: result.error.hint,
-        });
-
+        console.error(result.error);
         // Fallback REST endpoint upsert
-        console.log("Attempting Supabase REST fetch fallback...");
-        const restResponse = await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
@@ -135,19 +130,11 @@ export const CloudSyncEngine = {
             payload: allStorageData,
           }),
         });
-
-        const responseText = await restResponse.text();
-        console.log("Supabase REST fallback response:", {
-          status: restResponse.status,
-          statusText: restResponse.statusText,
-          body: responseText,
-        });
+      } else {
+        console.log("UPSERT OK");
       }
     } catch (e: any) {
-      console.error("Supabase Direct Push exception:", {
-        message: e?.message || e,
-        stack: e?.stack,
-      });
+      console.error("Supabase Direct Push exception:", e);
     }
   },
 
