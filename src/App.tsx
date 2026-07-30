@@ -95,11 +95,6 @@ export default function App() {
 
     const unsubscribe = CloudSyncEngine.subscribeToCloudData((cloudPayload) => {
       console.log("SUPER ADMIN RECEIVED REALTIME", cloudPayload);
-      if (cloudPayload && typeof cloudPayload === 'object') {
-        Object.keys(cloudPayload).forEach((key) => {
-          updateLiveMemoryStore(key, cloudPayload[key]);
-        });
-      }
       loadData();
     });
 
