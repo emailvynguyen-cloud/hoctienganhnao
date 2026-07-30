@@ -161,30 +161,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     if (targetSubmissionId) {
       setActiveTab('grading');
-      setInspectedClass(null);
-      setInspectedStudent(null);
+      setInspectedClassId(null);
+      setInspectedStudentId(null);
     }
   }, [targetSubmissionId]);
 
   // Handle Sub-View Navigation Updates to Parent Header
   useEffect(() => {
     if (onSetSubViewNavigation) {
-      if (inspectedStudent) {
-        onSetSubViewNavigation(true, () => setInspectedStudent(null), () => {
-          setInspectedStudent(null);
-          setInspectedClass(null);
+      if (activeInspectedStudent) {
+        onSetSubViewNavigation(true, () => setInspectedStudentId(null), () => {
+          setInspectedStudentId(null);
+          setInspectedClassId(null);
           setActiveTab('timetable');
         });
-      } else if (inspectedClass) {
-        onSetSubViewNavigation(true, () => setInspectedClass(null), () => {
-          setInspectedClass(null);
+      } else if (activeInspectedClass) {
+        onSetSubViewNavigation(true, () => setInspectedClassId(null), () => {
+          setInspectedClassId(null);
           setActiveTab('timetable');
         });
       } else {
         onSetSubViewNavigation(false);
       }
     }
-  }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
+  }, [activeInspectedStudent, activeInspectedClass, onSetSubViewNavigation]);
 
   // HELPER: Detect if teacher is Ms. Vy
   const isMsVyTeacher = (teacherName?: string, teacherId?: string) => {
