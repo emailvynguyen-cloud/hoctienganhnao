@@ -216,10 +216,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
+    const selectedTeacherObj = otherTeachersList.find((t) => t.name === newTeacherName);
+    const teacherId = newTeacherName.includes('Vy') ? 'u_super_admin' : (selectedTeacherObj?.id || 'u_admin');
+
     StorageEngine.addClass({
       className: newClassName,
       code: newClassCode,
       teacherName: newTeacherName || 'Ms. Vy',
+      teacherId,
       schedule: newSchedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
       courseName: newCourseName || 'Tiếng Anh Giao Tiếp',
       zoomLink: newZoomLink,
@@ -1119,14 +1123,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Viên Phụ Trách</label>
-                  <input
-                    type="text"
-                    placeholder="Ms. Vy"
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Viên Phụ Trách (*)</label>
+                  <select
                     value={newTeacherName}
                     onChange={(e) => setNewTeacherName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
+                  >
+                    <option value="Ms. Vy">👑 Ms. Vy (Super Admin / Điều Hành)</option>
+                    {otherTeachersList.map((t) => (
+                      <option key={t.id} value={t.name}>
+                        👩‍🏫 {t.name} ({t.email || 'Giáo viên'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">
