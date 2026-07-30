@@ -71,70 +71,62 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     return c.teacherId === currentUser.uid || (c.teacherName && c.teacherName === currentUser.displayName);
   });
 
-  // REAL-TIME VIETNAM TIME (ICT / GMT+7) & ACTIVE CLASS DETECTION
-  const getCurrentVietnamTimeMinutes = () => {
+  // REAL-TIME VIETNAM TIME (ICT / GMT+7) CALCULATION
+  const getCurrentVietnamTime = () => {
     const now = new Date();
     try {
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false,
+      const vnDateStr = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const vnDate = new Date(vnDateStr);
+      const hours = vnDate.getHours();
+      const minutes = vnDate.getMinutes();
+      return {
+        hours,
+        minutes,
+        totalMinutes: hours * 60 + minutes,
+        dayIndex: vnDate.getDay(), // 0: Sunday, 1: Monday, ...
       };
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      const timeStr = formatter.format(now);
-      const parts = timeStr.split(':');
-      const h = parseInt(parts[0], 10);
-      const m = parseInt(parts[1], 10);
-      return h * 60 + m;
     } catch (e) {
-      return now.getHours() * 60 + now.getMinutes();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      return {
+        hours,
+        minutes,
+        totalMinutes: hours * 60 + minutes,
+        dayIndex: now.getDay(),
+      };
     }
   };
 
-  const getTodayDayKey = () => {
-    const now = new Date();
-    let dayIndex = now.getDay(); // 0: Sunday, 1: Monday, ...
-    try {
-      const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' }).format(now);
-      if (dayStr === 'Sun') dayIndex = 0;
-      if (dayStr === 'Mon') dayIndex = 1;
-      if (dayStr === 'Tue') dayIndex = 2;
-      if (dayStr === 'Wed') dayIndex = 3;
-      if (dayStr === 'Thu') dayIndex = 4;
-      if (dayStr === 'Fri') dayIndex = 5;
-      if (dayStr === 'Sat') dayIndex = 6;
-    } catch (e) {}
-
-    if (dayIndex === 0) return 'CN';
-    return `T${dayIndex + 1}`;
-  };
-
+  // Helper to parse HH:mm start and end times from class schedule string
   const parseClassTimeRange = (scheduleStr?: string) => {
     if (!scheduleStr) return null;
-    const match = scheduleStr.match(/(\d{1,2})[:h](\d{2})\s*[-–—to]\s*(\d{1,2})[:h](\d{2})/i);
-    if (!match) return null;
+    const times = scheduleStr.match(/\b(\d{1,2})[:h](\d{2})\b/gi);
+    if (!times || times.length < 2) return null;
 
-    const startH = parseInt(match[1], 10);
-    const startM = parseInt(match[2], 10);
-    const endH = parseInt(match[3], 10);
-    const endM = parseInt(match[4], 10);
-
-    return {
-      startMinutes: startH * 60 + startM,
-      endMinutes: endH * 60 + endM,
+    const parseTimeStr = (tStr: string) => {
+      const clean = tStr.toLowerCase().replace('h', ':');
+      const [h, m] = clean.split(':').map((n) => parseInt(n, 10));
+      return h * 60 + m;
     };
+
+    const startMinutes = parseTimeStr(times[0]);
+    const endMinutes = parseTimeStr(times[1]);
+
+    if (isNaN(startMinutes) || isNaN(endMinutes)) return null;
+
+    return { startMinutes, endMinutes };
   };
 
-  const todayDayKey = getTodayDayKey();
-  const currentVietnamMinutes = getCurrentVietnamTimeMinutes();
+  const vnTime = getCurrentVietnamTime();
+  const dayKeyMap = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const todayDayKey = dayKeyMap[vnTime.dayIndex] || 'T2';
 
   // Find class that is TRULY in session right now in Vietnam Time
   const activeTodayClass = assignedClasses.find((c) => {
     if (!c || !c.schedule) return false;
     const sched = c.schedule.toUpperCase();
 
-    // 1. Check Day of Week
+    // 1. Check if class is scheduled for today's day of week
     let isToday = false;
     if (todayDayKey === 'T2') isToday = sched.includes('T2') || sched.includes('THỨ 2');
     else if (todayDayKey === 'T3') isToday = sched.includes('T3') || sched.includes('THỨ 3');
@@ -146,16 +138,19 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
     if (!isToday) return false;
 
-    // 2. Check Time Range (with 15 min early buffer before class and 10 min buffer after class)
+    // 2. Check if current Vietnam time falls within the class time range
     const timeRange = parseClassTimeRange(c.schedule);
-    if (!timeRange) return true; // If no time range parsed, fallback to day match
+    if (!timeRange) {
+      // IF NO TIME RANGE PARSED, DO NOT MARK AS ACTIVE ALL DAY!
+      return false;
+    }
 
     const earlyBuffer = 15; // 15 mins before start time
     const lateBuffer = 10;  // 10 mins after end time
 
     return (
-      currentVietnamMinutes >= (timeRange.startMinutes - earlyBuffer) &&
-      currentVietnamMinutes <= (timeRange.endMinutes + lateBuffer)
+      vnTime.totalMinutes >= (timeRange.startMinutes - earlyBuffer) &&
+      vnTime.totalMinutes <= (timeRange.endMinutes + lateBuffer)
     );
   }) || null;
 
@@ -189,7 +184,6 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
   // IF INSPECTING A STUDENT LEARNING PAGE FROM TEACHER PORTAL (TEACHER PORTAL CONTEXT INTACT)
   if (inspectedStudent) {
-    // ROUTE GUARD CHECK: Ensure Teacher can only inspect students enrolled in their assigned classes
     const isEnrolledInTeacherClass = isSuperOrAdmin || assignedClasses.some(
       (c) => inspectedStudent.classIds && inspectedStudent.classIds.includes(c.id)
     );
@@ -260,7 +254,6 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
   if (inspectedClass) {
-    // ROUTE GUARD CHECK: Ensure Teacher cannot inspect unassigned classes
     const isAssigned = isSuperOrAdmin || assignedClasses.some((c) => c.id === inspectedClass.id);
 
     if (!isAssigned) {
@@ -461,44 +454,81 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             </button>
           </div>
 
-          {/* Assigned Classes Grid */}
+          {/* Assigned Classes Grid With Alternating Soft Pastel Themes */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {assignedClasses.map((cls) => (
-              <div
-                key={cls.id}
-                onClick={() => setInspectedClass(cls)}
-                className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 shadow-xs group"
-              >
-                <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
-                    {cls.code}
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
-                </div>
+            {assignedClasses.map((cls, idx) => {
+              const themes = [
+                {
+                  bg: 'bg-gradient-to-br from-pink-100/90 via-pink-50 to-rose-100/80 border-pink-200 hover:border-pink-400 hover:bg-pink-100/80',
+                  badge: 'bg-pink-400 text-white',
+                  title: 'text-pink-950 dark:text-pink-300 group-hover:text-pink-600 underline decoration-pink-300',
+                  btn: 'bg-pink-400 hover:bg-pink-500 text-white',
+                },
+                {
+                  bg: 'bg-gradient-to-br from-amber-100/90 via-amber-50 to-yellow-100/80 border-amber-200 hover:border-amber-400 hover:bg-amber-100/80',
+                  badge: 'bg-amber-500 text-white',
+                  title: 'text-amber-950 dark:text-amber-300 group-hover:text-amber-700 underline decoration-amber-300',
+                  btn: 'bg-amber-500 hover:bg-amber-600 text-white',
+                },
+                {
+                  bg: 'bg-gradient-to-br from-emerald-100/90 via-emerald-50 to-teal-100/80 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100/80',
+                  badge: 'bg-emerald-500 text-white',
+                  title: 'text-emerald-950 dark:text-emerald-300 group-hover:text-emerald-700 underline decoration-emerald-300',
+                  btn: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+                },
+                {
+                  bg: 'bg-gradient-to-br from-sky-100/90 via-sky-50 to-blue-100/80 border-sky-200 hover:border-sky-400 hover:bg-sky-100/80',
+                  badge: 'bg-sky-500 text-white',
+                  title: 'text-sky-950 dark:text-sky-300 group-hover:text-sky-700 underline decoration-sky-300',
+                  btn: 'bg-sky-500 hover:bg-sky-600 text-white',
+                },
+                {
+                  bg: 'bg-gradient-to-br from-purple-100/90 via-purple-50 to-indigo-100/80 border-purple-200 hover:border-purple-400 hover:bg-purple-100/80',
+                  badge: 'bg-purple-500 text-white',
+                  title: 'text-purple-950 dark:text-purple-300 group-hover:text-purple-700 underline decoration-purple-300',
+                  btn: 'bg-purple-500 hover:bg-purple-600 text-white',
+                },
+              ];
 
-                <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
-                    {cls.className}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Giáo trình: {cls.courseName}</p>
-                </div>
+              const t = themes[idx % themes.length];
 
-                <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
-                    Mở Xem Chi Tiết Lớp →
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenAddSession(cls.id);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
-                  </button>
+              return (
+                <div
+                  key={cls.id}
+                  onClick={() => setInspectedClass(cls)}
+                  className={`p-5 rounded-3xl border transition cursor-pointer space-y-3 shadow-xs group ${t.bg}`}
+                >
+                  <div className="flex items-center justify-between border-b border-pink-100/60 pb-2">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${t.badge}`}>
+                      {cls.code}
+                    </span>
+                    <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">{cls.schedule}</span>
+                  </div>
+
+                  <div>
+                    <h4 className={`font-extrabold text-sm transition ${t.title}`}>
+                      {cls.className}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">Giáo trình: {cls.courseName}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-pink-100/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:translate-x-1 transition flex items-center">
+                      Mở Xem Chi Tiết Lớp →
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenAddSession(cls.id);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center shadow-2xs ${t.btn}`}
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
