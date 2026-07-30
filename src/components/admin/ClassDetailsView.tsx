@@ -241,9 +241,18 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
               </div>
 
               <div className="flex items-center space-x-1.5 shrink-0">
-                <div className="p-2 rounded-xl bg-pink-100 text-pink-900 group-hover:bg-pink-400 group-hover:text-white transition text-xs font-bold">
-                  <Share2 className="w-4 h-4" />
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const shareUrl = `${window.location.origin}/?student=${std.publicHash}`;
+                    navigator.clipboard.writeText(shareUrl);
+                    alert(`Đã sao chép link trang học tập công khai của em ${std.name} vào bộ nhớ tạm!\n\nLink: ${shareUrl}`);
+                  }}
+                  className="p-2 rounded-xl bg-emerald-100 text-emerald-950 hover:bg-emerald-500 hover:text-white transition text-xs font-bold cursor-pointer"
+                  title="Sao chép đường link xem trang học tập cho Phụ huynh / Học viên"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-700" />
+                </button>
 
                 {currentUser?.role === 'super_admin' && (
                   <button

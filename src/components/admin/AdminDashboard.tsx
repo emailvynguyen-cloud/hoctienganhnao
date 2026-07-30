@@ -934,6 +934,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <Eye className="w-3.5 h-3.5 mr-1" /> Mở Xem Trang Học Tập
                   </button>
 
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const shareUrl = `${window.location.origin}/?student=${std.publicHash}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert(`Đã sao chép link trang học tập công khai của em ${std.name} vào bộ nhớ tạm!\n\nLink: ${shareUrl}`);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 border border-emerald-300 font-extrabold text-xs hover:bg-emerald-200 transition shadow-xs flex items-center shrink-0 cursor-pointer"
+                    title="Sao chép đường link xem trang học tập dành cho Phụ huynh / Học viên"
+                  >
+                    <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-700" /> Copy Link Share
+                  </button>
+
                   {isSuperAdmin && (
                     <button
                       onClick={() => setEditingStudentModal(std)}

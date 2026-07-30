@@ -92,7 +92,24 @@ export default function App() {
       loadData();
     });
 
-    return () => unsubscribe();
+    const handleFocus = () => {
+      CloudSyncEngine.pullInitialCloudData().then(() => {
+        loadData();
+      });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    const syncInterval = setInterval(() => {
+      CloudSyncEngine.pullInitialCloudData().then(() => {
+        loadData();
+      });
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(syncInterval);
+    };
   }, []);
 
   useEffect(() => {

@@ -19,6 +19,10 @@ import {
   Trash2,
   Check,
   Plus,
+  Moon,
+  Sun,
+  Sunrise,
+  Sunset,
 } from 'lucide-react';
 
 interface WeeklyTimetableProps {
@@ -34,34 +38,44 @@ interface WeeklyTimetableProps {
   onUpdateClassSchedule?: (classId: string, newSchedule: string) => void;
 }
 
-// DEFAULT TIME SLOTS (CAN BE EDITED / ADDED MANUALLY)
-const DEFAULT_TIME_SLOTS = [
-  '05:00-07:00',
-  '07:00-08:30',
-  '08:30-09:30',
-  '09:30-10:30',
-  '10:30-12:00',
-  '12:00-14:00',
-  '14:00-15:00',
-  '15:00-16:30',
-  '16:30-18:00',
-  '18:00-19:30',
-  '19:30-21:00',
+// 4 MAJOR SHIFTS (CA DẠY) IN THE WEEKLY TIMETABLE
+const SHIFTS = [
+  {
+    key: 'morning',
+    title: '🌅 CA SÁNG (05:00 - 12:00)',
+    headerBg: 'bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 dark:from-amber-950 dark:to-slate-900 text-amber-950 dark:text-amber-200 border-amber-200 dark:border-amber-900',
+    slots: ['05:00-07:00', '07:00-08:30', '08:30-09:30', '09:30-10:30', '10:30-12:00'],
+  },
+  {
+    key: 'afternoon',
+    title: '☀️ CA CHIỀU (12:00 - 18:00)',
+    headerBg: 'bg-gradient-to-r from-sky-100 via-blue-100 to-sky-50 dark:from-sky-950 dark:to-slate-900 text-sky-950 dark:text-sky-200 border-sky-200 dark:border-sky-900',
+    slots: ['12:00-14:00', '14:00-15:00', '15:00-16:30', '16:30-18:00'],
+  },
+  {
+    key: 'evening',
+    title: '🌙 CA TỐI (18:00 - 24:00)',
+    headerBg: 'bg-gradient-to-r from-pink-100 via-purple-100 to-pink-50 dark:from-pink-950 dark:to-slate-900 text-pink-950 dark:text-pink-200 border-pink-200 dark:border-pink-900',
+    slots: ['18:00-19:30', '19:30-21:00', '21:00-22:30', '22:30-24:00'],
+  },
+  {
+    key: 'night',
+    title: '🌌 CA ĐÊM (00:00 - 02:00)',
+    headerBg: 'bg-gradient-to-r from-indigo-100 via-slate-200 to-indigo-50 dark:from-indigo-950 dark:to-slate-900 text-indigo-950 dark:text-indigo-200 border-indigo-200 dark:border-indigo-900',
+    slots: ['00:00-01:00', '01:00-02:00'],
+  },
 ];
 
 const DAYS_OF_WEEK = [
-  { key: 'T2', name: 'Thứ 2', full: 'Thứ Hai', bg: 'from-pink-500/10 to-rose-500/5', badge: 'bg-pink-100 text-pink-900 border-pink-200' },
-  { key: 'T3', name: 'Thứ 3', full: 'Thứ Ba', bg: 'from-amber-500/10 to-yellow-500/5', badge: 'bg-amber-100 text-amber-900 border-amber-200' },
-  { key: 'T4', name: 'Thứ 4', full: 'Thứ Tư', bg: 'from-emerald-500/10 to-teal-500/5', badge: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
-  { key: 'T5', name: 'Thứ 5', full: 'Thứ Năm', bg: 'from-sky-500/10 to-blue-500/5', badge: 'bg-sky-100 text-sky-900 border-sky-200' },
-  { key: 'T6', name: 'Thứ 6', full: 'Thứ Sáu', bg: 'from-purple-500/10 to-indigo-500/5', badge: 'bg-purple-100 text-purple-900 border-purple-200' },
-  { key: 'T7', name: 'Thứ 7', full: 'Thứ Bảy', bg: 'from-indigo-500/10 to-violet-500/5', badge: 'bg-indigo-100 text-indigo-900 border-indigo-200' },
-  { key: 'CN', name: 'Chủ Nhật', full: 'Chủ Nhật', bg: 'from-rose-500/10 to-red-500/5', badge: 'bg-rose-100 text-rose-900 border-rose-200' },
+  { key: 'T2', name: 'Thứ 2', full: 'Thứ Hai', badge: 'bg-pink-100 text-pink-900 border-pink-200' },
+  { key: 'T3', name: 'Thứ 3', full: 'Thứ Ba', badge: 'bg-amber-100 text-amber-900 border-amber-200' },
+  { key: 'T4', name: 'Thứ 4', full: 'Thứ Tư', badge: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
+  { key: 'T5', name: 'Thứ 5', full: 'Thứ Năm', badge: 'bg-sky-100 text-sky-900 border-sky-200' },
+  { key: 'T6', name: 'Thứ 6', full: 'Thứ Sáu', badge: 'bg-purple-100 text-purple-900 border-purple-200' },
+  { key: 'T7', name: 'Thứ 7', full: 'Thứ Bảy', badge: 'bg-indigo-100 text-indigo-900 border-indigo-200' },
+  { key: 'CN', name: 'Chủ Nhật', full: 'Chủ Nhật', badge: 'bg-rose-100 text-rose-900 border-rose-200' },
 ];
 
-// TIME RANGE PARSER & EXACT OVERLAP CONFLICT DETECTOR
-// Interval A [startA, endA] and B [startB, endB] conflict IF AND ONLY IF (startA < endB && startB < endA).
-// If endA === startB (e.g. 08:00-09:00 and 09:00-10:00), they touch at 09:00 -> NO CONFLICT!
 function parseTimeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
   const parts = timeStr.trim().split(':');
@@ -73,7 +87,6 @@ function parseTimeToMinutes(timeStr: string): number {
 
 function parseScheduleTimeRange(scheduleStr: string): { startMin: number; endMin: number; label: string } | null {
   if (!scheduleStr) return null;
-  // Match HH:MM - HH:MM or HH:MM-HH:MM pattern inside parentheses or raw
   const match = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
   if (!match) return null;
 
@@ -91,6 +104,7 @@ function parseScheduleTimeRange(scheduleStr: string): { startMin: number; endMin
 
 function checkTimeConflict(rangeA: { startMin: number; endMin: number }, rangeB: { startMin: number; endMin: number }): boolean {
   // Overlap condition: startA < endB AND startB < endA
+  // Exact boundary match (e.g. 08:00-09:00 and 09:00-10:00) returns FALSE (Valid!)
   return rangeA.startMin < rangeB.endMin && rangeB.startMin < rangeA.endMin;
 }
 
@@ -110,16 +124,11 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
   const isAdmin = currentUser?.role === 'admin' || (currentUser?.role === 'super_admin' && effectiveRole === 'admin');
   const isTeacher = currentUser?.role === 'teacher' || effectiveRole === 'teacher';
 
-  const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
-  const [newSlotInput, setNewSlotInput] = useState<string>('');
-  const [isAddingSlot, setIsAddingSlot] = useState<boolean>(false);
   const [editingClassForSchedule, setEditingClassForSchedule] = useState<Class | null>(null);
   const [customScheduleInput, setCustomScheduleInput] = useState<string>('');
 
   // EXTRACT TEACHERS FOR TABS
-  // Filter active (non-archived) classes
   const activeClasses = (classes || []).filter((c) => c && c.status !== 'archived');
-  const archivedClasses = (classes || []).filter((c) => c && c.status === 'archived');
 
   const teacherMap = new Map<string, { id: string; name: string }>();
   // Always ensure Ms. Vy is the first teacher tab
@@ -135,19 +144,20 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
   });
 
   const teacherTabs = Array.from(teacherMap.values());
-
-  // Determine active teacher tab
   const [activeTeacherId, setActiveTeacherId] = useState<string>('u_super_admin');
 
-  // If currentUser is teacher, force active tab to teacher's own schedule
   const effectiveTeacherTab = isTeacher
     ? (teacherTabs.find((t) => t.name === currentUser?.displayName || t.id === currentUser?.uid)?.id || 'u_super_admin')
     : activeTeacherId;
 
   const currentTeacherObj = teacherTabs.find((t) => t.id === effectiveTeacherTab) || teacherTabs[0];
 
-  // Filter classes for the active teacher tab
+  // STRICT TEACHER PRIVACY FILTERING:
+  // If user is a Teacher, ONLY show classes assigned to this teacher! (NEVER show Ms. Vy's classes for other teachers)
   const teacherClasses = activeClasses.filter((c) => {
+    if (isTeacher) {
+      return c.teacherId === currentUser?.uid || (c.teacherName && c.teacherName === currentUser?.displayName);
+    }
     if (currentTeacherObj.id === 'u_super_admin' || currentTeacherObj.name.toLowerCase().includes('vy')) {
       return !c.teacherName || c.teacherName.toLowerCase().includes('vy') || c.teacherId === 'u_super_admin';
     }
@@ -174,13 +184,13 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       if (!matchesDay) return false;
 
       const clsRange = parseScheduleTimeRange(cls.schedule);
-      if (!clsRange) return true; // If time not specified, show in slot
+      if (!clsRange) return true;
 
       return checkTimeConflict(slotRange, clsRange);
     });
   };
 
-  // CHECK FOR CONFLICTS IN A SPECIFIC DAY FOR ACTIVE TEACHER
+  // CONFLICT DETECTOR FOR ACTIVE TEACHER ON A SPECIFIC DAY
   const getConflictsForDay = (dayKey: string) => {
     const dayClasses = teacherClasses.filter((cls) => {
       if (!cls || !cls.schedule) return false;
@@ -209,7 +219,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
     return conflicts;
   };
 
-  // CALCULATE STATUS BADGES FOR A CLASS CARD
+  // CALCULATE STATUS BADGES FOR CLASS CARD
   const getClassStatusBadges = (cls: Class) => {
     const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
     const classSubs = (homeworkSubmissions || []).filter((s) => s && s.classId === cls.id);
@@ -217,7 +227,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
 
     const badges = [];
 
-    // 1. Pending Homework Submissions
     if (pendingSubs.length > 0) {
       badges.push({
         icon: '📚',
@@ -226,7 +235,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       });
     }
 
-    // 2. Unpaid Tuition or 0 remaining sessions
     const unpaidStudents = classStudents.filter((s) => (s.remainingSessions || 0) <= 0);
     if (unpaidStudents.length > 0) {
       badges.push({
@@ -236,7 +244,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       });
     }
 
-    // 3. Low Remaining Sessions (<= 2)
     const lowSessionStudents = classStudents.filter((s) => (s.remainingSessions || 0) > 0 && (s.remainingSessions || 0) <= 2);
     if (lowSessionStudents.length > 0) {
       badges.push({
@@ -246,7 +253,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       });
     }
 
-    // 4. Archived / Paused Class
     if (cls.status === 'archived' || cls.status === 'paused') {
       badges.push({
         icon: '⏸️',
@@ -255,7 +261,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       });
     }
 
-    // 5. No Active Students
     if (classStudents.length === 0) {
       badges.push({
         icon: '❌',
@@ -264,7 +269,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       });
     }
 
-    // 6. Top Diligent Stars
     const topStarsCount = classStudents.filter((s) => (s.stars || 0) >= 15).length;
     if (topStarsCount > 0) {
       badges.push({
@@ -277,18 +281,10 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
     return badges;
   };
 
-  const handleAddSlot = () => {
-    if (newSlotInput && !timeSlots.includes(newSlotInput)) {
-      setTimeSlots([...timeSlots, newSlotInput]);
-      setNewSlotInput('');
-      setIsAddingSlot(false);
-    }
-  };
-
   return (
     <div className="space-y-6 animate-fadeIn">
 
-      {/* HEADER BAR WITH NOTION / GOOGLE CALENDAR AESTHETICS */}
+      {/* HEADER BAR */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center space-x-3">
@@ -297,62 +293,28 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Thời Khóa Biểu Lịch Học Theo Tuần
+                Thời Khóa Biểu Lịch Học Theo Tuần (4 Ca Dạy)
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Thiết kế dạng Grid trực quan • Phân chia theo từng Giáo viên phụ trách
+                Chia làm 4 Ca Dạy chính (Sáng, Chiều, Tối, Đêm) • Thiết kế trực quan Notion / Apple style
               </p>
             </div>
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center space-x-2">
           {(isSuperAdmin || isAdmin) && (
             <button
-              onClick={() => setIsAddingSlot(!isAddingSlot)}
-              className="px-4 py-2.5 rounded-2xl bg-pink-100 text-pink-950 border border-pink-200 hover:bg-pink-200 font-extrabold text-xs transition flex items-center shrink-0 cursor-pointer"
+              onClick={() => onOpenAddSession()}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
             >
-              <Plus className="w-4 h-4 mr-1.5" /> + Khung Giờ
+              <PlusCircle className="w-4 h-4 mr-2" /> + Thêm Buổi Học
             </button>
           )}
-
-          <button
-            onClick={() => onOpenAddSession()}
-            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> + Thêm Buổi Học
-          </button>
         </div>
       </div>
 
-      {/* ADD CUSTOM TIME SLOT INPUT POPUP */}
-      {isAddingSlot && (
-        <div className="p-4 rounded-2xl bg-pink-50 border border-pink-200 flex items-center space-x-3 text-xs font-semibold animate-fadeIn">
-          <span>Nhập khung giờ mới (VD: 11:30-13:00):</span>
-          <input
-            type="text"
-            placeholder="HH:MM-HH:MM"
-            value={newSlotInput}
-            onChange={(e) => setNewSlotInput(e.target.value)}
-            className="px-3 py-1.5 rounded-xl border border-pink-200 bg-white focus:outline-none text-slate-900"
-          />
-          <button
-            onClick={handleAddSlot}
-            className="px-3.5 py-1.5 rounded-xl bg-pink-400 text-white font-bold hover:bg-pink-500"
-          >
-            Thêm
-          </button>
-          <button
-            onClick={() => setIsAddingSlot(false)}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* TEACHER TABS NAVIGATION BAR (SUPER ADMIN & ADMIN CAN TOGGLE) */}
+      {/* TEACHER TABS NAVIGATION BAR (SUPER ADMIN & ADMIN CAN TOGGLE BETWEEN TEACHERS) */}
       {!isTeacher && (
         <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
           {teacherTabs.map((t) => {
@@ -370,19 +332,19 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 }`}
               >
                 {isMsVy ? <Crown className="w-4 h-4 text-amber-200 shrink-0" /> : <UserIcon className="w-3.5 h-3.5 shrink-0" />}
-                <span>{isMsVy ? '👑 Lịch Ms. Vy (Super Admin)' : `👩‍🏫 ${t.name}`}</span>
+                <span>{isMsVy ? '👑 Lịch Ms. Vy (Super Admin)' : `👩‍🏫 Lịch ${t.name}`}</span>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* TEACHER ROLE NOTICE */}
+      {/* TEACHER ROLE NOTICE (STRICTLY ISOLATED TO THIS TEACHER) */}
       {isTeacher && (
         <div className="p-3.5 rounded-2xl bg-pink-50 border border-pink-200 text-xs font-bold text-pink-950 flex items-center justify-between">
           <span className="flex items-center">
             <Sparkles className="w-4 h-4 mr-2 text-pink-500" />
-            Đang hiển thị lịch giảng dạy cá nhân của <strong>{currentUser?.displayName || 'Giáo Viên'}</strong>
+            Đang hiển thị lịch giảng dạy cá nhân của Giáo Viên <strong>{currentUser?.displayName || ''}</strong>
           </span>
         </div>
       )}
@@ -406,7 +368,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
         );
       })}
 
-      {/* MAIN NOTION / APPLE STYLE GRID TIMETABLE */}
+      {/* MAIN 4-SHIFT NOTION / APPLE STYLE GRID TIMETABLE */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto min-w-[900px]">
           
@@ -415,10 +377,10 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
             {/* GRID COLUMNS HEADER: DAYS OF WEEK */}
             <thead>
               <tr className="border-b border-pink-100 dark:border-slate-800 bg-pink-50/50 dark:bg-slate-800/50">
-                <th className="p-4 text-left font-black text-xs text-slate-500 uppercase tracking-wider w-36 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-pink-50/90 dark:bg-slate-800 z-10">
+                <th className="p-4 text-left font-black text-xs text-slate-500 uppercase tracking-wider w-40 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-pink-50/90 dark:bg-slate-800 z-10">
                   <div className="flex items-center space-x-1.5">
                     <Clock className="w-4 h-4 text-pink-500" />
-                    <span>Khung Giờ</span>
+                    <span>Ca Dạy / Giờ</span>
                   </div>
                 </th>
 
@@ -434,117 +396,127 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
               </tr>
             </thead>
 
-            {/* GRID ROWS: TIME SLOTS */}
+            {/* GRID ROWS GROUPED BY 4 MAJOR SHIFTS (SÁNG, CHIỀU, TỐI, ĐÊM) */}
             <tbody className="divide-y divide-pink-100 dark:divide-slate-800 text-xs">
-              {timeSlots.map((slot, slotIdx) => (
-                <tr key={slotIdx} className="hover:bg-pink-50/20 dark:hover:bg-slate-800/30 transition">
+              {SHIFTS.map((shift) => (
+                <React.Fragment key={shift.key}>
                   
-                  {/* TIME SLOT LABEL COLUMN (STICKY LEFT ON MOBILE SCROLL) */}
-                  <td className="p-3.5 font-extrabold text-slate-700 dark:text-slate-300 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-white dark:bg-slate-900 z-10 shadow-xs whitespace-nowrap">
-                    <div className="flex items-center space-x-1.5 text-pink-600 font-mono">
-                      <span className="w-2 h-2 rounded-full bg-pink-400 inline-block shrink-0"></span>
-                      <span>{slot}</span>
-                    </div>
-                  </td>
+                  {/* SHIFT BANNER HEADER ROW (SPANS ALL COLUMNS) */}
+                  <tr className={`border-y font-black text-xs ${shift.headerBg}`}>
+                    <td colSpan={8} className="py-2.5 px-4 font-black tracking-wider uppercase">
+                      {shift.title}
+                    </td>
+                  </tr>
 
-                  {/* 7 DAYS COLUMNS */}
-                  {DAYS_OF_WEEK.map((day) => {
-                    const slotClasses = getClassesForSlotAndDay(day.key, slot);
-
-                    return (
-                      <td key={day.key} className="p-2 border-r border-pink-100 dark:border-slate-800 vertical-top h-24 align-top">
-                        {slotClasses.length > 0 ? (
-                          <div className="space-y-2">
-                            {slotClasses.map((cls) => {
-                              const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
-                              const statusBadges = getClassStatusBadges(cls);
-                              const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || slot;
-
-                              return (
-                                <div
-                                  key={cls.id}
-                                  onClick={() => onSelectClass && onSelectClass(cls)}
-                                  className="p-3 rounded-2xl bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-900 border border-pink-200/80 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
-                                >
-                                  {/* Top Header: Class Name & Micro Status Badges */}
-                                  <div className="flex items-start justify-between gap-1">
-                                    <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
-                                      {cls.className}
-                                    </h4>
-
-                                    {/* Status Badges with Tooltips */}
-                                    <div className="flex items-center space-x-1 shrink-0">
-                                      {statusBadges.map((badge, bIdx) => (
-                                        <span
-                                          key={bIdx}
-                                          title={badge.tooltip}
-                                          className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border shadow-2xs ${badge.color}`}
-                                        >
-                                          {badge.icon}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Time & Teacher Badge */}
-                                  <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-white/70 dark:bg-slate-800/70 p-1.5 rounded-xl border border-pink-100">
-                                    <Clock className="w-3 h-3 text-pink-500 shrink-0" />
-                                    <span>{parsedTime}</span>
-                                  </div>
-
-                                  {/* Student Avatars Preview Strip */}
-                                  <div className="flex items-center justify-between pt-1 border-t border-pink-100/60 dark:border-slate-800">
-                                    <div className="flex -space-x-1.5 overflow-hidden">
-                                      {classStudents.slice(0, 4).map((std) => (
-                                        <img
-                                          key={std.id}
-                                          src={resolveAvatarUrl(std.avatar)}
-                                          alt={std.name}
-                                          title={`Học viên: ${std.name}`}
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onSelectStudent) onSelectStudent(std);
-                                          }}
-                                          className="inline-block h-5 w-5 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
-                                        />
-                                      ))}
-                                      {classStudents.length > 4 && (
-                                        <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 font-bold text-[9px] flex items-center justify-center border border-white">
-                                          +{classStudents.length - 4}
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {(isSuperAdmin || isAdmin) && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setEditingClassForSchedule(cls);
-                                          setCustomScheduleInput(cls.schedule);
-                                        }}
-                                        className="p-1 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-100 transition opacity-0 group-hover:opacity-100 cursor-pointer"
-                                        title="Sửa nhanh lịch học lớp này"
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-[10px] text-slate-300 dark:text-slate-700 italic">
-                            Trống ca
-                          </div>
-                        )}
+                  {/* SHIFT SLOTS ROWS */}
+                  {shift.slots.map((slot, slotIdx) => (
+                    <tr key={slotIdx} className="hover:bg-pink-50/20 dark:hover:bg-slate-800/30 transition">
+                      
+                      {/* TIME SLOT LABEL COLUMN */}
+                      <td className="p-3.5 font-extrabold text-slate-700 dark:text-slate-300 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-white dark:bg-slate-900 z-10 shadow-xs whitespace-nowrap">
+                        <div className="flex items-center space-x-1.5 text-pink-600 font-mono">
+                          <span className="w-2 h-2 rounded-full bg-pink-400 inline-block shrink-0"></span>
+                          <span>{slot}</span>
+                        </div>
                       </td>
-                    );
-                  })}
-                </tr>
+
+                      {/* 7 DAYS COLUMNS FOR THIS SLOT */}
+                      {DAYS_OF_WEEK.map((day) => {
+                        const slotClasses = getClassesForSlotAndDay(day.key, slot);
+
+                        return (
+                          <td key={day.key} className="p-2 border-r border-pink-100 dark:border-slate-800 align-top h-24">
+                            {slotClasses.length > 0 ? (
+                              <div className="space-y-2">
+                                {slotClasses.map((cls) => {
+                                  const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
+                                  const statusBadges = getClassStatusBadges(cls);
+                                  const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || slot;
+
+                                  return (
+                                    <div
+                                      key={cls.id}
+                                      onClick={() => onSelectClass && onSelectClass(cls)}
+                                      className="p-3 rounded-2xl bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-900 border border-pink-200/80 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
+                                    >
+                                      <div className="flex items-start justify-between gap-1">
+                                        <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
+                                          {cls.className}
+                                        </h4>
+
+                                        {/* Status Badges with Tooltips */}
+                                        <div className="flex items-center space-x-1 shrink-0">
+                                          {statusBadges.map((badge, bIdx) => (
+                                            <span
+                                              key={bIdx}
+                                              title={badge.tooltip}
+                                              className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border shadow-2xs ${badge.color}`}
+                                            >
+                                              {badge.icon}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-white/70 dark:bg-slate-800/70 p-1.5 rounded-xl border border-pink-100">
+                                        <Clock className="w-3 h-3 text-pink-500 shrink-0" />
+                                        <span>{parsedTime}</span>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-1 border-t border-pink-100/60 dark:border-slate-800">
+                                        <div className="flex -space-x-1.5 overflow-hidden">
+                                          {classStudents.slice(0, 4).map((std) => (
+                                            <img
+                                              key={std.id}
+                                              src={resolveAvatarUrl(std.avatar)}
+                                              alt={std.name}
+                                              title={`Học viên: ${std.name}`}
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                                              }}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onSelectStudent) onSelectStudent(std);
+                                              }}
+                                              className="inline-block h-5 w-5 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
+                                            />
+                                          ))}
+                                          {classStudents.length > 4 && (
+                                            <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 font-bold text-[9px] flex items-center justify-center border border-white">
+                                              +{classStudents.length - 4}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {(isSuperAdmin || isAdmin) && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingClassForSchedule(cls);
+                                              setCustomScheduleInput(cls.schedule);
+                                            }}
+                                            className="p-1 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-100 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                                            title="Sửa nhanh lịch học lớp này"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-[10px] text-slate-300 dark:text-slate-700 italic">
+                                Trống ca
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
 
@@ -553,7 +525,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
         </div>
       </div>
 
-      {/* QUICK SCHEDULE EDIT MODAL FOR SUPER ADMIN & ADMIN */}
+      {/* QUICK SCHEDULE EDIT MODAL */}
       {editingClassForSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-800 dark:text-white relative">
@@ -584,7 +556,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 text-slate-900 dark:text-white font-extrabold"
               />
               <p className="text-[11px] text-slate-500 italic">
-                Hệ thống tự động đọc thứ (T2, T3, T4, T5, T6, T7, CN) và khung giờ thực tế (HH:MM - HH:MM).
+                Hệ thống tự động phân loại vào đúng 4 Ca Dạy (Sáng, Chiều, Tối, Đêm) và các thứ tương ứng.
               </p>
             </div>
 
