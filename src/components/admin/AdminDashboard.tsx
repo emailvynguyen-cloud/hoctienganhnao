@@ -1192,7 +1192,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 8: AI STUDIO PORTAL FOR ADMIN / SUPER ADMIN */}
       {activeTab === 'ai_studio' && (
-        <AiStudioPortal />
+        <AiStudioPortal currentUser={currentUser} />
       )}
 
       {/* RECEIPT GENERATOR MODAL FOR SUPER ADMIN */}

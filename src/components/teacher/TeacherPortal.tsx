@@ -857,7 +857,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
       {/* TAB 6: AI STUDIO PORTAL FOR TEACHERS */}
       {activeTab === 'ai_studio' && (
-        <AiStudioPortal />
+        <AiStudioPortal currentUser={currentUser} />
       )}
 
       {/* MODAL 1: PER CLASS DETAILED SESSIONS SALARY BREAKDOWN */}

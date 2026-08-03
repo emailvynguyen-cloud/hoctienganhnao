@@ -22,9 +22,16 @@ import {
 } from 'lucide-react';
 import { GeminiSettingsModal } from '../common/GeminiSettingsModal';
 
-export const AiStudioPortal: React.FC = () => {
+import { User } from '../../types';
+
+interface AiStudioPortalProps {
+  currentUser?: User | null;
+}
+
+export const AiStudioPortal: React.FC<AiStudioPortalProps> = ({ currentUser }) => {
   const [activeSubTab, setActiveSubTab] = useState<'image' | 'worksheet' | 'speech'>('image');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // --- TAB 1: IMAGE GRADER STATES ---
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -224,13 +231,19 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-black text-xs backdrop-blur-md border border-white/30 transition flex items-center space-x-1.5 cursor-pointer shrink-0"
-          >
-            <Settings className="w-4 h-4 text-yellow-200" />
-            <span>⚙️ Cấu Hình API Key</span>
-          </button>
+          {isSuperAdmin ? (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-black text-xs backdrop-blur-md border border-white/30 transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+            >
+              <Settings className="w-4 h-4 text-yellow-200" />
+              <span>⚙️ Cấu Hình API Key</span>
+            </button>
+          ) : (
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-white/20 border border-white/30 backdrop-blur-md hidden sm:inline-block">
+              Powered by Gemini AI ⚡
+            </span>
+          )}
         </div>
       </div>
 
@@ -292,17 +305,21 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <span className="font-black text-amber-900 dark:text-amber-200 block">
-                    ⚠️ CHƯA NHẬP GEMINI API KEY CÁ NHÂN!
+                    ⚠️ HỆ THỐNG ĐANG CHỜ KÍCH HOẠT GEMINI API KEY!
                   </span>
                   <p className="text-amber-800 dark:text-amber-300 font-medium">
-                    Để mắt thần AI đọc và phân tích chính xác từng nét chữ viết tay từ ảnh thực tế của bạn, hãy nhập API Key cá nhân từ Google AI Studio (Miễn phí 100%).
+                    {isSuperAdmin
+                      ? 'Để mắt thần AI đọc và phân tích chính xác từng nét chữ viết tay từ ảnh thực tế, bạn hãy bấm nút Cấu Hình API Key để dán Key từ Google AI Studio (Miễn phí 100%).'
+                      : 'Để AI soi và đọc chữ viết tay trên ảnh bài làm thực tế, vui lòng liên hệ Người Điều Hành (Ms. Vy) nhập API Key trên hệ thống nhé!'}
                   </p>
-                  <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition inline-flex items-center space-x-1 cursor-pointer"
-                  >
-                    <span>⚙️ Nhập Gemini API Key Ngay (Miễn Phí 100%) →</span>
-                  </button>
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition inline-flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>⚙️ Nhập Gemini API Key Ngay (Miễn Phí 100%) →</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

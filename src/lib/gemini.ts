@@ -115,17 +115,18 @@ export const GeminiEngine = {
     fileBase64?: string,
     mimeType?: string
   ): Promise<{ text: string; modelUsed: string }> {
-    const apiKey = this.getApiKey();
+    const rawApiKey = this.getApiKey();
+    const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, '') : '';
 
     if (!apiKey) {
       if (mimeType && mimeType.startsWith('image/')) {
         return {
-          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nĐể AI có thể soi và đọc chính xác chữ viết tay từ hình ảnh thực tế của bạn, hệ thống cần kết nối với mắt thần Google Gemini Vision API.\n\n👉 **Vui lòng thực hiện theo 2 bước sau (Hoàn toàn miễn phí):**\n1. Bấm vào nút **"⚙️ Nhập Gemini API Key Cá Nhân"** (ở góc trên trang) hoặc truy cập **https://aistudio.google.com/api-keys** để tạo API Key miễn phí.\n2. Dán API Key vào và bấm **Lưu Cấu Hình**.\n\nSau khi lưu Key, bạn chỉ cần bấm **"Phân Tích & Chấm Bài Tập Ngay"** lại một lần nữa, AI sẽ soi từng chữ và giải thích lỗi sai thực tế trên ảnh của học viên!`,
+          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nHệ thống chưa ghi nhận Gemini API Key hợp lệ.\n\n👉 **Vui lòng liên hệ Người Điều Hành (Super Admin / Ms. Vy)** để bấm nút **"⚙️ Cấu Hình API Key"** và dán API Key miễn phí từ **https://aistudio.google.com/api-keys** để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!`,
           modelUsed: 'Yêu cầu API Key',
         };
       } else if (mimeType && (mimeType.startsWith('audio/') || mimeType.startsWith('video/'))) {
         return {
-          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nVui lòng bấm vào nút **"⚙️ Nhập Gemini API Key Cá Nhân"** và nhập API Key lấy từ Google AI Studio (miễn phí) để AI có thể lắng nghe và chấm điểm bài phát âm thực tế!`,
+          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nVui lòng liên hệ Super Admin (Ms. Vy) để nhập Gemini API Key cá nhân từ Google AI Studio (miễn phí) để AI có thể lắng nghe và chấm điểm bài phát âm thực tế!`,
           modelUsed: 'Yêu cầu API Key',
         };
       }
@@ -138,15 +139,16 @@ export const GeminiEngine = {
 
     const preferredModel = this.getSelectedModel();
     const fallbackList = [
-      preferredModel,
-      'gemini-2.5-flash',
       'gemini-1.5-flash',
       'gemini-2.0-flash',
-      'gemini-2.5-pro',
+      preferredModel,
+      'gemini-2.5-flash',
       'gemini-1.5-pro',
+      'gemini-2.5-pro',
     ];
 
     const uniqueModels = Array.from(new Set(fallbackList));
+    let lastErrorMsg = '';
 
     for (const modelId of uniqueModels) {
       try {
@@ -154,13 +156,18 @@ export const GeminiEngine = {
         let contentsData: any = promptText;
 
         if (fileBase64 && mimeType) {
-          const cleanBase64 = fileBase64.includes('base64,') ? fileBase64.split('base64,')[1] : fileBase64;
+          let cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+          cleanBase64 = cleanBase64.replace(/\s/g, '');
+
+          let normalizedMime = mimeType.toLowerCase();
+          if (normalizedMime === 'image/jpg') normalizedMime = 'image/jpeg';
+
           contentsData = [
             promptText,
             {
               inlineData: {
                 data: cleanBase64,
-                mimeType: mimeType,
+                mimeType: normalizedMime,
               },
             },
           ];
@@ -175,12 +182,13 @@ export const GeminiEngine = {
           return { text: response.text, modelUsed: modelId };
         }
       } catch (err: any) {
-        console.warn(`Model ${modelId} multimodal failed, trying fallback...`, err);
+        lastErrorMsg = err?.message || String(err);
+        console.warn(`Model ${modelId} multimodal failed:`, lastErrorMsg);
       }
     }
 
     return {
-      text: `⚠️ **KHÔNG THỂ PHÂN TÍCH ẢNH (Lỗi API Key / Hết Quota):**\n\nHệ thống đã gửi ảnh tới Gemini Vision nhưng gặp lỗi kết nối (API Key không hợp lệ hoặc đã chạm ngưỡng quota miễn phí trong ngày).\n\n👉 **Cách khắc phục:** Truy cập **https://aistudio.google.com/api-keys**, tạo 1 Key mới và dán vào nút **"⚙️ Nhập Gemini API Key"** để tiếp tục sử dụng mượt mà nhé!`,
+      text: `⚠️ **KHÔNG THỂ PHÂN TÍCH ẢNH:**\n\nChi tiết phản hồi từ Google Gemini: *${lastErrorMsg || 'Kết nối không thành công'}*\n\n👉 **Cách khắc phục:** Vui lòng nhờ Super Admin (Ms. Vy) kiểm tra lại API Key tại **https://aistudio.google.com/api-keys** và cập nhật Key mới vào nút **"⚙️ Cấu Hình API Key"** nhé!`,
       modelUsed: 'Lỗi API Key / Quota',
     };
   },

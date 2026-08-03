@@ -356,16 +356,27 @@ export const Header: React.FC<HeaderProps> = ({
                       <span className="hidden sm:inline">Đổi Tài Khoản</span>
                     </button>
 
-                    {/* Super Admin Account Management Button */}
+                    {/* Super Admin Account Management & Gemini Key Button */}
                     {currentUser.role === 'super_admin' && (
-                      <button
-                        onClick={onOpenAccountManagement}
-                        className="px-2.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 transition shadow-2xs border border-sky-300 flex items-center"
-                        title="Quản Lý Cấp Tài Khoản Nhân Sự"
-                      >
-                        <Users className="w-3.5 h-3.5 mr-1" />
-                        <span className="hidden sm:inline">Quản Lý</span> Đội Ngũ
-                      </button>
+                      <>
+                        <button
+                          onClick={onOpenAccountManagement}
+                          className="px-2.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 transition shadow-2xs border border-sky-300 flex items-center"
+                          title="Quản Lý Cấp Tài Khoản Nhân Sự"
+                        >
+                          <Users className="w-3.5 h-3.5 mr-1" />
+                          <span className="hidden sm:inline">Quản Lý</span> Đội Ngũ
+                        </button>
+
+                        <button
+                          onClick={onOpenGeminiSettings}
+                          className="px-2.5 py-1.5 rounded-xl bg-purple-200 text-purple-950 font-extrabold text-xs hover:bg-purple-300 transition shadow-2xs border border-purple-300 flex items-center shrink-0"
+                          title="Cấu Hình Gemini AI Key (Quyền Super Admin)"
+                        >
+                          <Key className="w-3.5 h-3.5 mr-1 text-purple-700" />
+                          <span className="hidden sm:inline">Cấu Hình </span>AI Key
+                        </button>
+                      </>
                     )}
 
                     {/* Logout Button */}
