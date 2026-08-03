@@ -557,18 +557,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 </tr>
               ))}
             </tbody>
-          </table>                        Trống ca
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-
           </table>
 
         </div>

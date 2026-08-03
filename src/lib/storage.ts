@@ -245,14 +245,6 @@ export const StorageEngine = {
 
     return newStudent;
   },
-  updateStudent(student: Student) {
-    const students = this.getStudents() || [];
-    const idx = students.findIndex((s) => s && s.id === student.id);
-    if (idx !== -1) {
-      students[idx] = student;
-      this.saveStudents(students);
-    }
-  },
   deleteStudent(id: string) {
     this.deleteStudentPermanently(id);
   },
@@ -593,34 +585,6 @@ export const StorageEngine = {
     }
   },
 
-  addStudent(studentData: Omit<Student, 'id' | 'publicHash' | 'createdAt' | 'status' | 'stars' | 'badges'>): Student {
-    const students = this.getStudents() || [];
-    const newStudent: Student = {
-      ...studentData,
-      id: `std_${Date.now()}`,
-      publicHash: generatePublicHash(studentData.name),
-      status: 'active',
-      stars: 10,
-      badges: ['b_super_star'],
-      completedHomeworkTaskIds: [],
-      resourceLinks: [],
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    students.push(newStudent);
-    this.saveStudents(students);
-    return newStudent;
-  },
-
-  updateStudent(student: Student) {
-    const students = this.getStudents() || [];
-    const idx = students.findIndex((s) => s && s.id === student.id);
-    if (idx !== -1) {
-      const updatedStudents = [...students];
-      updatedStudents[idx] = student;
-      this.saveStudents(updatedStudents);
-    }
-  },
-
   // COMPREHENSIVE 2-STATE HOMEWORK COMPLETION & REALTIME NOTIFICATION SYSTEM
   toggleHomeworkTaskItemCheck(studentId: string, sessionId: string, homeworkItemId: string, homeworkTitle: string): boolean {
     const students = this.getStudents() || [];
@@ -763,21 +727,6 @@ export const StorageEngine = {
   // ALIAS FOR GRADED SUBMISSIONS
   gradeHomeworkSubmission(submissionId: string, feedbackText: string, ratingStars: number, teacherUser?: User | null) {
     this.submitHomeworkFeedback(submissionId, feedbackText, ratingStars, teacherUser);
-  },
-
-  addClass(classData: Omit<Class, 'id' | 'totalStudents' | 'status'>): Class {
-    const classes = this.getClasses() || [];
-    const newClass: Class = {
-      ...classData,
-      id: `cls_${Date.now()}`,
-      totalStudents: 0,
-      status: 'active',
-      startSessionNumber: classData.startSessionNumber || 1,
-      resourceLinks: classData.resourceLinks || [],
-    };
-    classes.push(newClass);
-    this.saveClasses(classes);
-    return newClass;
   },
 
   recordBulkSession(sessionData: {
