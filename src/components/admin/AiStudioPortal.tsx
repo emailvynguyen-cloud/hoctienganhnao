@@ -17,10 +17,14 @@ import {
   Zap,
   BookOpen,
   Volume2,
+  Clipboard,
+  Settings,
 } from 'lucide-react';
+import { GeminiSettingsModal } from '../common/GeminiSettingsModal';
 
 export const AiStudioPortal: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'image' | 'worksheet' | 'speech'>('image');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // --- TAB 1: IMAGE GRADER STATES ---
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -47,16 +51,71 @@ export const AiStudioPortal: React.FC = () => {
   const [isSpeechLoading, setIsSpeechLoading] = useState(false);
   const [speechResult, setSpeechResult] = useState<string | null>(null);
 
-  // Handle Image Upload
+  // Process Image File/Blob
+  const processImageFile = (file: File) => {
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Image File Upload via Input
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file);
+    }
+  };
+
+  // Global Ctrl + V Clipboard Paste Listener
+  React.useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (activeSubTab !== 'image') return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const file = new File([blob], `pasted_homework_${Date.now()}.png`, { type: blob.type || 'image/png' });
+            processImageFile(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [activeSubTab]);
+
+  // Handle Clipboard Paste Button Click
+  const handlePasteFromClipboardButton = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const file = new File([blob], `pasted_homework_${Date.now()}.png`, { type: imageType });
+            processImageFile(file);
+            return;
+          }
+        }
+        alert('Không tìm thấy hình ảnh trong bộ nhớ tạm! Bạn hãy chụp/copy ảnh (Zalo, Snipping Tool, Chrome...) rồi nhấn Ctrl + V nhé!');
+      } else {
+        alert('Vui lòng sử dụng phím tắt Ctrl + V trên bàn phím để dán ảnh trực tiếp nhé!');
+      }
+    } catch (err) {
+      console.warn(err);
+      alert('Vui lòng bấm tổ hợp phím Ctrl + V trên bàn phím để dán ảnh!');
     }
   };
 
@@ -165,9 +224,13 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
               </p>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-black bg-white/20 border border-white/30 backdrop-blur-md hidden sm:inline-block">
-            Powered by Gemini AI ⚡
-          </span>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="px-3.5 py-2 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-black text-xs backdrop-blur-md border border-white/30 transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+          >
+            <Settings className="w-4 h-4 text-yellow-200" />
+            <span>⚙️ Cấu Hình API Key</span>
+          </button>
         </div>
       </div>
 
@@ -223,6 +286,28 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
             </p>
           </div>
 
+          {!GeminiEngine.getApiKey() && (
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-slate-800 border-2 border-amber-300 space-y-2 text-xs">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-black text-amber-900 dark:text-amber-200 block">
+                    ⚠️ CHƯA NHẬP GEMINI API KEY CÁ NHÂN!
+                  </span>
+                  <p className="text-amber-800 dark:text-amber-300 font-medium">
+                    Để mắt thần AI đọc và phân tích chính xác từng nét chữ viết tay từ ảnh thực tế của bạn, hãy nhập API Key cá nhân từ Google AI Studio (Miễn phí 100%).
+                  </p>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition inline-flex items-center space-x-1 cursor-pointer"
+                  >
+                    <span>⚙️ Nhập Gemini API Key Ngay (Miễn Phí 100%) →</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left: File Upload & Controls */}
             <div className="space-y-4">
@@ -231,18 +316,28 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                 />
                 <div className="space-y-2">
                   <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-600 mx-auto flex items-center justify-center">
                     <Upload className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-black text-slate-700 dark:text-slate-200 block">
-                    {imageFile ? imageFile.name : 'Bấm để chọn ảnh bài làm hoặc kéo thả vào đây'}
+                    {imageFile ? imageFile.name : 'Bấm để chọn ảnh bài làm, kéo thả vào đây hoặc dán Ctrl+V'}
                   </span>
-                  <span className="text-[10px] text-slate-400 block">Hỗ trợ PNG, JPG, WEBP</span>
+                  <span className="text-[10px] text-slate-400 block">Hỗ trợ PNG, JPG, WEBP • Nhấn Ctrl + V để dán ngay!</span>
                 </div>
               </div>
+
+              {/* Paste from Clipboard Action Button */}
+              <button
+                type="button"
+                onClick={handlePasteFromClipboardButton}
+                className="w-full py-2.5 rounded-2xl bg-pink-100 dark:bg-slate-800 hover:bg-pink-200 text-pink-950 dark:text-pink-300 font-extrabold text-xs transition border border-pink-300 flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
+              >
+                <Clipboard className="w-4 h-4 text-pink-600" />
+                <span>📋 Dán Ảnh Từ Bộ Nhớ Tạm (Phím Tắt Ctrl + V)</span>
+              </button>
 
               {imagePreview && (
                 <div className="rounded-2xl overflow-hidden border border-pink-200 shadow-xs max-h-60 flex justify-center bg-slate-50">
@@ -515,6 +610,15 @@ PHẦN 2: ĐÁP ÁN & GIẢI THÍCH CHI TIẾT DÀNH CHO GIÁO VIÊN (Dịch ngh
           </div>
         </div>
       )}
+
+      {/* GEMINI API KEY SETTINGS MODAL */}
+      <GeminiSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSaved={() => {
+          setIsSettingsOpen(false);
+        }}
+      />
     </div>
   );
 };

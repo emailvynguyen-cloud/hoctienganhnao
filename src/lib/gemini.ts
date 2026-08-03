@@ -4,13 +4,18 @@ export const GEMINI_MODELS = [
   {
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
-    desc: 'Tốc độ nhanh, phản hồi tức thì cho từ vựng & nhận xét (Mặc định)',
+    desc: 'Tốc độ siêu nhanh, đọc chữ viết tay trên ảnh cực chuẩn (Mặc định)',
     isDefault: true,
+  },
+  {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    desc: 'Nhận diện ảnh Vision ổn định & nhanh chóng',
   },
   {
     id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
-    desc: 'Suy luận sâu, phân tích ngữ pháp & chữa bài viết IELTS',
+    desc: 'Suy luận sâu, phân tích ngữ pháp bài viết dài & IELTS',
   },
 ];
 
@@ -33,7 +38,6 @@ export const GeminiEngine = {
     const userKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
     if (userKey) return userKey.trim();
 
-    // Check Vite Environment Variable if deployed with server key
     try {
       if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
         return import.meta.env.VITE_GEMINI_API_KEY;
@@ -57,11 +61,10 @@ export const GeminiEngine = {
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, modelId);
   },
 
-  // AI Prompt Execution with Built-in Auto Fallback (Zero Setup Required)
+  // AI Prompt Execution with Built-in Auto Fallback
   async generateText(promptText: string): Promise<{ text: string; modelUsed: string }> {
     const apiKey = this.getApiKey();
 
-    // IF NO API KEY PROVIDED, USE INSTANT SMART FEEDBACK GENERATOR (NO ERROR THROWN)
     if (!apiKey) {
       const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
       const generatedTemplate = SMART_FEEDBACK_TEMPLATES[randomIndex];
@@ -74,12 +77,16 @@ export const GeminiEngine = {
     const preferredModel = this.getSelectedModel();
     const fallbackList = [
       preferredModel,
-      ...GEMINI_MODELS.map((m) => m.id).filter((id) => id !== preferredModel),
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-pro',
+      'gemini-1.5-pro',
     ];
 
-    let lastError: any = null;
+    const uniqueModels = Array.from(new Set(fallbackList));
 
-    for (const modelId of fallbackList) {
+    for (const modelId of uniqueModels) {
       try {
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
@@ -92,11 +99,9 @@ export const GeminiEngine = {
         }
       } catch (err: any) {
         console.warn(`Model ${modelId} failed, trying fallback...`, err);
-        lastError = err;
       }
     }
 
-    // Fallback gracefully to smart generator if API quota runs out
     const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
     return {
       text: SMART_FEEDBACK_TEMPLATES[randomIndex],
@@ -115,13 +120,13 @@ export const GeminiEngine = {
     if (!apiKey) {
       if (mimeType && mimeType.startsWith('image/')) {
         return {
-          text: `📝 **Nội dung đọc được (OCR Transcribed Text):**\n"1. She go to school every day. 2. I have two cat. 3. He don't like milk."\n\n❌ **Phân tích lỗi sai & Lý do tại sao sai:**\n- **Câu 1**: "She go" -> Sai chia động từ ngôi thứ 3 số ít ("She"). Ngôi "She/He/It" ở thì Hiện tại đơn cần thêm -s/-es vào động từ.\n- **Câu 2**: "two cat" -> Sai danh từ số nhiều. Khi có số lượng từ 2 trở lên ("two"), danh từ "cat" phải thêm -s thành "cats".\n- **Câu 3**: "He don't" -> Sai trợ động từ phủ định cho ngôi "He". Phải dùng "doesn't" thay vì "don't".\n\n💡 **Hướng dẫn học viên sửa lại cho đúng:**\n1. Động từ đi với She/He/It -> Thêm -s/es: *go -> goes*.\n2. Danh từ đi với số nhiều (>=2) -> Thêm -s: *cat -> cats*.\n3. Phủ định với She/He/It -> Dùng *doesn't*.\n\n✨ **Bài làm sửa lại hoàn chỉnh:**\n1. She goes to school every day.\n2. I have two cats.\n3. He doesn't like milk.\n\n🌟 **Nhận xét của giáo viên:**\nEm làm bài rất cẩn thận và có nét chữ đẹp! Hãy lưu ý 3 quy tắc chia động từ và danh từ số nhiều ở trên để lần sau đạt điểm tuyệt đối nhé. Cố gắng lên em! 💪`,
-          modelUsed: 'Smart AI Image Analyzer (Built-in Demo)',
+          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nĐể AI có thể soi và đọc chính xác chữ viết tay từ hình ảnh thực tế của bạn, hệ thống cần kết nối với mắt thần Google Gemini Vision API.\n\n👉 **Vui lòng thực hiện theo 2 bước sau (Hoàn toàn miễn phí):**\n1. Bấm vào nút **"⚙️ Nhập Gemini API Key Cá Nhân"** (ở góc trên trang) hoặc truy cập **https://aistudio.google.com/api-keys** để tạo API Key miễn phí.\n2. Dán API Key vào và bấm **Lưu Cấu Hình**.\n\nSau khi lưu Key, bạn chỉ cần bấm **"Phân Tích & Chấm Bài Tập Ngay"** lại một lần nữa, AI sẽ soi từng chữ và giải thích lỗi sai thực tế trên ảnh của học viên!`,
+          modelUsed: 'Yêu cầu API Key',
         };
       } else if (mimeType && (mimeType.startsWith('audio/') || mimeType.startsWith('video/'))) {
         return {
-          text: `🎧 **Văn bản nhận diện từ bài phát âm (Transcribed Speech):**\n"Hello teacher, my name is Nu Nu. Today I talk about my favorite food."\n\n🏆 **Điểm số phát âm (Pronunciation Score):** **88 / 100** (Rất Tốt ✨)\n\n❌ **Từ phát âm chưa chuẩn & Hướng dẫn sửa:**\n- Từ **"teacher"**: Em lưu ý âm cuối /tʃər/ cần uốn lưỡi nhẹ, tránh đọc thành "tí-chơ".\n- Từ **"favorite"**: Đọc là /ˈfeɪ.vər.ɪt/ (3 âm tiết), chú ý âm đầu /feɪ/ kéo dài hơn.\n\n🌊 **Đánh giá Độ trôi chảy & Nhịp điệu (Fluency & Intonation):**\nGiọng nói truyền cảm, âm lượng rõ ràng. Nhịp điệu câu khá tự nhiên!\n\n💡 **Lời khuyên luyện tập:**\nHãy mở file audio mẫu và nhại theo (shadowing) 3 lần để đạt điểm 100/100 nhé!`,
-          modelUsed: 'Smart AI Speech Analyzer (Built-in Demo)',
+          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nVui lòng bấm vào nút **"⚙️ Nhập Gemini API Key Cá Nhân"** và nhập API Key lấy từ Google AI Studio (miễn phí) để AI có thể lắng nghe và chấm điểm bài phát âm thực tế!`,
+          modelUsed: 'Yêu cầu API Key',
         };
       }
       const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
@@ -134,10 +139,16 @@ export const GeminiEngine = {
     const preferredModel = this.getSelectedModel();
     const fallbackList = [
       preferredModel,
-      ...GEMINI_MODELS.map((m) => m.id).filter((id) => id !== preferredModel),
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-pro',
+      'gemini-1.5-pro',
     ];
 
-    for (const modelId of fallbackList) {
+    const uniqueModels = Array.from(new Set(fallbackList));
+
+    for (const modelId of uniqueModels) {
       try {
         const ai = new GoogleGenAI({ apiKey });
         let contentsData: any = promptText;
@@ -168,10 +179,9 @@ export const GeminiEngine = {
       }
     }
 
-    const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
     return {
-      text: SMART_FEEDBACK_TEMPLATES[randomIndex],
-      modelUsed: 'Smart AI Fallback',
+      text: `⚠️ **KHÔNG THỂ PHÂN TÍCH ẢNH (Lỗi API Key / Hết Quota):**\n\nHệ thống đã gửi ảnh tới Gemini Vision nhưng gặp lỗi kết nối (API Key không hợp lệ hoặc đã chạm ngưỡng quota miễn phí trong ngày).\n\n👉 **Cách khắc phục:** Truy cập **https://aistudio.google.com/api-keys**, tạo 1 Key mới và dán vào nút **"⚙️ Nhập Gemini API Key"** để tiếp tục sử dụng mượt mà nhé!`,
+      modelUsed: 'Lỗi API Key / Quota',
     };
   },
 };
