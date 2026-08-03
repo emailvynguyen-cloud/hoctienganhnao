@@ -972,16 +972,94 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   countRemaining -= thisCycleCount;
                   cycleIdx++;
                 }
-                          <span className="text-slate-500 font-bold">💰 Số tiền đóng học phí:</span>
-                          <span className="font-black text-slate-900 dark:text-white text-sm">
-                            {formatVND(item.amount)}
-                          </span>
-                        </div>
-                      )}
+                cumulativeSessions = totalPaid;
+              }
+
+              const totalPaidDisplay = Math.max(cumulativeSessions, currentStudent.totalPaidSessions || 0, currentStudent.remainingSessions || 0);
+              const remainingDisplay = currentStudent.remainingSessions || 0;
+              const usedDisplay = Math.max(0, totalPaidDisplay - remainingDisplay);
+
+              return (
+                <div className="space-y-4">
+                  {/* Summary Stats Cards */}
+                  <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-pink-50/80 dark:bg-slate-800/80 border border-pink-200/80 text-center">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Tổng Buổi Đã Đóng</span>
+                      <span className="text-base sm:text-lg font-black text-pink-700 dark:text-pink-300 font-mono">
+                        {totalPaidDisplay} Buổi
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 border-x border-pink-200 dark:border-slate-700">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Đã Sử Dụng</span>
+                      <span className="text-base sm:text-lg font-black text-slate-700 dark:text-slate-200 font-mono">
+                        {usedDisplay} Buổi
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Buổi Còn Lại</span>
+                      <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        {remainingDisplay} Buổi
+                      </span>
                     </div>
                   </div>
-                ));
-              })()}
+
+                  {/* Detailed Payment Cycles Table / List */}
+                  <div className="space-y-3">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                      📋 Danh Sách Chi Tiết Các Lần Đóng Học Phí:
+                    </span>
+
+                    {historyList.reverse().map((item) => (
+                      <div
+                        key={item.index}
+                        className="p-4 rounded-2xl bg-gradient-to-r from-white via-pink-50/50 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 border border-pink-200/80 dark:border-slate-700 shadow-2xs space-y-2.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 dark:border-slate-700/60 pb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-pink-400 text-white shadow-2xs">
+                              Lần #{item.index}
+                            </span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white">
+                              🗓️ Ngày đóng: <strong className="text-pink-600 dark:text-pink-300 font-extrabold">{item.paidDate}</strong>
+                            </span>
+                          </div>
+                          <span className="text-xs font-mono font-bold text-slate-500 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-pink-100">
+                            {item.code}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-slate-500 font-bold">📦 Số buổi đóng:</span>
+                            <span className="font-black text-pink-700 dark:text-pink-300 bg-pink-100/80 dark:bg-pink-950/40 px-2 py-0.5 rounded-md border border-pink-200">
+                              +{item.sessionsCount} buổi học
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-slate-500 font-bold">🎓 Hạn buổi học:</span>
+                            <span className="font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200">
+                              Buổi #{item.startSession} → Buổi #{item.endSession}
+                            </span>
+                          </div>
+
+                          {item.amount && (
+                            <div className="flex items-center space-x-1.5 sm:col-span-2 pt-1 border-t border-dashed border-pink-100 dark:border-slate-700/50">
+                              <span className="text-slate-500 font-bold">💰 Số tiền đóng học phí:</span>
+                              <span className="font-black text-slate-900 dark:text-white text-sm">
+                                {formatVND(item.amount)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             </div>
 
             {/* Modal Close Footer */}
