@@ -42,38 +42,95 @@ interface WeeklyTimetableProps {
 const SHIFTS = [
   {
     key: 'morning',
-    title: '🌅 CA SÁNG (05:00 - 12:00)',
-    headerBg: 'bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 dark:from-amber-950 dark:to-slate-900 text-amber-950 dark:text-amber-200 border-amber-200 dark:border-amber-900',
-    slots: ['05:00-07:00', '07:00-08:30', '08:30-09:30', '09:30-10:30', '10:30-12:00'],
+    title: 'CA SÁNG',
+    timeLabel: '05:00 - 12:00',
+    range: { startMin: 5 * 60, endMin: 12 * 60 },
+    icon: '🌅',
+    badge: 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950 dark:text-amber-200',
   },
   {
     key: 'afternoon',
-    title: '☀️ CA CHIỀU (12:00 - 18:00)',
-    headerBg: 'bg-gradient-to-r from-sky-100 via-blue-100 to-sky-50 dark:from-sky-950 dark:to-slate-900 text-sky-950 dark:text-sky-200 border-sky-200 dark:border-sky-900',
-    slots: ['12:00-14:00', '14:00-15:00', '15:00-16:30', '16:30-18:00'],
+    title: 'CA CHIỀU',
+    timeLabel: '12:00 - 18:00',
+    range: { startMin: 12 * 60, endMin: 18 * 60 },
+    icon: '☀️',
+    badge: 'bg-sky-100 text-sky-950 border-sky-300 dark:bg-sky-950 dark:text-sky-200',
   },
   {
     key: 'evening',
-    title: '🌙 CA TỐI (18:00 - 24:00)',
-    headerBg: 'bg-gradient-to-r from-pink-100 via-purple-100 to-pink-50 dark:from-pink-950 dark:to-slate-900 text-pink-950 dark:text-pink-200 border-pink-200 dark:border-pink-900',
-    slots: ['18:00-19:30', '19:30-21:00', '21:00-22:30', '22:30-24:00'],
+    title: 'CA TỐI',
+    timeLabel: '18:00 - 24:00',
+    range: { startMin: 18 * 60, endMin: 24 * 60 },
+    icon: '🌙',
+    badge: 'bg-pink-100 text-pink-950 border-pink-300 dark:bg-pink-950 dark:text-pink-200',
   },
   {
     key: 'night',
-    title: '🌌 CA ĐÊM (00:00 - 02:00)',
-    headerBg: 'bg-gradient-to-r from-indigo-100 via-slate-200 to-indigo-50 dark:from-indigo-950 dark:to-slate-900 text-indigo-950 dark:text-indigo-200 border-indigo-200 dark:border-indigo-900',
-    slots: ['00:00-01:00', '01:00-02:00'],
+    title: 'CA ĐÊM',
+    timeLabel: '00:00 - 02:00',
+    range: { startMin: 0, endMin: 2 * 60 },
+    icon: '🌌',
+    badge: 'bg-indigo-100 text-indigo-950 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-200',
   },
 ];
 
 const DAYS_OF_WEEK = [
-  { key: 'T2', name: 'Thứ 2', full: 'Thứ Hai', badge: 'bg-pink-100 text-pink-900 border-pink-200' },
-  { key: 'T3', name: 'Thứ 3', full: 'Thứ Ba', badge: 'bg-amber-100 text-amber-900 border-amber-200' },
-  { key: 'T4', name: 'Thứ 4', full: 'Thứ Tư', badge: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
-  { key: 'T5', name: 'Thứ 5', full: 'Thứ Năm', badge: 'bg-sky-100 text-sky-900 border-sky-200' },
-  { key: 'T6', name: 'Thứ 6', full: 'Thứ Sáu', badge: 'bg-purple-100 text-purple-900 border-purple-200' },
-  { key: 'T7', name: 'Thứ 7', full: 'Thứ Bảy', badge: 'bg-indigo-100 text-indigo-900 border-indigo-200' },
-  { key: 'CN', name: 'Chủ Nhật', full: 'Chủ Nhật', badge: 'bg-rose-100 text-rose-900 border-rose-200' },
+  {
+    key: 'T2',
+    name: 'Thứ 2',
+    full: 'Thứ Hai',
+    badge: 'bg-pink-200 text-pink-950 border-pink-300 font-black',
+    colHeaderBg: 'bg-pink-100/90 dark:bg-pink-950/40 text-pink-950 dark:text-pink-200 border-pink-200 dark:border-pink-900',
+    colCellBg: 'bg-pink-50/50 dark:bg-pink-950/15 hover:bg-pink-100/60',
+  },
+  {
+    key: 'T3',
+    name: 'Thứ 3',
+    full: 'Thứ Ba',
+    badge: 'bg-amber-200 text-amber-950 border-amber-300 font-black',
+    colHeaderBg: 'bg-amber-100/90 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 border-amber-200 dark:border-amber-900',
+    colCellBg: 'bg-amber-50/50 dark:bg-amber-950/15 hover:bg-amber-100/60',
+  },
+  {
+    key: 'T4',
+    name: 'Thứ 4',
+    full: 'Thứ Tư',
+    badge: 'bg-emerald-200 text-emerald-950 border-emerald-300 font-black',
+    colHeaderBg: 'bg-emerald-100/90 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900',
+    colCellBg: 'bg-emerald-50/50 dark:bg-emerald-950/15 hover:bg-emerald-100/60',
+  },
+  {
+    key: 'T5',
+    name: 'Thứ 5',
+    full: 'Thứ Năm',
+    badge: 'bg-sky-200 text-sky-950 border-sky-300 font-black',
+    colHeaderBg: 'bg-sky-100/90 dark:bg-sky-950/40 text-sky-950 dark:text-sky-200 border-sky-200 dark:border-sky-900',
+    colCellBg: 'bg-sky-50/50 dark:bg-sky-950/15 hover:bg-sky-100/60',
+  },
+  {
+    key: 'T6',
+    name: 'Thứ 6',
+    full: 'Thứ Sáu',
+    badge: 'bg-purple-200 text-purple-950 border-purple-300 font-black',
+    colHeaderBg: 'bg-purple-100/90 dark:bg-purple-950/40 text-purple-950 dark:text-purple-200 border-purple-200 dark:border-purple-900',
+    colCellBg: 'bg-purple-50/50 dark:bg-purple-950/15 hover:bg-purple-100/60',
+  },
+  {
+    key: 'T7',
+    name: 'Thứ 7',
+    full: 'Thứ Bảy',
+    badge: 'bg-indigo-200 text-indigo-950 border-indigo-300 font-black',
+    colHeaderBg: 'bg-indigo-100/90 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 border-indigo-200 dark:border-indigo-900',
+    colCellBg: 'bg-indigo-50/50 dark:bg-indigo-950/15 hover:bg-indigo-100/60',
+  },
+  {
+    key: 'CN',
+    name: 'Chủ Nhật',
+    full: 'Chủ Nhật',
+    badge: 'bg-rose-200 text-rose-950 border-rose-300 font-black',
+    colHeaderBg: 'bg-rose-100/90 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200 border-rose-200 dark:border-rose-900',
+    colCellBg: 'bg-rose-50/50 dark:bg-rose-950/15 hover:bg-rose-100/60',
+  },
 ];
 
 function parseTimeToMinutes(timeStr: string): number {
@@ -164,11 +221,8 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
     return c.teacherId === currentTeacherObj.id || c.teacherName === currentTeacherObj.name;
   });
 
-  // HELPER: Map classes to specific Day & Time Slot
-  const getClassesForSlotAndDay = (dayKey: string, slotStr: string) => {
-    const slotRange = parseScheduleTimeRange(slotStr);
-    if (!slotRange) return [];
-
+  // HELPER: Map classes to specific Day & Shift Range
+  const getClassesForShiftAndDay = (dayKey: string, shiftRange: { startMin: number; endMin: number }) => {
     return teacherClasses.filter((cls) => {
       if (!cls || !cls.schedule) return false;
       const schedUpper = cls.schedule.toUpperCase();
@@ -186,7 +240,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       const clsRange = parseScheduleTimeRange(cls.schedule);
       if (!clsRange) return true;
 
-      return checkTimeConflict(slotRange, clsRange);
+      return checkTimeConflict(shiftRange, clsRange);
     });
   };
 
@@ -364,20 +418,12 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 </p>
               ))}
             </div>
-          </div>
-        );
-      })}
-
-      {/* MAIN 4-SHIFT NOTION / APPLE STYLE GRID TIMETABLE */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto min-w-[900px]">
-          
           <table className="w-full border-collapse">
             
-            {/* GRID COLUMNS HEADER: DAYS OF WEEK */}
+            {/* GRID COLUMNS HEADER: DAYS OF WEEK WITH DISTINCT BACKGROUND COLORS */}
             <thead>
-              <tr className="border-b border-pink-100 dark:border-slate-800 bg-pink-50/50 dark:bg-slate-800/50">
-                <th className="p-4 text-left font-black text-xs text-slate-500 uppercase tracking-wider w-40 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-pink-50/90 dark:bg-slate-800 z-10">
+              <tr className="border-b border-pink-100 dark:border-slate-800">
+                <th className="p-4 text-left font-black text-xs text-slate-700 dark:text-slate-200 uppercase tracking-wider w-44 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-slate-100 dark:bg-slate-800 z-10">
                   <div className="flex items-center space-x-1.5">
                     <Clock className="w-4 h-4 text-pink-500" />
                     <span>Ca Dạy / Giờ</span>
@@ -385,9 +431,9 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 </th>
 
                 {DAYS_OF_WEEK.map((day) => (
-                  <th key={day.key} className="p-4 text-center font-black text-xs text-slate-800 dark:text-slate-200 border-r border-pink-100 dark:border-slate-800 min-w-[120px]">
+                  <th key={day.key} className={`p-4 text-center font-black text-xs border-r border-pink-100 dark:border-slate-800 min-w-[130px] ${day.colHeaderBg}`}>
                     <div className="space-y-1">
-                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold border ${day.badge} inline-block`}>
+                      <span className={`px-3.5 py-1 rounded-full text-xs font-black border shadow-2xs ${day.badge} inline-block`}>
                         {day.name}
                       </span>
                     </div>
@@ -396,119 +442,122 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
               </tr>
             </thead>
 
-            {/* GRID ROWS GROUPED BY 4 MAJOR SHIFTS (SÁNG, CHIỀU, TỐI, ĐÊM) */}
+            {/* GRID ROWS: ONE ROW PER SHIFT (SÁNG, CHIỀU, TỐI, ĐÊM) */}
             <tbody className="divide-y divide-pink-100 dark:divide-slate-800 text-xs">
               {SHIFTS.map((shift) => (
-                <React.Fragment key={shift.key}>
+                <tr key={shift.key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
                   
-                  {/* SHIFT BANNER HEADER ROW (SPANS ALL COLUMNS) */}
-                  <tr className={`border-y font-black text-xs ${shift.headerBg}`}>
-                    <td colSpan={8} className="py-2.5 px-4 font-black tracking-wider uppercase">
-                      {shift.title}
-                    </td>
-                  </tr>
+                  {/* LEFT COLUMN: SHIFT LABEL & TIME RANGE (e.g. 05:00 - 12:00) */}
+                  <td className="p-4 font-black text-slate-800 dark:text-slate-200 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-white dark:bg-slate-900 z-10 shadow-xs whitespace-nowrap align-top">
+                    <div className="space-y-1.5">
+                      <div className="text-xs font-black text-slate-900 dark:text-white flex items-center">
+                        <span className="mr-1.5 text-base">{shift.icon}</span>
+                        <span>{shift.title}</span>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold border ${shift.badge} inline-block font-mono shadow-2xs`}>
+                        {shift.timeLabel}
+                      </span>
+                    </div>
+                  </td>
 
-                  {/* SHIFT SLOTS ROWS */}
-                  {shift.slots.map((slot, slotIdx) => (
-                    <tr key={slotIdx} className="hover:bg-pink-50/20 dark:hover:bg-slate-800/30 transition">
-                      
-                      {/* TIME SLOT LABEL COLUMN */}
-                      <td className="p-3.5 font-extrabold text-slate-700 dark:text-slate-300 border-r border-pink-100 dark:border-slate-800 sticky left-0 bg-white dark:bg-slate-900 z-10 shadow-xs whitespace-nowrap">
-                        <div className="flex items-center space-x-1.5 text-pink-600 font-mono">
-                          <span className="w-2 h-2 rounded-full bg-pink-400 inline-block shrink-0"></span>
-                          <span>{slot}</span>
-                        </div>
-                      </td>
+                  {/* 7 DAYS COLUMNS FOR THIS SHIFT */}
+                  {DAYS_OF_WEEK.map((day) => {
+                    const shiftClasses = getClassesForShiftAndDay(day.key, shift.range);
 
-                      {/* 7 DAYS COLUMNS FOR THIS SLOT */}
-                      {DAYS_OF_WEEK.map((day) => {
-                        const slotClasses = getClassesForSlotAndDay(day.key, slot);
+                    return (
+                      <td key={day.key} className={`p-2.5 border-r border-pink-100 dark:border-slate-800 align-top min-h-[140px] transition ${day.colCellBg}`}>
+                        {shiftClasses.length > 0 ? (
+                          <div className="space-y-2">
+                            {shiftClasses.map((cls) => {
+                              const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
+                              const statusBadges = getClassStatusBadges(cls);
+                              const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || shift.timeLabel;
 
-                        return (
-                          <td key={day.key} className="p-2 border-r border-pink-100 dark:border-slate-800 align-top h-24">
-                            {slotClasses.length > 0 ? (
-                              <div className="space-y-2">
-                                {slotClasses.map((cls) => {
-                                  const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
-                                  const statusBadges = getClassStatusBadges(cls);
-                                  const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || slot;
+                              return (
+                                <div
+                                  key={cls.id}
+                                  onClick={() => onSelectClass && onSelectClass(cls)}
+                                  className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-pink-200/90 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
+                                >
+                                  <div className="flex items-start justify-between gap-1">
+                                    <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
+                                      {cls.className}
+                                    </h4>
 
-                                  return (
-                                    <div
-                                      key={cls.id}
-                                      onClick={() => onSelectClass && onSelectClass(cls)}
-                                      className="p-3 rounded-2xl bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-900 border border-pink-200/80 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
-                                    >
-                                      <div className="flex items-start justify-between gap-1">
-                                        <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
-                                          {cls.className}
-                                        </h4>
-
-                                        {/* Status Badges with Tooltips */}
-                                        <div className="flex items-center space-x-1 shrink-0">
-                                          {statusBadges.map((badge, bIdx) => (
-                                            <span
-                                              key={bIdx}
-                                              title={badge.tooltip}
-                                              className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border shadow-2xs ${badge.color}`}
-                                            >
-                                              {badge.icon}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-
-                                      <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-white/70 dark:bg-slate-800/70 p-1.5 rounded-xl border border-pink-100">
-                                        <Clock className="w-3 h-3 text-pink-500 shrink-0" />
-                                        <span>{parsedTime}</span>
-                                      </div>
-
-                                      <div className="flex items-center justify-between pt-1 border-t border-pink-100/60 dark:border-slate-800">
-                                        <div className="flex -space-x-1.5 overflow-hidden">
-                                          {classStudents.slice(0, 4).map((std) => (
-                                            <img
-                                              key={std.id}
-                                              src={resolveAvatarUrl(std.avatar)}
-                                              alt={std.name}
-                                              title={`Học viên: ${std.name}`}
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                                              }}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (onSelectStudent) onSelectStudent(std);
-                                              }}
-                                              className="inline-block h-5 w-5 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
-                                            />
-                                          ))}
-                                          {classStudents.length > 4 && (
-                                            <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 font-bold text-[9px] flex items-center justify-center border border-white">
-                                              +{classStudents.length - 4}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {(isSuperAdmin || isAdmin) && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setEditingClassForSchedule(cls);
-                                              setCustomScheduleInput(cls.schedule);
-                                            }}
-                                            className="p-1 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-100 transition opacity-0 group-hover:opacity-100 cursor-pointer"
-                                            title="Sửa nhanh lịch học lớp này"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                        )}
-                                      </div>
+                                    {/* Status Badges with Tooltips */}
+                                    <div className="flex items-center space-x-1 shrink-0">
+                                      {statusBadges.map((badge, bIdx) => (
+                                        <span
+                                          key={bIdx}
+                                          title={badge.tooltip}
+                                          className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border shadow-2xs ${badge.color}`}
+                                        >
+                                          {badge.icon}
+                                        </span>
+                                      ))}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-[10px] text-slate-300 dark:text-slate-700 italic">
-                                Trống ca
+                                  </div>
+
+                                  <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-pink-50/80 dark:bg-slate-900/80 p-1.5 rounded-xl border border-pink-100">
+                                    <Clock className="w-3 h-3 text-pink-500 shrink-0" />
+                                    <span>{parsedTime}</span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between pt-1 border-t border-pink-100/60 dark:border-slate-800">
+                                    <div className="flex -space-x-1.5 overflow-hidden">
+                                      {classStudents.slice(0, 4).map((std) => (
+                                        <img
+                                          key={std.id}
+                                          src={resolveAvatarUrl(std.avatar)}
+                                          alt={std.name}
+                                          title={`Học viên: ${std.name}`}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onSelectStudent) onSelectStudent(std);
+                                          }}
+                                          className="inline-block h-5 w-5 rounded-full border-2 border-white hover:scale-110 transition cursor-pointer object-cover shadow-2xs"
+                                        />
+                                      ))}
+                                      {classStudents.length > 4 && (
+                                        <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 font-bold text-[9px] flex items-center justify-center border border-white">
+                                          +{classStudents.length - 4}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {(isSuperAdmin || isAdmin) && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingClassForSchedule(cls);
+                                          setCustomScheduleInput(cls.schedule);
+                                        }}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-100 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        title="Sửa nhanh lịch học lớp này"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="h-full min-h-[100px] flex items-center justify-center text-[11px] font-semibold text-slate-400 dark:text-slate-600 italic">
+                            Trống ca
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>                        Trống ca
                               </div>
                             )}
                           </td>

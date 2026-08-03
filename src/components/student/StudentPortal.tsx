@@ -64,6 +64,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
 
   if (!currentStudent) {
     return (
@@ -116,6 +117,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // HANDLER: STUDENT TICKS/UNTICKS HOMEWORK COMPLETION
   const handleToggleTaskCheck = (session: Session, hwItemId: string, hwTitle: string) => {
     const isNowChecked = StorageEngine.toggleHomeworkTaskItemCheck(currentStudent.id, session.id, hwItemId, hwTitle);
+    console.log("UPDATE SUCCESS", { studentId: currentStudent.id, homeworkItemId, isNowChecked });
     if (isNowChecked) {
       confetti({
         particleCount: 40,
@@ -192,8 +194,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </span>
                 )}
               </div>
-              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                Ngày học: {session.date} • GV: {currentTeacherName}
+              <span className="text-xs sm:text-sm font-black text-pink-700 dark:text-pink-300">
+                🗓️ Ngày học: {session.date}
               </span>
             </div>
           </div>
@@ -237,7 +239,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {session.studentFeedbacks?.[currentStudent.id] && (
           <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
             <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
-              💬 Nhận Xét Riêng Từ Giáo Viên ({currentTeacherName}) Cho Em:
+              💬 Nhận xét
             </span>
             {session.studentFeedbacks[currentStudent.id].strengths && (
               <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
@@ -485,11 +487,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           </div>
 
-          {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI) */}
-          <div className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800 text-pink-950 dark:text-white px-7 py-6 rounded-3xl shadow-sm border-2 border-pink-300 dark:border-slate-700 min-w-[200px] sm:min-w-[220px] shrink-0 flex flex-col items-center justify-center text-center gap-2.5 w-full lg:w-auto">
-            
-            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-900 dark:text-pink-300">
-              SỐ BUỔI CÒN LẠI
+          {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
+          <div
+            onClick={() => setIsPaymentHistoryOpen(true)}
+            className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800 text-pink-950 dark:text-white px-7 py-6 rounded-3xl shadow-sm border-2 border-pink-300 dark:border-slate-700 min-w-[200px] sm:min-w-[220px] shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:scale-102 hover:shadow-md transition-all duration-200 group relative"
+            title="Bấm vào để xem lịch sử đóng học phí chi tiết"
+          >
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-900 dark:text-pink-300 flex items-center justify-center gap-1">
+              SỐ BUỔI CÒN LẠI <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition" />
             </span>
 
             <div className="flex items-baseline justify-center gap-1.5">
@@ -501,10 +506,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </span>
             </div>
 
-            <span className="text-xs font-bold text-pink-800/90 dark:text-pink-300 bg-white/70 dark:bg-slate-900/70 px-3 py-1 rounded-full border border-pink-200">
+            <span className="text-[11px] font-extrabold text-pink-900 dark:text-pink-200 bg-white/80 dark:bg-slate-900/80 px-3 py-1 rounded-full border border-pink-200 group-hover:bg-pink-500 group-hover:text-white transition">
               Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
             </span>
 
+            <span className="text-[10px] font-black text-pink-700 dark:text-pink-300 underline group-hover:text-pink-900 transition">
+              🔍 Bấm xem chi tiết đóng học phí →
+            </span>
           </div>
 
         </div>
@@ -873,6 +881,181 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 className="px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-extrabold text-xs hover:bg-slate-200 transition"
               >
                 Đóng
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 4. DETAILED TUITION PAYMENT HISTORY MODAL */}
+      {isPaymentHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-pink-300 p-6 sm:p-7 space-y-5 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
+            
+            <button
+              onClick={() => setIsPaymentHistoryOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center space-x-3.5 border-b border-pink-100 dark:border-slate-800 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-400 to-rose-400 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                💳
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                  Lịch Sử Đóng Học Phí Chi Tiết
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                  Học viên: <strong className="text-pink-600 dark:text-pink-400">{currentStudent.name}</strong> • Chi tiết các đợt hoàn tất học phí
+                </p>
+              </div>
+            </div>
+
+            {/* Summary Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-pink-50/80 dark:bg-slate-800/80 border border-pink-200/80 text-center">
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Tổng Buổi Đã Đóng</span>
+                <span className="text-base sm:text-lg font-black text-pink-700 dark:text-pink-300 font-mono">
+                  {currentStudent.totalPaidSessions || 8} Buổi
+                </span>
+              </div>
+
+              <div className="space-y-1 border-x border-pink-200 dark:border-slate-700">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Đã Sử Dụng</span>
+                <span className="text-base sm:text-lg font-black text-slate-700 dark:text-slate-200 font-mono">
+                  {Math.max(0, (currentStudent.totalPaidSessions || 8) - (currentStudent.remainingSessions || 0))} Buổi
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Buổi Còn Lại</span>
+                <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {currentStudent.remainingSessions || 0} Buổi
+                </span>
+              </div>
+            </div>
+
+            {/* Detailed Payment Cycles Table / List */}
+            <div className="space-y-3">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                📋 Danh Sách Chi Tiết Các Lần Đóng Học Phí:
+              </span>
+
+              {(() => {
+                const paidInvoices = (invoices || [])
+                  .filter((inv) => inv && inv.studentId === currentStudent.id && (inv.status === 'paid' || inv.status === 'completed'))
+                  .sort((a, b) => (a.paidDate || a.createdDate || '').localeCompare(b.paidDate || b.createdDate || ''));
+
+                const historyList = [];
+                let cumulativeSessions = 0;
+
+                if (paidInvoices.length > 0) {
+                  paidInvoices.forEach((inv, idx) => {
+                    const count = Number(inv.sessionsPurchased) || 8;
+                    const startSession = cumulativeSessions + 1;
+                    const endSession = cumulativeSessions + count;
+                    cumulativeSessions = endSession;
+
+                    historyList.push({
+                      index: idx + 1,
+                      code: inv.code,
+                      paidDate: inv.paidDate || inv.createdDate || 'Đã thanh toán',
+                      sessionsCount: count,
+                      amount: inv.amount,
+                      startSession,
+                      endSession,
+                    });
+                  });
+                } else {
+                  const totalPaid = Number(currentStudent.totalPaidSessions) || Number(currentStudent.packageSessionCount) || 8;
+                  const pkgPrice = Number(currentStudent.tuitionPackagePrice) || 2000000;
+                  const sessionStep = Number(currentStudent.packageSessionCount) || 8;
+
+                  let currentStart = 1;
+                  let countRemaining = totalPaid;
+                  let cycleIdx = 1;
+
+                  while (countRemaining > 0) {
+                    const thisCycleCount = Math.min(countRemaining, sessionStep);
+                    const endSession = currentStart + thisCycleCount - 1;
+
+                    historyList.push({
+                      index: cycleIdx,
+                      code: `PACK-0${cycleIdx}`,
+                      paidDate: currentStudent.joinedDate || 'Thời điểm nhập học',
+                      sessionsCount: thisCycleCount,
+                      amount: pkgPrice,
+                      startSession: currentStart,
+                      endSession: endSession,
+                    });
+
+                    currentStart = endSession + 1;
+                    countRemaining -= thisCycleCount;
+                    cycleIdx++;
+                  }
+                }
+
+                const reversedList = historyList.reverse();
+
+                return reversedList.map((item) => (
+                  <div
+                    key={item.index}
+                    className="p-4 rounded-2xl bg-gradient-to-r from-white via-pink-50/50 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 border border-pink-200/80 dark:border-slate-700 shadow-2xs space-y-2.5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 dark:border-slate-700/60 pb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-pink-400 text-white shadow-2xs">
+                          Lần #{item.index}
+                        </span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          🗓️ Ngày đóng: <strong className="text-pink-600 dark:text-pink-300 font-extrabold">{item.paidDate}</strong>
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-slate-500 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-pink-100">
+                        {item.code}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-slate-500 font-bold">📦 Số buổi đóng:</span>
+                        <span className="font-black text-pink-700 dark:text-pink-300 bg-pink-100/80 dark:bg-pink-950/40 px-2 py-0.5 rounded-md border border-pink-200">
+                          +{item.sessionsCount} buổi học
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-slate-500 font-bold">🎓 Hạn buổi học:</span>
+                        <span className="font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Buổi #{item.startSession} → Buổi #{item.endSession}
+                        </span>
+                      </div>
+
+                      {item.amount && (
+                        <div className="flex items-center space-x-1.5 sm:col-span-2 pt-1 border-t border-dashed border-pink-100 dark:border-slate-700/50">
+                          <span className="text-slate-500 font-bold">💰 Số tiền đóng học phí:</span>
+                          <span className="font-black text-slate-900 dark:text-white text-sm">
+                            {formatVND(item.amount)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            {/* Modal Close Footer */}
+            <div className="text-center pt-3 border-t border-pink-100 dark:border-slate-800">
+              <button
+                onClick={() => setIsPaymentHistoryOpen(false)}
+                className="px-6 py-2.5 rounded-2xl bg-pink-400 hover:bg-pink-500 text-white font-extrabold text-xs shadow-xs transition cursor-pointer"
+              >
+                Đóng Cửa Sổ Lịch Sử
               </button>
             </div>
 
