@@ -30,6 +30,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [courseName, setCourseName] = useState(targetClass.courseName || '');
   const [zoomLink, setZoomLink] = useState(targetClass.zoomLink || '');
   const [startSessionNumber, setStartSessionNumber] = useState(targetClass.startSessionNumber || 1);
+  const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(targetClass.teacherPayRatePerSession || 150000);
 
   if (!isOpen) return null;
 
@@ -53,6 +54,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       courseName,
       zoomLink,
       startSessionNumber: Number(startSessionNumber) || 1,
+      teacherPayRatePerSession: Number(teacherPayRatePerSession) || 150000,
     });
 
     alert(`Đã cập nhật thông tin lớp học "${className}" thành công!`);
@@ -133,6 +135,27 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
               />
             </div>
           </div>
+
+          {!teacherName.toLowerCase().includes('vy') && (
+            <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
+              <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
+                💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="10000"
+                required
+                value={teacherPayRatePerSession}
+                onChange={(e) => setTeacherPayRatePerSession(Number(e.target.value))}
+                className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
+                placeholder="Nhập bậc lương, ví dụ: 150000"
+              />
+              <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
+                Bậc lương này sẽ dùng để tự động tính tổng doanh thu/lương trên bảng điều khiển của giáo viên {teacherName}.
+              </span>
+            </div>
+          )}
 
           {/* MULTI SCHEDULE SLOTS PICKER */}
           <div className="p-3.5 rounded-2xl bg-pink-50/70 dark:bg-slate-800/70 border border-pink-200 dark:border-slate-700 space-y-2.5">

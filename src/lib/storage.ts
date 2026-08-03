@@ -741,6 +741,7 @@ export const StorageEngine = {
     quizletUrl?: string;
     sessionMaterials?: ResourceLink[];
     attendanceList: AttendanceRecord[];
+    isChargedAbsenceSession?: boolean;
   }): Session {
     const sessions = this.getSessions() || [];
     const classes = this.getClasses() || [];
@@ -765,6 +766,7 @@ export const StorageEngine = {
       recordLink: sessionData.recordLink,
       quizletUrl: sessionData.quizletUrl,
       sessionMaterials: sessionData.sessionMaterials || [],
+      isChargedAbsenceSession: sessionData.isChargedAbsenceSession || false,
       createdAt: new Date().toISOString(),
     };
 
@@ -775,7 +777,7 @@ export const StorageEngine = {
     let updated = false;
 
     (sessionData.attendanceList || []).forEach((att) => {
-      if (att && (att.status === 'present' || att.status === 'late')) {
+      if (att && (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)) {
         const std = students.find((s) => s && s.id === att.studentId);
         if (std && std.remainingSessions > 0) {
           std.remainingSessions -= 1;

@@ -30,6 +30,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [lessonContent, setLessonContent] = useState<string>(editingSession?.lessonContent || '');
   const [recordLink, setRecordLink] = useState<string>(editingSession?.recordLink || '');
   const [quizletUrl, setQuizletUrl] = useState<string>(editingSession?.quizletUrl || '');
+  const [isChargedAbsenceSession, setIsChargedAbsenceSession] = useState<boolean>(editingSession?.isChargedAbsenceSession || false);
 
   useEffect(() => {
     if (editingSession) {
@@ -38,6 +39,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       setLessonContent(editingSession.lessonContent);
       setRecordLink(editingSession.recordLink || '');
       setQuizletUrl(editingSession.quizletUrl || '');
+      setIsChargedAbsenceSession(editingSession.isChargedAbsenceSession || false);
       setHomeworkItems(editingSession.homeworkItems || [
         { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
       ]);
@@ -145,6 +147,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         quizletUrl,
         sessionMaterials: materials,
         attendance: attendanceList,
+        isChargedAbsenceSession,
       });
       alert(`Đã cập nhật chỉnh sửa Buổi học #${editingSession.sessionNumber} thành công!`);
     } else {
@@ -161,6 +164,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         quizletUrl,
         sessionMaterials: materials,
         attendanceList,
+        isChargedAbsenceSession,
       });
       alert('Đã tạo buổi học mới thành công!');
     }
@@ -227,6 +231,24 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                 required
               />
             </div>
+          </div>
+
+          {/* CHARGED ABSENCE SESSION CHECKBOX */}
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700/60 shadow-2xs">
+            <label className="flex items-center space-x-3 cursor-pointer text-xs font-black text-amber-950 dark:text-amber-300">
+              <input
+                type="checkbox"
+                checked={isChargedAbsenceSession}
+                onChange={(e) => setIsChargedAbsenceSession(e.target.checked)}
+                className="w-4 h-4 text-pink-500 rounded focus:ring-pink-400 cursor-pointer"
+              />
+              <span>⚠️ Lớp nghỉ tính phí vì nghỉ quá số lần quy định hoặc học viên không vào lớp</span>
+            </label>
+            {isChargedAbsenceSession && (
+              <p className="text-[11px] text-amber-800 dark:text-amber-400 font-semibold mt-1.5 pl-7 leading-relaxed">
+                Lưu ý: Ca học này vẫn được tính vào buổi dạy hoàn thành và trừ số buổi theo quy định do vắng/hủy quá quy định.
+              </p>
+            )}
           </div>
 
           {/* Lesson Content */}

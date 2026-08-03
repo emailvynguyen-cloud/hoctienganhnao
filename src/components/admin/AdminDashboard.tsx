@@ -139,6 +139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newCourseName, setNewCourseName] = useState('IELTS Breakthrough');
   const [newZoomLink, setNewZoomLink] = useState('');
   const [newStartSessionNumber, setNewStartSessionNumber] = useState(1);
+  const [newTeacherPayRate, setNewTeacherPayRate] = useState(150000);
 
   // New Student Form State
   const [newStudentName, setNewStudentName] = useState('');
@@ -257,6 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       courseName: newCourseName || 'Tiếng Anh Giao Tiếp',
       zoomLink: newZoomLink,
       startSessionNumber: Number(newStartSessionNumber) || 1,
+      teacherPayRatePerSession: Number(newTeacherPayRate) || 150000,
       resourceLinks: [],
     });
 
@@ -1267,6 +1269,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
               </div>
+
+              {!newTeacherName.toLowerCase().includes('vy') && (
+                <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
+                  <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
+                    💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    required
+                    value={newTeacherPayRate}
+                    onChange={(e) => setNewTeacherPayRate(Number(e.target.value))}
+                    className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
+                    placeholder="Nhập bậc lương, ví dụ: 150000"
+                  />
+                  <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
+                    Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương trên trang điều khiển của giáo viên {newTeacherName}.
+                  </span>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Lịch Học Hàng Tuần</label>

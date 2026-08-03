@@ -69,6 +69,7 @@ export interface Class {
   startSessionNumber?: number; // Số thứ tự buổi học bắt đầu khi tạo lớp (mặc định 1)
   zoomLink?: string;
   resourceLinks?: ResourceLink[];
+  teacherPayRatePerSession?: number; // Bậc lương từng buổi dạy (VNĐ / buổi học), ví dụ: 150.000đ
 }
 
 export type AttendanceStatus = 'present' | 'excused' | 'unexcused' | 'late';
@@ -95,6 +96,7 @@ export interface Session {
   recordLink?: string;
   quizletUrl?: string; // Link Quizlet Học Từ Vựng Buổi Học
   sessionMaterials?: ResourceLink[];
+  isChargedAbsenceSession?: boolean; // Lớp nghỉ tính phí vì nghỉ quá số lần quy định hoặc học viên không vào lớp
   createdAt: string;
 }
 
