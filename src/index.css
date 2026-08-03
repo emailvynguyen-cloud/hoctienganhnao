@@ -74,3 +74,9 @@ body {
 .animate-pulse-glow {
   animation: pulseGlow 2.5s ease-in-out infinite;
 }
+
+/* Smooth Touch Momentum Scrolling for Mobile & Tablet */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
