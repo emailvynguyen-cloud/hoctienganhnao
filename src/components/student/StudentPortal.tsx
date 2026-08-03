@@ -506,11 +506,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </span>
             </div>
 
-            <span className="text-[11px] font-extrabold text-pink-900 dark:text-pink-200 bg-white/80 dark:bg-slate-900/80 px-3 py-1 rounded-full border border-pink-200 group-hover:bg-pink-500 group-hover:text-white transition">
-              Gói đã đóng: {currentStudent.totalPaidSessions || 8} buổi
-            </span>
-
-            <span className="text-[10px] font-black text-pink-700 dark:text-pink-300 underline group-hover:text-pink-900 transition">
+            <span className="text-[10px] font-black text-pink-700 dark:text-pink-300 underline group-hover:text-pink-900 transition mt-1">
               🔍 Bấm xem chi tiết đóng học phí →
             </span>
           </div>
