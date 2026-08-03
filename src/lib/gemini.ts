@@ -137,20 +137,17 @@ export const GeminiEngine = {
       };
     }
 
-    const preferredModel = this.getSelectedModel();
-    const fallbackList = [
+    // For Multimodal (Image OCR / Audio), ONLY use Flash models which have 100% free high quotas (gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash)
+    const visionModels = [
       'gemini-1.5-flash',
       'gemini-2.0-flash',
-      preferredModel,
       'gemini-2.5-flash',
-      'gemini-1.5-pro',
-      'gemini-2.5-pro',
     ];
 
-    const uniqueModels = Array.from(new Set(fallbackList));
     let lastErrorMsg = '';
+    let isQuotaError = false;
 
-    for (const modelId of uniqueModels) {
+    for (const modelId of visionModels) {
       try {
         const ai = new GoogleGenAI({ apiKey });
         let contentsData: any = promptText;
@@ -183,8 +180,18 @@ export const GeminiEngine = {
         }
       } catch (err: any) {
         lastErrorMsg = err?.message || String(err);
-        console.warn(`Model ${modelId} multimodal failed:`, lastErrorMsg);
+        if (lastErrorMsg.includes('429') || lastErrorMsg.includes('RESOURCE_EXHAUSTED') || lastErrorMsg.includes('quota')) {
+          isQuotaError = true;
+        }
+        console.warn(`Vision Model ${modelId} failed:`, lastErrorMsg);
       }
+    }
+
+    if (isQuotaError) {
+      return {
+        text: `⚠️ **VƯỢT QUÁ TẦN SUẤT TRUY CẬP (Rate Limit 429 / Quota Limit):**\n\nTài khoản Google AI Studio miễn phí quy định gửi tối đa 15 ảnh/phút. Bạn vừa nhấn nút hoặc gửi ảnh liên tục quá nhanh trong thời gian ngắn.\n\n👉 **Cách khắc phục:**\n1. Vui lòng **chờ 5 - 10 giây** rồi bấm nút **"Phân Tích & Chấm Bài Tập Ngay"** lại một lần nữa.\n2. Hoặc nếu bạn muốn chấm số lượng lớn không bị giới hạn, hãy tạo 1 API Key mới tại **https://aistudio.google.com/api-keys** và dán vào phần Cấu Hình API Key nhé!`,
+        modelUsed: 'Rate Limit (429)',
+      };
     }
 
     return {
