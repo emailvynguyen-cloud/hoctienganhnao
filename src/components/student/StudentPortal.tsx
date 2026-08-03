@@ -915,128 +915,63 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
             </div>
 
-            {/* Summary Stats Cards */}
-            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-pink-50/80 dark:bg-slate-800/80 border border-pink-200/80 text-center">
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Tổng Buổi Đã Đóng</span>
-                <span className="text-base sm:text-lg font-black text-pink-700 dark:text-pink-300 font-mono">
-                  {currentStudent.totalPaidSessions || 8} Buổi
-                </span>
-              </div>
+            {/* Top 3 KPI Summary Cards inside Payment History Modal */}
+            {(() => {
+              const paidInvoices = (invoices || [])
+                .filter((inv) => inv && inv.studentId === currentStudent.id && (inv.status === 'paid' || inv.status === 'completed'))
+                .sort((a, b) => (a.paidDate || a.createdDate || '').localeCompare(b.paidDate || b.createdDate || ''));
 
-              <div className="space-y-1 border-x border-pink-200 dark:border-slate-700">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Đã Sử Dụng</span>
-                <span className="text-base sm:text-lg font-black text-slate-700 dark:text-slate-200 font-mono">
-                  {Math.max(0, (currentStudent.totalPaidSessions || 8) - (currentStudent.remainingSessions || 0))} Buổi
-                </span>
-              </div>
+              const historyList = [];
+              let cumulativeSessions = 0;
 
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">Buổi Còn Lại</span>
-                <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                  {currentStudent.remainingSessions || 0} Buổi
-                </span>
-              </div>
-            </div>
+              if (paidInvoices.length > 0) {
+                paidInvoices.forEach((inv, idx) => {
+                  const count = Number(inv.sessionsPurchased) || 8;
+                  const startSession = cumulativeSessions + 1;
+                  const endSession = cumulativeSessions + count;
+                  cumulativeSessions = endSession;
 
-            {/* Detailed Payment Cycles Table / List */}
-            <div className="space-y-3">
-              <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                📋 Danh Sách Chi Tiết Các Lần Đóng Học Phí:
-              </span>
-
-              {(() => {
-                const paidInvoices = (invoices || [])
-                  .filter((inv) => inv && inv.studentId === currentStudent.id && (inv.status === 'paid' || inv.status === 'completed'))
-                  .sort((a, b) => (a.paidDate || a.createdDate || '').localeCompare(b.paidDate || b.createdDate || ''));
-
-                const historyList = [];
-                let cumulativeSessions = 0;
-
-                if (paidInvoices.length > 0) {
-                  paidInvoices.forEach((inv, idx) => {
-                    const count = Number(inv.sessionsPurchased) || 8;
-                    const startSession = cumulativeSessions + 1;
-                    const endSession = cumulativeSessions + count;
-                    cumulativeSessions = endSession;
-
-                    historyList.push({
-                      index: idx + 1,
-                      code: inv.code,
-                      paidDate: inv.paidDate || inv.createdDate || 'Đã thanh toán',
-                      sessionsCount: count,
-                      amount: inv.amount,
-                      startSession,
-                      endSession,
-                    });
+                  historyList.push({
+                    index: idx + 1,
+                    code: inv.code,
+                    paidDate: inv.paidDate || inv.createdDate || 'Đã thanh toán',
+                    sessionsCount: count,
+                    amount: inv.amount,
+                    startSession,
+                    endSession,
                   });
-                } else {
-                  const totalPaid = Number(currentStudent.totalPaidSessions) || Number(currentStudent.packageSessionCount) || 8;
-                  const pkgPrice = Number(currentStudent.tuitionPackagePrice) || 2000000;
-                  const sessionStep = Number(currentStudent.packageSessionCount) || 8;
+                });
+              } else {
+                const totalPaid = Math.max(
+                  Number(currentStudent.totalPaidSessions) || 0,
+                  Number(currentStudent.remainingSessions) || 0,
+                  Number(currentStudent.packageSessionCount) || 8
+                );
+                const pkgPrice = Number(currentStudent.tuitionPackagePrice) || 2000000;
+                const sessionStep = Number(currentStudent.packageSessionCount) || 8;
 
-                  let currentStart = 1;
-                  let countRemaining = totalPaid;
-                  let cycleIdx = 1;
+                let currentStart = 1;
+                let countRemaining = totalPaid;
+                let cycleIdx = 1;
 
-                  while (countRemaining > 0) {
-                    const thisCycleCount = Math.min(countRemaining, sessionStep);
-                    const endSession = currentStart + thisCycleCount - 1;
+                while (countRemaining > 0) {
+                  const thisCycleCount = Math.min(countRemaining, sessionStep);
+                  const endSession = currentStart + thisCycleCount - 1;
 
-                    historyList.push({
-                      index: cycleIdx,
-                      code: `PACK-0${cycleIdx}`,
-                      paidDate: currentStudent.joinedDate || 'Thời điểm nhập học',
-                      sessionsCount: thisCycleCount,
-                      amount: pkgPrice,
-                      startSession: currentStart,
-                      endSession: endSession,
-                    });
+                  historyList.push({
+                    index: cycleIdx,
+                    code: `PACK-0${cycleIdx}`,
+                    paidDate: currentStudent.createdAt || 'Thời điểm nhập học',
+                    sessionsCount: thisCycleCount,
+                    amount: pkgPrice,
+                    startSession: currentStart,
+                    endSession: endSession,
+                  });
 
-                    currentStart = endSession + 1;
-                    countRemaining -= thisCycleCount;
-                    cycleIdx++;
-                  }
+                  currentStart = endSession + 1;
+                  countRemaining -= thisCycleCount;
+                  cycleIdx++;
                 }
-
-                const reversedList = historyList.reverse();
-
-                return reversedList.map((item) => (
-                  <div
-                    key={item.index}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-white via-pink-50/50 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 border border-pink-200/80 dark:border-slate-700 shadow-2xs space-y-2.5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 dark:border-slate-700/60 pb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-pink-400 text-white shadow-2xs">
-                          Lần #{item.index}
-                        </span>
-                        <span className="text-xs font-black text-slate-900 dark:text-white">
-                          🗓️ Ngày đóng: <strong className="text-pink-600 dark:text-pink-300 font-extrabold">{item.paidDate}</strong>
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-slate-500 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-pink-100">
-                        {item.code}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-slate-500 font-bold">📦 Số buổi đóng:</span>
-                        <span className="font-black text-pink-700 dark:text-pink-300 bg-pink-100/80 dark:bg-pink-950/40 px-2 py-0.5 rounded-md border border-pink-200">
-                          +{item.sessionsCount} buổi học
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-slate-500 font-bold">🎓 Hạn buổi học:</span>
-                        <span className="font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Buổi #{item.startSession} → Buổi #{item.endSession}
-                        </span>
-                      </div>
-
-                      {item.amount && (
-                        <div className="flex items-center space-x-1.5 sm:col-span-2 pt-1 border-t border-dashed border-pink-100 dark:border-slate-700/50">
                           <span className="text-slate-500 font-bold">💰 Số tiền đóng học phí:</span>
                           <span className="font-black text-slate-900 dark:text-white text-sm">
                             {formatVND(item.amount)}

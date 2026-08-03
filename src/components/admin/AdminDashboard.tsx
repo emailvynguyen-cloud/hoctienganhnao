@@ -1195,8 +1195,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* ADD NEW CLASS MODAL (SUPER ADMIN ONLY) */}
       {isAddClassOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto shadow-2xl space-y-5 relative">
             <button
               onClick={() => setIsAddClassOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"

@@ -206,14 +206,16 @@ export const StorageEngine = {
   addStudent(studentData: Partial<Student>): Student {
     const students = this.getStudents() || [];
     const newId = studentData.id || `std_${Date.now()}`;
+    const initialSessions = Number(studentData.remainingSessions) || Number(studentData.packageSessionCount) || 8;
     const newStudent: Student = {
       id: newId,
       name: studentData.name || 'Học viên mới',
       email: studentData.email || `${newId}@gmail.com`,
       phone: studentData.phone || '',
       classIds: studentData.classIds || [],
-      remainingSessions: Number(studentData.remainingSessions) || 8,
-      totalPaidSessions: Number(studentData.totalPaidSessions) || 8,
+      // LẦN ĐẦU ĐÓNG HỌC PHÍ: Số buổi còn lại = đúng bằng số buổi học viên đã đóng lần 1
+      remainingSessions: initialSessions,
+      totalPaidSessions: initialSessions,
       tuitionPackagePrice: Number(studentData.tuitionPackagePrice) || 2000000,
       packageSessionCount: Number(studentData.packageSessionCount) || 8,
       publicHash: `hash_${newId}_${Math.random().toString(36).substr(2, 6)}`,
@@ -472,8 +474,16 @@ export const StorageEngine = {
       const students = this.getStudents() || [];
       const std = students.find((s) => s && s.id === newInvoice.studentId);
       if (std) {
-        std.remainingSessions = (std.remainingSessions || 0) + newInvoice.sessionsPurchased;
-        std.totalPaidSessions = (std.totalPaidSessions || 0) + newInvoice.sessionsPurchased;
+        const addedCount = newInvoice.sessionsPurchased || 8;
+        if (!std.totalPaidSessions || std.totalPaidSessions === 0) {
+          // Lần đầu đóng học phí: Số buổi còn lại = đúng bằng số buổi học viên vừa đóng
+          std.remainingSessions = addedCount;
+          std.totalPaidSessions = addedCount;
+        } else {
+          // Từ lần thứ 2 trở đi: Tính theo công thức = (số buổi còn lại hiện tại) + (số buổi mới đóng)
+          std.remainingSessions = (std.remainingSessions || 0) + addedCount;
+          std.totalPaidSessions = (std.totalPaidSessions || 0) + addedCount;
+        }
         this.saveStudents(students);
       }
     }
@@ -493,8 +503,16 @@ export const StorageEngine = {
     const students = this.getStudents() || [];
     const std = students.find((s) => s && s.id === inv.studentId);
     if (std) {
-      std.remainingSessions = (std.remainingSessions || 0) + (inv.sessionsPurchased || 8);
-      std.totalPaidSessions = (std.totalPaidSessions || 0) + (inv.sessionsPurchased || 8);
+      const addedCount = inv.sessionsPurchased || 8;
+      if (!std.totalPaidSessions || std.totalPaidSessions === 0) {
+        // Lần đầu đóng học phí: Số buổi còn lại = đúng bằng số buổi học viên vừa đóng
+        std.remainingSessions = addedCount;
+        std.totalPaidSessions = addedCount;
+      } else {
+        // Từ lần thứ 2 trở đi: Tính theo công thức = (số buổi còn lại hiện tại) + (số buổi mới đóng)
+        std.remainingSessions = (std.remainingSessions || 0) + addedCount;
+        std.totalPaidSessions = (std.totalPaidSessions || 0) + addedCount;
+      }
       this.saveStudents(students);
     }
 
