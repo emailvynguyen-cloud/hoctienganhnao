@@ -60,9 +60,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     }
   }, [targetSubmissionId]);
 
-  // Sub-View Inspection State (Keeps Teacher Portal Context Intact)
-  const [inspectedClass, setInspectedClass] = useState<Class | null>(null);
-  const [inspectedStudent, setInspectedStudent] = useState<Student | null>(null);
+  // Sub-View Inspection State (Keeps Teacher Portal Context Intact & Syncs 100% with Props)
+  const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
+  const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
+
+  const activeInspectedStudent = inspectedStudentId
+    ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
+    : null;
+
+  const activeInspectedClass = inspectedClassId
+    ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
+    : null;
 
   // STRICT TEACHER SCOPING: Filter classes strictly assigned to this teacher
   const isSuperOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
@@ -159,29 +167,29 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   useEffect(() => {
     if (targetSubmissionId) {
       setActiveTab('grading');
-      setInspectedClass(null);
-      setInspectedStudent(null);
+      setInspectedClassId(null);
+      setInspectedStudentId(null);
     }
   }, [targetSubmissionId]);
 
   useEffect(() => {
     if (onSetSubViewNavigation) {
-      if (inspectedStudent) {
+      if (activeInspectedStudent) {
         onSetSubViewNavigation(
           true,
-          () => setInspectedStudent(null),
+          () => setInspectedStudentId(null),
           () => {
-            setInspectedStudent(null);
-            setInspectedClass(null);
+            setInspectedStudentId(null);
+            setInspectedClassId(null);
             setActiveTab('today');
           }
         );
-      } else if (inspectedClass) {
+      } else if (activeInspectedClass) {
         onSetSubViewNavigation(
           true,
-          () => setInspectedClass(null),
+          () => setInspectedClassId(null),
           () => {
-            setInspectedClass(null);
+            setInspectedClassId(null);
             setActiveTab('today');
           }
         );
@@ -189,12 +197,12 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         onSetSubViewNavigation(false);
       }
     }
-  }, [inspectedStudent, inspectedClass, onSetSubViewNavigation]);
+  }, [activeInspectedStudent, activeInspectedClass, onSetSubViewNavigation]);
 
   // IF INSPECTING A STUDENT LEARNING PAGE FROM TEACHER PORTAL (TEACHER PORTAL CONTEXT INTACT)
-  if (inspectedStudent) {
+  if (activeInspectedStudent) {
     const isEnrolledInTeacherClass = isSuperOrAdmin || assignedClasses.some(
-      (c) => inspectedStudent.classIds && inspectedStudent.classIds.includes(c.id)
+      (c) => activeInspectedStudent.classIds && activeInspectedStudent.classIds.includes(c.id)
     );
 
     if (!isEnrolledInTeacherClass) {
@@ -206,7 +214,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             Học viên này không thuộc các lớp học do bạn trực tiếp giảng dạy. Vui lòng quay về bảng điều khiển Giáo Viên.
           </p>
           <button
-            onClick={() => setInspectedStudent(null)}
+            onClick={() => setInspectedStudentId(null)}
             className="px-6 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs"
           >
             ← Quay Về Bảng Giáo Viên
@@ -220,7 +228,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         {/* SUB-VIEW BREADCRUMB & BACK BUTTON FOR TEACHER */}
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
-            onClick={() => setInspectedStudent(null)}
+            onClick={() => setInspectedStudentId(null)}
             className="px-4 py-2 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Giáo Viên
@@ -228,7 +236,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
           <div className="text-center">
             <span className="text-xs font-black text-pink-950 dark:text-slate-200 block">
-              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{inspectedStudent.name}</strong>
+              Đang Xem Trang Học Tập Học Viên: <strong className="text-pink-600 underline">{activeInspectedStudent.name}</strong>
             </span>
             <span className="text-[10px] text-slate-500 font-bold uppercase">
               (Bạn vẫn đang ở Teacher Management Portal Context)
@@ -237,8 +245,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
           <button
             onClick={() => {
-              setInspectedStudent(null);
-              setInspectedClass(null);
+              setInspectedStudentId(null);
+              setInspectedClassId(null);
               setActiveTab('today');
             }}
             className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition flex items-center shrink-0 border border-slate-300"
@@ -248,7 +256,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
 
         <StudentPortal
-          currentStudent={inspectedStudent}
+          currentStudent={activeInspectedStudent}
           classes={assignedClasses}
           sessions={sessions}
           homeworkTasks={StorageEngine.getHomeworkTasks()}
@@ -262,8 +270,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   }
 
   // IF INSPECTING A SPECIFIC CLASS DEDICATED PAGE VIEW
-  if (inspectedClass) {
-    const isAssigned = isSuperOrAdmin || assignedClasses.some((c) => c.id === inspectedClass.id);
+  if (activeInspectedClass) {
+    const isAssigned = isSuperOrAdmin || assignedClasses.some((c) => c.id === activeInspectedClass.id);
 
     if (!isAssigned) {
       return (
@@ -274,7 +282,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             Bạn không có quyền quản lý hoặc xem dữ liệu của lớp học này. Vui lòng quay về trang chủ Giáo Viên của bạn.
           </p>
           <button
-            onClick={() => setInspectedClass(null)}
+            onClick={() => setInspectedClassId(null)}
             className="px-6 py-2.5 rounded-2xl bg-pink-400 text-white font-extrabold text-xs hover:bg-pink-500 shadow-xs"
           >
             ← Quay Về Trang Chủ Giáo Viên
@@ -288,17 +296,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         {/* SUB-VIEW BREADCRUMB & BACK BUTTON FOR TEACHER */}
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-pink-200 dark:border-slate-800 shadow-xs">
           <button
-            onClick={() => setInspectedClass(null)}
+            onClick={() => setInspectedClassId(null)}
             className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center shrink-0 border border-pink-300"
           >
             <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay Lại Bảng Giáo Viên
           </button>
           <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
-            Đang Xem Chi Tiết Lớp: {inspectedClass.className}
+            Đang Xem Chi Tiết Lớp: {activeInspectedClass.className}
           </span>
           <button
             onClick={() => {
-              setInspectedClass(null);
+              setInspectedClassId(null);
               setActiveTab('today');
             }}
             className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center shrink-0"
@@ -308,17 +316,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
 
         <ClassDetailsView
-          selectedClass={inspectedClass}
+          selectedClass={activeInspectedClass}
           students={students}
           sessions={sessions}
           homeworkSubmissions={StorageEngine.getHomeworkSubmissions()}
-          onBack={() => setInspectedClass(null)}
+          onBack={() => setInspectedClassId(null)}
           onOpenAddSession={onOpenAddSession}
           onOpenEditSession={(session) => onOpenAddSession(session.classId, session)}
           onOpenPublicStudentLink={(hash) => {
             const foundStd = students.find((s) => s.publicHash === hash);
             if (foundStd) {
-              setInspectedStudent(foundStd);
+              setInspectedStudentId(foundStd.id);
             }
           }}
         />
@@ -415,7 +423,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                     </a>
                   ) : (
                     <button
-                      onClick={() => setInspectedClass(activeTodayClass)}
+                      onClick={() => setInspectedClassId(activeTodayClass.id)}
                       className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition flex items-center"
                     >
                       <PlayCircle className="w-4 h-4 mr-2" /> Vào Chi Tiết Lớp Học →
@@ -505,7 +513,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
               return (
                 <div
                   key={cls.id}
-                  onClick={() => setInspectedClass(cls)}
+                  onClick={() => setInspectedClassId(cls.id)}
                   className={`p-5 rounded-3xl border transition cursor-pointer space-y-3 shadow-xs group ${t.bg}`}
                 >
                   <div className="flex items-center justify-between border-b border-pink-100/60 pb-2">
@@ -575,7 +583,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             {assignedClasses.map((cls) => (
               <div
                 key={cls.id}
-                onClick={() => setInspectedClass(cls)}
+                onClick={() => setInspectedClassId(cls.id)}
                 className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 shadow-xs group"
               >
                 <div className="flex items-center justify-between border-b border-pink-100 pb-2">

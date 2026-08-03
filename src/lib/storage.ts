@@ -159,8 +159,9 @@ export const StorageEngine = {
     const users = this.getUsers() || [];
     const idx = users.findIndex((u) => u && u.uid === user.uid);
     if (idx !== -1) {
-      users[idx] = user;
-      this.saveUsers(users);
+      const updated = [...users];
+      updated[idx] = { ...updated[idx], ...user };
+      this.saveUsers(updated);
     }
   },
   deleteUser(uid: string) {
@@ -199,7 +200,7 @@ export const StorageEngine = {
     return getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
   },
   saveStudents(students: Student[]) {
-    setItem(STORAGE_KEYS.STUDENTS, students);
+    setItem(STORAGE_KEYS.STUDENTS, [...students]);
     this.syncAllToCloud();
   },
   addStudent(studentData: Partial<Student>): Student {
@@ -269,18 +270,24 @@ export const StorageEngine = {
   },
   removeStudentFromClass(studentId: string, classId: string) {
     const students = this.getStudents() || [];
-    const std = students.find((s) => s && s.id === studentId);
-    if (std && std.classIds) {
-      std.classIds = std.classIds.filter((cid) => cid !== classId);
-      this.saveStudents(students);
-    }
+    const updated = students.map((std) => {
+      if (std && std.id === studentId && std.classIds) {
+        return {
+          ...std,
+          classIds: std.classIds.filter((cid) => cid !== classId),
+        };
+      }
+      return std;
+    });
+    this.saveStudents(updated);
   },
   updateStudent(student: Student) {
     const students = this.getStudents() || [];
     const idx = students.findIndex((s) => s && s.id === student.id);
     if (idx !== -1) {
-      students[idx] = { ...students[idx], ...student };
-      this.saveStudents(students);
+      const updated = [...students];
+      updated[idx] = { ...updated[idx], ...student };
+      this.saveStudents(updated);
     }
   },
 
@@ -288,7 +295,7 @@ export const StorageEngine = {
     return getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
   },
   saveClasses(classes: Class[]) {
-    setItem(STORAGE_KEYS.CLASSES, classes);
+    setItem(STORAGE_KEYS.CLASSES, [...classes]);
     this.syncAllToCloud();
   },
   addClass(classData: Partial<Class>): Class {
@@ -314,25 +321,30 @@ export const StorageEngine = {
     const classes = this.getClasses() || [];
     const idx = classes.findIndex((c) => c && c.id === cls.id);
     if (idx !== -1) {
-      classes[idx] = cls;
-      this.saveClasses(classes);
+      const updated = [...classes];
+      updated[idx] = { ...updated[idx], ...cls };
+      this.saveClasses(updated);
     }
   },
   archiveClass(classId: string) {
     const classes = this.getClasses() || [];
-    const cls = classes.find((c) => c && c.id === classId);
-    if (cls) {
-      cls.status = 'archived';
-      this.saveClasses(classes);
-    }
+    const updated = classes.map((c) => {
+      if (c && c.id === classId) {
+        return { ...c, status: 'archived' as const };
+      }
+      return c;
+    });
+    this.saveClasses(updated);
   },
   restoreClass(classId: string) {
     const classes = this.getClasses() || [];
-    const cls = classes.find((c) => c && c.id === classId);
-    if (cls) {
-      cls.status = 'active';
-      this.saveClasses(classes);
-    }
+    const updated = classes.map((c) => {
+      if (c && c.id === classId) {
+        return { ...c, status: 'active' as const };
+      }
+      return c;
+    });
+    this.saveClasses(updated);
   },
   deleteClass(id: string) {
     const classes = this.getClasses() || [];
@@ -603,54 +615,65 @@ export const StorageEngine = {
     const students = this.getStudents() || [];
     const idx = students.findIndex((s) => s && s.id === student.id);
     if (idx !== -1) {
-      students[idx] = student;
-      this.saveStudents(students);
+      const updatedStudents = [...students];
+      updatedStudents[idx] = student;
+      this.saveStudents(updatedStudents);
     }
   },
 
   // COMPREHENSIVE 2-STATE HOMEWORK COMPLETION & REALTIME NOTIFICATION SYSTEM
   toggleHomeworkTaskItemCheck(studentId: string, sessionId: string, homeworkItemId: string, homeworkTitle: string): boolean {
     const students = this.getStudents() || [];
-    const std = students.find((s) => s && s.id === studentId);
+    const stdIndex = students.findIndex((s) => s && s.id === studentId);
     let isCheckedNow = false;
 
-    if (std) {
-      if (!std.completedHomeworkTaskIds) std.completedHomeworkTaskIds = [];
-      const idx = std.completedHomeworkTaskIds.indexOf(homeworkItemId);
+    if (stdIndex !== -1) {
+      const originalStd = students[stdIndex];
+      const completedIds = originalStd.completedHomeworkTaskIds ? [...originalStd.completedHomeworkTaskIds] : [];
+      const idx = completedIds.indexOf(homeworkItemId);
 
       if (idx !== -1) {
-        std.completedHomeworkTaskIds.splice(idx, 1);
+        completedIds.splice(idx, 1);
         isCheckedNow = false;
       } else {
-        std.completedHomeworkTaskIds.push(homeworkItemId);
-        std.stars = (std.stars || 0) + 2;
+        completedIds.push(homeworkItemId);
         isCheckedNow = true;
       }
-      this.saveStudents(students);
+
+      const updatedStd = {
+        ...originalStd,
+        completedHomeworkTaskIds: completedIds,
+        stars: isCheckedNow ? (originalStd.stars || 0) + 2 : (originalStd.stars || 0),
+      };
+
+      const updatedStudents = [...students];
+      updatedStudents[stdIndex] = updatedStd;
+      this.saveStudents(updatedStudents);
 
       const subs = this.getHomeworkSubmissions() || [];
-      const existingSub = subs.find((sub) => sub && sub.studentId === studentId && sub.homeworkTaskId === homeworkItemId);
+      const existingSubIdx = subs.findIndex((sub) => sub && sub.studentId === studentId && sub.homeworkTaskId === homeworkItemId);
 
       const now = new Date();
       const completionTimeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       const todayDateStr = now.toISOString().split('T')[0];
 
-      // Find student's primary class for notification scoping
       const classes = this.getClasses() || [];
-      const cls = classes.find((c) => c && std.classIds && std.classIds.includes(c.id)) || classes[0];
+      const cls = classes.find((c) => c && updatedStd.classIds && updatedStd.classIds.includes(c.id)) || classes[0];
 
-      if (existingSub) {
-        existingSub.isStudentChecked = isCheckedNow;
-        existingSub.completionStatus = isCheckedNow ? 'COMPLETED' : 'UNCOMPLETED';
-        if (isCheckedNow) {
-          existingSub.completionTime = completionTimeStr;
-          existingSub.submissionDate = todayDateStr;
-          if (existingSub.feedbackStatus !== 'COMPLETED') {
-            existingSub.feedbackStatus = 'PENDING';
-          }
-        } else {
-          existingSub.feedbackStatus = 'NONE';
-        }
+      if (existingSubIdx !== -1) {
+        const updatedSub = {
+          ...subs[existingSubIdx],
+          isStudentChecked: isCheckedNow,
+          completionStatus: isCheckedNow ? ('COMPLETED' as const) : ('UNCOMPLETED' as const),
+          completionTime: isCheckedNow ? completionTimeStr : subs[existingSubIdx].completionTime,
+          submissionDate: isCheckedNow ? todayDateStr : subs[existingSubIdx].submissionDate,
+          feedbackStatus: isCheckedNow
+            ? (subs[existingSubIdx].feedbackStatus !== 'COMPLETED' ? ('PENDING' as const) : subs[existingSubIdx].feedbackStatus)
+            : ('NONE' as const),
+        };
+        const updatedSubs = [...subs];
+        updatedSubs[existingSubIdx] = updatedSub;
+        this.saveHomeworkSubmissions(updatedSubs);
       } else if (isCheckedNow) {
         const newSubId = `sub_${Date.now()}`;
         const newSub: HomeworkSubmission = {
@@ -659,7 +682,7 @@ export const StorageEngine = {
           homeworkTaskId: homeworkItemId,
           homeworkTitle,
           studentId,
-          studentName: std.name || 'Học viên',
+          studentName: updatedStd.name || 'Học viên',
           classId: cls?.id,
           className: cls?.className,
           teacherId: cls?.teacherId,
@@ -671,16 +694,15 @@ export const StorageEngine = {
           completionTime: completionTimeStr,
           submissionDate: todayDateStr,
         };
-        subs.unshift(newSub);
+        const updatedSubs = [newSub, ...subs];
 
-        // CREATE AUTOMATIC REAL-TIME NOTIFICATION FOR ADMIN/TEACHER
         const notifs = this.getNotifications() || [];
         const newNotif: AppNotification = {
           id: `notif_${Date.now()}`,
-          title: `🔔 ${std.name} đã hoàn thành bài tập`,
+          title: `🔔 ${updatedStd.name} đã hoàn thành bài tập`,
           message: `📚 ${homeworkTitle} • 🕐 Đã hoàn thành lúc ${completionTimeStr}`,
-          studentId: std.id,
-          studentName: std.name,
+          studentId: updatedStd.id,
+          studentName: updatedStd.name,
           classId: cls?.id || '',
           className: cls?.className || 'Lớp Học',
           teacherId: cls?.teacherId || '',
@@ -692,10 +714,9 @@ export const StorageEngine = {
           createdAt: new Date().toISOString(),
           isRead: false,
         };
-        notifs.unshift(newNotif);
-        this.saveNotifications(notifs);
+        this.saveNotifications([newNotif, ...notifs]);
+        this.saveHomeworkSubmissions(updatedSubs);
       }
-      this.saveHomeworkSubmissions(subs);
     }
     return isCheckedNow;
   },
@@ -703,28 +724,38 @@ export const StorageEngine = {
   // SUBMIT TEACHER FEEDBACK WITH COMPLETED FEEDBACK STATUS
   submitHomeworkFeedback(submissionId: string, feedbackText: string, ratingStars: number, teacherUser?: User | null) {
     const subs = this.getHomeworkSubmissions() || [];
-    const sub = subs.find((s) => s && s.id === submissionId);
-    if (sub) {
+    const subIdx = subs.findIndex((s) => s && s.id === submissionId);
+    if (subIdx !== -1) {
       const now = new Date();
       const feedbackTimeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       const todayDateStr = now.toISOString().split('T')[0];
 
-      sub.isTeacherFeedbackChecked = true;
-      sub.feedbackStatus = 'COMPLETED';
-      sub.feedbackText = feedbackText;
-      sub.ratingStars = ratingStars;
-      sub.feedbackDate = todayDateStr;
-      sub.feedbackTime = feedbackTimeStr;
-      sub.feedbackByUserId = teacherUser?.uid || 'admin';
-      sub.feedbackByUserName = teacherUser?.displayName || 'Giáo Viên';
-      this.saveHomeworkSubmissions(subs);
+      const updatedSub = {
+        ...subs[subIdx],
+        isTeacherFeedbackChecked: true,
+        feedbackStatus: 'COMPLETED' as const,
+        feedbackText,
+        ratingStars,
+        feedbackDate: todayDateStr,
+        feedbackTime: feedbackTimeStr,
+        feedbackByUserId: teacherUser?.uid || 'admin',
+        feedbackByUserName: teacherUser?.displayName || 'Giáo Viên',
+      };
+      const updatedSubs = [...subs];
+      updatedSubs[subIdx] = updatedSub;
+      this.saveHomeworkSubmissions(updatedSubs);
       this.markNotificationBySubmissionAsRead(submissionId);
 
       const students = this.getStudents() || [];
-      const std = students.find((s) => s && s.id === sub.studentId);
-      if (std) {
-        std.stars = (std.stars || 0) + ratingStars;
-        this.saveStudents(students);
+      const stdIdx = students.findIndex((s) => s && s.id === updatedSub.studentId);
+      if (stdIdx !== -1) {
+        const std = {
+          ...students[stdIdx],
+          stars: (students[stdIdx].stars || 0) + ratingStars,
+        };
+        const updatedStudents = [...students];
+        updatedStudents[stdIdx] = std;
+        this.saveStudents(updatedStudents);
       }
     }
   },
