@@ -1082,6 +1082,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           </div>
         </div>
+      )}
+
       {/* 24/7 AI STUDENT ASSISTANT CHATBOT WIDGET */}
       <StudentAiChatbotModal />
     </div>
