@@ -2,20 +2,20 @@ import { GoogleGenAI } from '@google/genai';
 
 export const GEMINI_MODELS = [
   {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    desc: 'Tốc độ siêu nhanh, đọc chữ viết tay trên ảnh cực chuẩn (Mặc định)',
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    desc: 'Đọc chữ viết tay siêu tốc, hoàn toàn miễn phí & ổn định nhất (Mặc định)',
     isDefault: true,
   },
   {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    desc: 'Nhận diện ảnh Vision ổn định & nhanh chóng',
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    desc: 'Thế hệ AI mới, nhận diện hình ảnh & văn bản chính xác',
   },
   {
-    id: 'gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
-    desc: 'Suy luận sâu, phân tích ngữ pháp bài viết dài & IELTS',
+    id: 'gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
+    desc: 'Suy luận sâu cho ngữ pháp dài & IELTS',
   },
 ];
 
@@ -54,7 +54,12 @@ export const GeminiEngine = {
   },
 
   getSelectedModel(): string {
-    return localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) || 'gemini-2.5-flash';
+    const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL);
+    if (saved && saved.includes('pro')) {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-1.5-flash');
+      return 'gemini-1.5-flash';
+    }
+    return saved || 'gemini-1.5-flash';
   },
 
   setSelectedModel(modelId: string) {
@@ -74,13 +79,10 @@ export const GeminiEngine = {
       };
     }
 
-    const preferredModel = this.getSelectedModel();
     const fallbackList = [
-      preferredModel,
-      'gemini-2.5-flash',
       'gemini-1.5-flash',
       'gemini-2.0-flash',
-      'gemini-2.5-pro',
+      'gemini-2.5-flash',
       'gemini-1.5-pro',
     ];
 
