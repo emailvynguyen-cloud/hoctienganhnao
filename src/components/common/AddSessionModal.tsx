@@ -109,7 +109,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   };
 
   // Student Feedback Handlers
-  const handleUpdateStudentFeedback = (studentId: string, field: 'strengths' | 'improvements', value: string) => {
+  const handleUpdateStudentFeedback = (studentId: string, field: keyof StudentFeedback, value: string) => {
     setStudentFeedbacks({
       ...studentFeedbacks,
       [studentId]: {
@@ -399,6 +399,29 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                         onChange={(e) => handleUpdateStudentFeedback(std.id, 'improvements', e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-rose-200 text-xs bg-rose-50/30"
                       />
+                    </div>
+
+                    {/* Link tài liệu riêng trong buổi học cho học viên này */}
+                    <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
+                      <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
+                        <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {std.name}:
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
+                          value={fb.materialTitle || ''}
+                          onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialTitle', e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs bg-sky-50/20 font-bold text-slate-800 dark:text-white"
+                        />
+                        <input
+                          type="url"
+                          placeholder="Link dẫn đến (https://drive.google.com/...)"
+                          value={fb.materialUrl || ''}
+                          onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialUrl', e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs font-mono text-slate-800 dark:text-white"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

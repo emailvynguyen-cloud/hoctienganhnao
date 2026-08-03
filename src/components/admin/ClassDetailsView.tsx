@@ -77,12 +77,35 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   // Filter sessions in this class
   const classSessions = (sessions || []).filter((s) => s && s.classId === selectedClass.id);
 
-  // Extract all session materials
-  const allSessionMaterials = classSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
-    ...m,
-    sessionNum: s.sessionNumber,
-    date: s.date,
-  })));
+  // Extract all session materials (general session materials + student-specific materials in sessions)
+  const allSessionMaterials = classSessions.flatMap((s) => {
+    const generalMaterials = (s.sessionMaterials || []).map((m) => ({
+      ...m,
+      sessionNum: s.sessionNumber,
+      date: s.date,
+    }));
+
+    const studentMaterials: { id: string; title: string; url: string; sessionNum: number; date: string }[] = [];
+
+    if (s.studentFeedbacks) {
+      Object.entries(s.studentFeedbacks).forEach(([studentId, fb]) => {
+        if (fb && fb.materialUrl) {
+          const std = classStudents.find((st) => st.id === studentId);
+          const stdName = std ? ` - Học viên: ${std.name}` : '';
+          const matTitle = fb.materialTitle ? fb.materialTitle : 'Tài liệu riêng học viên';
+          studentMaterials.push({
+            id: `std_mat_${s.id}_${studentId}`,
+            title: `${matTitle}${stdName}`,
+            url: fb.materialUrl,
+            sessionNum: s.sessionNumber,
+            date: s.date,
+          });
+        }
+      });
+    }
+
+    return [...generalMaterials, ...studentMaterials];
+  });
 
   // Filter materials search query
   const filteredSessionMaterials = allSessionMaterials.filter((mat) =>
@@ -491,18 +514,37 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {Object.entries(session.studentFeedbacks).map(([stdId, fb]) => {
                         const stdObj = classStudents.find((s) => s.id === stdId);
-                        if (!fb.strengths && !fb.improvements) return null;
+                        if (!fb.strengths && !fb.improvements && !fb.materialUrl) return null;
 
                         return (
                           <div key={stdId} className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1 backdrop-blur-xs">
-                            <span className="font-black text-pink-900 block">
-                              👤 {stdObj?.name || 'Học viên'}:
-                            </span>
+                            <div className="flex items-center justify-between border-b border-pink-100 pb-1 font-bold">
+                              <span className="text-pink-950 dark:text-white flex items-center">
+                                👤 {stdObj?.name || 'Học viên'}
+                              </span>
+                            </div>
+
                             {fb.strengths && (
-                              <p className="text-emerald-800 font-medium">💪 <strong>Mạnh:</strong> {fb.strengths}</p>
+                              <p className="text-emerald-800 dark:text-emerald-300">
+                                🌟 <strong>Điểm mạnh:</strong> {fb.strengths}
+                              </p>
                             )}
                             {fb.improvements && (
-                              <p className="text-amber-800 font-medium">🎯 <strong>Cải thiện:</strong> {fb.improvements}</p>
+                              <p className="text-rose-800 dark:text-rose-300">
+                                🎯 <strong>Cần cải thiện:</strong> {fb.improvements}
+                              </p>
+                            )}
+                            {fb.materialUrl && (
+                              <div className="pt-1">
+                                <a
+                                  href={fb.materialUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 rounded-lg bg-sky-100 text-sky-950 font-extrabold text-[11px] hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
+                                >
+                                  📎 Tài liệu riêng: {fb.materialTitle || 'Xem tài liệu'} ↗
+                                </a>
+                              </div>
                             )}
                           </div>
                         );

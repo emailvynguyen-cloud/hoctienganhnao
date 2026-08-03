@@ -3,6 +3,7 @@ import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, Ban
 import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
+import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import {
   Calendar,
@@ -239,7 +240,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {session.studentFeedbacks?.[currentStudent.id] && (
           <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
             <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
-              💬 Nhận xét
+              💬 Nhận Xét & Tài Liệu Dành Cho Em Hôm Nay
             </span>
             {session.studentFeedbacks[currentStudent.id].strengths && (
               <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
@@ -250,6 +251,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <p className="text-amber-800 dark:text-amber-300 font-semibold">
                 🎯 <strong>Cần phát huy:</strong> {session.studentFeedbacks[currentStudent.id].improvements}
               </p>
+            )}
+            {session.studentFeedbacks[currentStudent.id].materialUrl && (
+              <div className="pt-1">
+                <a
+                  href={session.studentFeedbacks[currentStudent.id].materialUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
+                >
+                  📎 Link tài liệu đính kèm: {session.studentFeedbacks[currentStudent.id].materialTitle || 'Xem tài liệu ngay'} ↗
+                </a>
+              </div>
             )}
           </div>
         )}
@@ -1069,8 +1082,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           </div>
         </div>
-      )}
-
+      {/* 24/7 AI STUDENT ASSISTANT CHATBOT WIDGET */}
+      <StudentAiChatbotModal />
     </div>
   );
 };

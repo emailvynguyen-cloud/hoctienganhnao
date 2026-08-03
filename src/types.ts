@@ -30,6 +30,8 @@ export interface HomeworkTaskItem {
 export interface StudentFeedback {
   strengths?: string; // Điểm mạnh riêng của học viên này
   improvements?: string; // Điểm cần cải thiện riêng của học viên này
+  materialTitle?: string; // Tên tài liệu riêng cho học viên này
+  materialUrl?: string; // Link dẫn đến tài liệu riêng cho học viên này
 }
 
 export interface Student {

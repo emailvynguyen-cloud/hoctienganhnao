@@ -4,6 +4,7 @@ import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
+import { AiStudioPortal } from './AiStudioPortal';
 import { StudentPortal } from '../student/StudentPortal';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine } from '../../lib/storage';
@@ -470,6 +471,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5 mr-1" /> Chấm Bài Tập Về Nhà
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ai_studio')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'ai_studio'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> 🤖 AI Studio Dạy Học
         </button>
 
         {/* TEACHERS MANAGEMENT TAB - SUPER ADMIN ONLY */}
@@ -1176,6 +1188,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
         </div>
+      )}
+
+      {/* TAB 8: AI STUDIO PORTAL FOR ADMIN / SUPER ADMIN */}
+      {activeTab === 'ai_studio' && (
+        <AiStudioPortal />
       )}
 
       {/* RECEIPT GENERATOR MODAL FOR SUPER ADMIN */}

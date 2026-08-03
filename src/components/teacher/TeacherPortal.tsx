@@ -4,6 +4,7 @@ import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from '../admin/ClassDetailsView';
 import { StudentPortal } from '../student/StudentPortal';
 import { HomeworkGradingWidget } from '../admin/HomeworkGradingWidget';
+import { AiStudioPortal } from '../admin/AiStudioPortal';
 import { StorageEngine } from '../../lib/storage';
 import {
   Calendar,
@@ -438,6 +439,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         >
           <DollarSign className="w-3.5 h-3.5 mr-1" /> Doanh Thu Lương Dạy
         </button>
+
+        <button
+          onClick={() => setActiveTab('ai_studio')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'ai_studio'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> 🤖 AI Studio Dạy Học
+        </button>
       </div>
 
       {/* TAB 1: TODAY'S CLASSES & SESSIONS */}
@@ -841,6 +853,11 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           })()}
 
         </div>
+      )}
+
+      {/* TAB 6: AI STUDIO PORTAL FOR TEACHERS */}
+      {activeTab === 'ai_studio' && (
+        <AiStudioPortal />
       )}
 
       {/* MODAL 1: PER CLASS DETAILED SESSIONS SALARY BREAKDOWN */}
