@@ -135,22 +135,73 @@ const DAYS_OF_WEEK = [
 
 function parseTimeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
-  const parts = timeStr.trim().split(':');
+  let str = timeStr.trim().toUpperCase();
+  const isPM = str.includes('PM') || str.includes('CH');
+  const isAM = str.includes('AM') || str.includes('SA');
+  str = str.replace(/[A-Z]/g, '').trim();
+
+  const parts = str.split(':');
   if (parts.length < 2) return 0;
-  const h = parseInt(parts[0], 10) || 0;
+  let h = parseInt(parts[0], 10) || 0;
   const m = parseInt(parts[1], 10) || 0;
+
+  if (isPM && h < 12) h += 12;
+  if (isAM && h === 12) h = 0;
+
   return h * 60 + m;
 }
 
-function parseScheduleTimeRange(scheduleStr: string): { startMin: number; endMin: number; label: string } | null {
+function parseScheduleTimeRange(scheduleStr: string, dayKey?: string): { startMin: number; endMin: number; label: string } | null {
   if (!scheduleStr) return null;
-  const match = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-  if (!match) return null;
 
-  const startStr = match[1];
-  const endStr = match[2];
+  if (dayKey) {
+    const schedUpper = scheduleStr.toUpperCase();
+    const dayAliases: Record<string, string[]> = {
+      'T2': ['T2', 'THỨ 2', 'THỨ HAI'],
+      'T3': ['T3', 'THỨ 3', 'THỨ BA'],
+      'T4': ['T4', 'THỨ 4', 'THỨ TƯ'],
+      'T5': ['T5', 'THỨ 5', 'THỨ NĂM'],
+      'T6': ['T6', 'THỨ 6', 'THỨ SÁU'],
+      'T7': ['T7', 'THỨ 7', 'THỨ BẢY'],
+      'CN': ['CN', 'CHỦ NHẬT'],
+    };
+
+    const aliases = dayAliases[dayKey] || [dayKey];
+
+    for (const alias of aliases) {
+      const idx = schedUpper.indexOf(alias);
+      if (idx !== -1) {
+        const subStr = scheduleStr.slice(idx, idx + 45);
+        const match = subStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+        if (match) {
+          const startStr = match[1];
+          const endStr = match[2];
+          const startMin = parseTimeToMinutes(startStr);
+          let endMin = parseTimeToMinutes(endStr);
+          if (endMin === 0 && endStr === '00:00') {
+            endMin = 24 * 60;
+          }
+          return {
+            startMin,
+            endMin,
+            label: `${startStr} - ${endStr}`,
+          };
+        }
+      }
+    }
+  }
+
+  // Fallback: parse global first time range
+  const globalMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  if (!globalMatch) return null;
+
+  const startStr = globalMatch[1];
+  const endStr = globalMatch[2];
   const startMin = parseTimeToMinutes(startStr);
-  const endMin = parseTimeToMinutes(endStr);
+  let endMin = parseTimeToMinutes(endStr);
+  if (endMin === 0 && endStr === '00:00') {
+    endMin = 24 * 60;
+  }
 
   return {
     startMin,
@@ -161,7 +212,6 @@ function parseScheduleTimeRange(scheduleStr: string): { startMin: number; endMin
 
 function checkTimeConflict(rangeA: { startMin: number; endMin: number }, rangeB: { startMin: number; endMin: number }): boolean {
   // Overlap condition: startA < endB AND startB < endA
-  // Exact boundary match (e.g. 08:00-09:00 and 09:00-10:00) returns FALSE (Valid!)
   return rangeA.startMin < rangeB.endMin && rangeB.startMin < rangeA.endMin;
 }
 
@@ -237,7 +287,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
 
       if (!matchesDay) return false;
 
-      const clsRange = parseScheduleTimeRange(cls.schedule);
+      const clsRange = parseScheduleTimeRange(cls.schedule, dayKey);
       if (!clsRange) return true;
 
       return checkTimeConflict(shiftRange, clsRange);
@@ -263,8 +313,8 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
     const conflicts: { classA: Class; classB: Class }[] = [];
     for (let i = 0; i < dayClasses.length; i++) {
       for (let j = i + 1; j < dayClasses.length; j++) {
-        const rangeA = parseScheduleTimeRange(dayClasses[i].schedule);
-        const rangeB = parseScheduleTimeRange(dayClasses[j].schedule);
+        const rangeA = parseScheduleTimeRange(dayClasses[i].schedule, dayKey);
+        const rangeB = parseScheduleTimeRange(dayClasses[j].schedule, dayKey);
         if (rangeA && rangeB && checkTimeConflict(rangeA, rangeB)) {
           conflicts.push({ classA: dayClasses[i], classB: dayClasses[j] });
         }
@@ -475,7 +525,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                             {shiftClasses.map((cls) => {
                               const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
                               const statusBadges = getClassStatusBadges(cls);
-                              const parsedTime = parseScheduleTimeRange(cls.schedule)?.label || shift.timeLabel;
+                              const parsedTime = parseScheduleTimeRange(cls.schedule, day.key)?.label || shift.timeLabel;
 
                               return (
                                 <div

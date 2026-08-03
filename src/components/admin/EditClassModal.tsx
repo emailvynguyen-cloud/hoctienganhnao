@@ -11,6 +11,79 @@ interface EditClassModalProps {
   onRefreshData: () => void;
 }
 
+const HOURS_24_OPTIONS = [
+  '05:00', '05:30', '06:00', '06:30', '07:00', '07:30', '08:00', '08:30',
+  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
+  '21:00', '21:30', '22:00', '22:30', '23:00', '23:30', '00:00'
+];
+
+function parseExistingScheduleToSlots(scheduleStr: string) {
+  if (!scheduleStr) {
+    return [
+      { id: 'slot_1', day: 'T2' as const, startTime: '18:00', endTime: '19:30' },
+      { id: 'slot_2', day: 'T4' as const, startTime: '18:00', endTime: '19:30' },
+      { id: 'slot_3', day: 'T6' as const, startTime: '18:00', endTime: '19:30' },
+    ];
+  }
+
+  const daysMap: { key: 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN'; patterns: RegExp }[] = [
+    { key: 'T2', patterns: /T2|THỨ 2|THỨ HAI/i },
+    { key: 'T3', patterns: /T3|THỨ 3|THỨ BA/i },
+    { key: 'T4', patterns: /T4|THỨ 4|THỨ TƯ/i },
+    { key: 'T5', patterns: /T5|THỨ 5|THỨ NĂM/i },
+    { key: 'T6', patterns: /T6|THỨ 6|THỨ SÁU/i },
+    { key: 'T7', patterns: /T7|THỨ 7|THỨ BẢY/i },
+    { key: 'CN', patterns: /CN|CHỦ NHẬT/i },
+  ];
+
+  const parts = scheduleStr.split(',');
+  const slots: { id: string; day: 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN'; startTime: string; endTime: string }[] = [];
+
+  parts.forEach((part, index) => {
+    const rangeMatch = part.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+    const startTime = rangeMatch ? rangeMatch[1].padStart(5, '0') : '18:00';
+    const endTime = rangeMatch ? rangeMatch[2].padStart(5, '0') : '19:30';
+
+    daysMap.forEach(({ key, patterns }) => {
+      if (patterns.test(part)) {
+        slots.push({
+          id: `slot_${index}_${key}`,
+          day: key,
+          startTime,
+          endTime,
+        });
+      }
+    });
+  });
+
+  if (slots.length > 0) return slots;
+
+  const globalMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  const startTime = globalMatch ? globalMatch[1].padStart(5, '0') : '18:00';
+  const endTime = globalMatch ? globalMatch[2].padStart(5, '0') : '19:30';
+
+  daysMap.forEach(({ key, patterns }) => {
+    if (patterns.test(scheduleStr)) {
+      slots.push({
+        id: `slot_${key}`,
+        day: key,
+        startTime,
+        endTime,
+      });
+    }
+  });
+
+  return slots.length > 0
+    ? slots
+    : [
+        { id: 'slot_1', day: 'T2' as const, startTime: '18:00', endTime: '19:30' },
+        { id: 'slot_2', day: 'T4' as const, startTime: '18:00', endTime: '19:30' },
+        { id: 'slot_3', day: 'T6' as const, startTime: '18:00', endTime: '19:30' },
+      ];
+}
+
 export const EditClassModal: React.FC<EditClassModalProps> = ({
   isOpen,
   onClose,
@@ -22,11 +95,9 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [code, setCode] = useState(targetClass.code || '');
   const [teacherName, setTeacherName] = useState(targetClass.teacherName || 'Ms. Vy');
   const [schedule, setSchedule] = useState(targetClass.schedule || '');
-  const [scheduleSlots, setScheduleSlots] = useState<{ id: string; day: 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN'; startTime: string; endTime: string }[]>([
-    { id: 'slot_1', day: 'T2', startTime: '18:00', endTime: '19:30' },
-    { id: 'slot_2', day: 'T4', startTime: '18:00', endTime: '19:30' },
-    { id: 'slot_3', day: 'T6', startTime: '18:00', endTime: '19:30' },
-  ]);
+  const [scheduleSlots, setScheduleSlots] = useState<{ id: string; day: 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN'; startTime: string; endTime: string }[]>(() => {
+    return parseExistingScheduleToSlots(targetClass.schedule || '');
+  });
   const [courseName, setCourseName] = useState(targetClass.courseName || '');
   const [zoomLink, setZoomLink] = useState(targetClass.zoomLink || '');
   const [startSessionNumber, setStartSessionNumber] = useState(targetClass.startSessionNumber || 1);
@@ -199,8 +270,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
                     <option value="CN">Chủ Nhật (CN)</option>
                   </select>
 
-                  <input
-                    type="time"
+                  <select
                     value={slot.startTime}
                     onChange={(e) => {
                       const updated = [...scheduleSlots];
@@ -208,11 +278,14 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
                       setScheduleSlots(updated);
                       setSchedule(updated.map((s) => `${s.day} (${s.startTime} - ${s.endTime})`).join(', '));
                     }}
-                    className="px-2 py-1 rounded-lg border border-pink-200 bg-white font-mono text-xs text-slate-800"
-                  />
-                  <span>-</span>
-                  <input
-                    type="time"
+                    className="px-2 py-1 rounded-lg border border-pink-200 bg-white font-mono text-xs text-slate-800 font-bold cursor-pointer"
+                  >
+                    {HOURS_24_OPTIONS.map((time) => (
+                      <option key={`start_${time}`} value={time}>{time}</option>
+                    ))}
+                  </select>
+                  <span className="font-bold text-pink-400">-</span>
+                  <select
                     value={slot.endTime}
                     onChange={(e) => {
                       const updated = [...scheduleSlots];
@@ -220,8 +293,12 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
                       setScheduleSlots(updated);
                       setSchedule(updated.map((s) => `${s.day} (${s.startTime} - ${s.endTime})`).join(', '));
                     }}
-                    className="px-2 py-1 rounded-lg border border-pink-200 bg-white font-mono text-xs text-slate-800"
-                  />
+                    className="px-2 py-1 rounded-lg border border-pink-200 bg-white font-mono text-xs text-slate-800 font-bold cursor-pointer"
+                  >
+                    {HOURS_24_OPTIONS.map((time) => (
+                      <option key={`end_${time}`} value={time}>{time}</option>
+                    ))}
+                  </select>
 
                   {scheduleSlots.length > 1 && (
                     <button
