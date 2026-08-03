@@ -418,6 +418,13 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                 </p>
               ))}
             </div>
+          </div>
+        );
+      })}
+
+      {/* MAIN 4-SHIFT TIMETABLE */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto min-w-[900px]">
           <table className="w-full border-collapse">
             
             {/* GRID COLUMNS HEADER: DAYS OF WEEK WITH DISTINCT BACKGROUND COLORS */}
@@ -558,7 +565,6 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
               ))}
             </tbody>
           </table>
-
         </div>
       </div>
 
