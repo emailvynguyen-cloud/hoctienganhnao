@@ -78,6 +78,28 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
     : null;
 
+  const isSuperOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+
+  // HELPER: Month calculation for Teacher Revenue (Current month & Previous month ONLY)
+  const getTeacherMonthOptions = () => {
+    const now = new Date();
+    const currYear = now.getFullYear();
+    const currMonthNum = now.getMonth() + 1;
+    const currKey = `${currYear}-${currMonthNum < 10 ? '0' : ''}${currMonthNum}`;
+    const currLabel = `${currMonthNum < 10 ? '0' : ''}${currMonthNum}/${currYear}`;
+
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevYear = prevDate.getFullYear();
+    const prevMonthNum = prevDate.getMonth() + 1;
+    const prevKey = `${prevYear}-${prevMonthNum < 10 ? '0' : ''}${prevMonthNum}`;
+    const prevLabel = `${prevMonthNum < 10 ? '0' : ''}${prevMonthNum}/${prevYear}`;
+
+    return { currKey, currLabel, prevKey, prevLabel };
+  };
+
+  const monthOptions = getTeacherMonthOptions();
+  const [teacherSelectedMonth, setTeacherSelectedMonth] = useState<string>(monthOptions.currKey);
+
   // STRICT TEACHER SCOPING: Filter classes strictly assigned to this teacher
   const isMsVy = (teacherName?: string, teacherId?: string) => {
     if (!teacherName && !teacherId) return true;
@@ -668,35 +690,55 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 </h3>
               </div>
               <p className="text-xs text-emerald-900 font-medium">
-                Thu nhập được tính bằng Bậc lương mỗi buổi học x Tổng số buổi dạy hoàn thành của các lớp phụ trách
+                Thu nhập được tính bằng Bậc lương mỗi buổi học x Số buổi dạy hoàn thành trong tháng
               </p>
             </div>
 
-            <button
-              onClick={() => setIsAllSessionsRevenueModalOpen(true)}
-              className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
-            >
-              <Eye className="w-4 h-4 mr-1.5" /> 🔍 Xem Chi Tiết Tất Cả Các Buổi Đã Tính Lương
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* MONTH SELECTOR FOR TEACHER (CURRENT MONTH & PREVIOUS MONTH ONLY) */}
+              <div className="flex items-center space-x-2 bg-white dark:bg-slate-800 p-2 rounded-2xl border border-emerald-300 shadow-2xs">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Kỳ Lương:</span>
+                <select
+                  value={teacherSelectedMonth}
+                  onChange={(e) => setTeacherSelectedMonth(e.target.value)}
+                  className="bg-white dark:bg-slate-900 text-xs font-black text-emerald-950 dark:text-white px-3 py-1 rounded-xl border border-emerald-200 focus:outline-none cursor-pointer"
+                >
+                  <option value={monthOptions.currKey}>Tháng Hiện Tại ({monthOptions.currLabel})</option>
+                  <option value={monthOptions.prevKey}>Tháng Trước ({monthOptions.prevLabel})</option>
+                </select>
+              </div>
+
+              <button
+                onClick={() => setIsAllSessionsRevenueModalOpen(true)}
+                className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
+              >
+                <Eye className="w-4 h-4 mr-1.5" /> 🔍 Xem Chi Tiết Các Buổi Đã Tính Lương
+              </button>
+            </div>
           </div>
 
           {/* KPI Summary Cards */}
           {(() => {
             const teacherClassesMap = new Map(assignedClasses.map((c) => [c.id, c]));
-            const teacherSessions = (sessions || []).filter((s) => s && teacherClassesMap.has(s.classId));
+            const monthTeacherSessions = (sessions || []).filter(
+              (s) => s && s.date && s.date.startsWith(teacherSelectedMonth) && teacherClassesMap.has(s.classId)
+            );
             
             let totalSalary = 0;
             const classSalaryList = assignedClasses.map((cls) => {
-              const clsSessions = (sessions || []).filter((s) => s && s.classId === cls.id);
+              const clsMonthSessions = (sessions || []).filter(
+                (s) => s && s.classId === cls.id && s.date && s.date.startsWith(teacherSelectedMonth)
+              );
               const rate = cls.teacherPayRatePerSession || 150000;
-              const salary = clsSessions.length * rate;
+              const salary = clsMonthSessions.length * rate;
               totalSalary += salary;
               return {
                 classObj: cls,
-                sessionCount: clsSessions.length,
+                sessionCount: clsMonthSessions.length,
                 rate,
                 totalSalary: salary,
-                sessionList: clsSessions,
+                sessionList: clsMonthSessions,
               };
             });
 
@@ -707,25 +749,25 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-100 text-emerald-950 border-2 border-emerald-300 space-y-1.5 shadow-xs">
                     <span className="text-[11px] font-black uppercase text-emerald-900">
-                      💰 Tổng Thu Nhập / Lương Đã Dạy
+                      💰 Lương Dạy (Tháng {teacherSelectedMonth.split('-')[1]})
                     </span>
                     <h4 className="text-2xl sm:text-3xl font-black text-emerald-950 font-mono">
                       {formatVND(totalSalary)}
                     </h4>
                     <p className="text-[10px] text-emerald-800 font-semibold">
-                      Tích lũy từ tất cả các ca dạy hoàn thành
+                      Tích lũy từ ca dạy trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}
                     </p>
                   </div>
 
                   <div className="p-5 rounded-3xl bg-gradient-to-r from-sky-100 via-blue-50 to-indigo-100 text-sky-950 border-2 border-sky-300 space-y-1.5 shadow-xs">
                     <span className="text-[11px] font-extrabold uppercase text-sky-900">
-                      📚 Tổng Số Buổi Đã Giảng Dạy
+                      📚 Buổi Dạy Hoàn Thành
                     </span>
                     <h4 className="text-2xl sm:text-3xl font-black text-sky-950 font-mono">
-                      {teacherSessions.length} Buổi
+                      {monthTeacherSessions.length} Buổi
                     </h4>
                     <p className="text-[10px] text-sky-800 font-semibold">
-                      Thuộc {assignedClasses.length} lớp học trực thuộc phụ trách
+                      Tính trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}
                     </p>
                   </div>
 
@@ -828,12 +870,14 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
             <div className="space-y-2.5">
               {(() => {
-                const classSesList = (sessions || []).filter((s) => s && s.classId === selectedClassForRevenueDetails.id);
+                const classSesList = (sessions || []).filter(
+                  (s) => s && s.classId === selectedClassForRevenueDetails.id && s.date && s.date.startsWith(teacherSelectedMonth)
+                );
                 const rate = selectedClassForRevenueDetails.teacherPayRatePerSession || 150000;
 
                 if (classSesList.length === 0) {
                   return (
-                    <p className="text-xs text-slate-400 italic p-4 text-center">Chưa có buổi học nào được ghi nhận cho lớp này.</p>
+                    <p className="text-xs text-slate-400 italic p-4 text-center">Chưa có buổi học nào được ghi nhận cho lớp này trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}.</p>
                   );
                 }
 
@@ -904,11 +948,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             <div className="space-y-2.5">
               {(() => {
                 const teacherClassesMap = new Map(assignedClasses.map((c) => [c.id, c]));
-                const teacherSessions = (sessions || []).filter((s) => s && teacherClassesMap.has(s.classId));
+                const teacherSessions = (sessions || []).filter(
+                  (s) => s && s.date && s.date.startsWith(teacherSelectedMonth) && teacherClassesMap.has(s.classId)
+                );
 
                 if (teacherSessions.length === 0) {
                   return (
-                    <p className="text-xs text-slate-400 italic p-4 text-center">Chưa có buổi học nào được ghi nhận.</p>
+                    <p className="text-xs text-slate-400 italic p-4 text-center">Chưa có buổi học nào được ghi nhận trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}.</p>
                   );
                 }
 

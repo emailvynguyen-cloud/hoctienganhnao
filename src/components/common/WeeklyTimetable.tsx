@@ -347,11 +347,8 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Thời Khóa Biểu Lịch Học Theo Tuần (4 Ca Dạy)
+                Thời Khóa Biểu Lịch Học Theo Tuần
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Chia làm 4 Ca Dạy chính (Sáng, Chiều, Tối, Đêm) • Thiết kế trực quan Notion / Apple style
-              </p>
             </div>
           </div>
         </div>
