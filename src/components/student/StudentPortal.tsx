@@ -1060,7 +1060,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               );
             })()}
-            </div>
 
             {/* Modal Close Footer */}
             <div className="text-center pt-3 border-t border-pink-100 dark:border-slate-800">
