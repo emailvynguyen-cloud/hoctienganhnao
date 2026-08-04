@@ -285,24 +285,24 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
             📘 Nội Dung Bài Học:
           </span>
-          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs">
+          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs whitespace-pre-wrap leading-relaxed">
             {session.lessonContent}
           </p>
         </div>
 
-        {/* Teacher Comment for THIS specific student in THIS session (DYNAMIC TEACHER NAME) */}
+        {/* Teacher Comment for THIS specific student in THIS session */}
         {session.studentFeedbacks?.[currentStudent.id] && (
           <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
             <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
               💬 Nhận Xét & Tài Liệu Dành Cho Em Hôm Nay
             </span>
             {session.studentFeedbacks[currentStudent.id].strengths && (
-              <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
+              <p className="text-emerald-800 dark:text-emerald-300 font-semibold whitespace-pre-wrap leading-relaxed">
                 💪 <strong>Điểm mạnh:</strong> {session.studentFeedbacks[currentStudent.id].strengths}
               </p>
             )}
             {session.studentFeedbacks[currentStudent.id].improvements && (
-              <p className="text-amber-800 dark:text-amber-300 font-semibold">
+              <p className="text-amber-800 dark:text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed">
                 🎯 <strong>Cần phát huy:</strong> {session.studentFeedbacks[currentStudent.id].improvements}
               </p>
             )}

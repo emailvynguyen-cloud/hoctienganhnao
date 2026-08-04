@@ -103,7 +103,16 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const handleToggleNotifDropdown = () => {
+    const nextState = !isNotifDropdownOpen;
+    setIsNotifDropdownOpen(nextState);
+
+    // AUTOMATICALLY MARK ALL UNREAD NOTIFICATIONS AS READ WHEN BELL IS CLICKED
+    if (nextState && unreadCount > 0) {
+      StorageEngine.markAllNotificationsAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    }
+  };
 
   const handleNotificationClick = (notif: AppNotification) => {
     StorageEngine.markNotificationAsRead(notif.id);
@@ -235,12 +244,12 @@ export const Header: React.FC<HeaderProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-pink-500 animate-pulse hidden sm:inline" />
             </button>
 
-            {/* NOTIFICATION BELL FOR ADMIN / TEACHER PORTAL */}
-            {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+            {/* NOTIFICATION BELL FOR ADMIN / TEACHER PORTAL ONLY (NEVER FOR STUDENT) */}
+            {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin' || currentUser.role === 'teacher') && !activePublicHash && currentRole !== 'student' && (
               <div className="relative">
                 <button
-                  onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
-                  className="p-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 border border-pink-200 transition shadow-xs relative flex items-center justify-center"
+                  onClick={handleToggleNotifDropdown}
+                  className="p-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 border border-pink-200 transition shadow-xs relative flex items-center justify-center cursor-pointer"
                   title="Thông báo bài tập cần feedback"
                 >
                   <Bell className="w-4 h-4 text-pink-700" />
@@ -251,56 +260,38 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </button>
 
-                {/* Notifications Dropdown */}
+                {/* Notifications Dropdown (Responsive & Fixed Overflow Layout) */}
                 {isNotifDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-2 border-pink-200 p-4 space-y-3 z-50 animate-fadeIn text-xs">
-                    <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                      <span className="font-black text-slate-900 dark:text-white flex items-center">
-                        <Bell className="w-4 h-4 mr-1.5 text-pink-500" /> Thông Báo Bài Tập ({notifications.length})
+                  <div className="fixed top-16 right-3 left-3 sm:left-auto sm:right-4 sm:top-auto sm:absolute sm:mt-2 w-auto sm:w-[420px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-2 border-pink-300 dark:border-slate-800 p-4 sm:p-5 space-y-3 z-50 animate-fadeIn text-xs max-h-[85vh] flex flex-col">
+                    <div className="flex items-center justify-between border-b border-pink-100 dark:border-slate-800 pb-3 shrink-0">
+                      <span className="font-black text-slate-900 dark:text-white flex items-center text-sm">
+                        <Bell className="w-4 h-4 mr-2 text-pink-500" /> Thông Báo Bài Tập ({notifications.length})
                       </span>
-                      {unreadCount > 0 ? (
-                        <button
-                          onClick={handleMarkAllAsRead}
-                          className="text-[10px] font-black text-pink-600 hover:text-pink-800 hover:underline flex items-center"
-                        >
-                          <Check className="w-3 h-3 mr-0.5 text-pink-600" /> Đánh dấu đã đọc ({unreadCount})
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-400">
-                          Đã đọc tất cả
-                        </span>
-                      )}
+                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                        ✓ Đã tự động đọc tất cả
+                      </span>
                     </div>
 
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 flex-1">
                       {notifications.length > 0 ? (
                         notifications.map((n) => (
                           <div
                             key={n.id}
                             onClick={() => handleNotificationClick(n)}
-                            className={`p-3.5 rounded-2xl border transition cursor-pointer space-y-1 relative group ${
+                            className={`p-3.5 rounded-2xl border transition cursor-pointer space-y-1.5 relative group ${
                               n.isRead
-                                ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 opacity-60'
-                                : 'bg-pink-50/90 border-pink-300 shadow-2xs hover:bg-pink-100'
+                                ? 'bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 opacity-80'
+                                : 'bg-pink-50/95 dark:bg-slate-800 border-pink-300 shadow-2xs hover:bg-pink-100'
                             }`}
                           >
-                            <div className="flex items-center justify-between font-extrabold text-slate-900 dark:text-white">
-                              <span className="truncate pr-2">{n.title}</span>
-                              <div className="flex items-center space-x-1 shrink-0">
-                                <span className="text-[10px] text-pink-600 font-mono">{n.completionTime}</span>
-                                {!n.isRead && (
-                                  <button
-                                    onClick={(e) => handleDismissSingleNotif(e, n.id)}
-                                    className="p-0.5 rounded-full hover:bg-pink-200 text-slate-400 hover:text-pink-700 transition cursor-pointer"
-                                    title="Tắt thông báo này"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </div>
+                            <div className="flex items-start justify-between gap-2 font-extrabold text-slate-900 dark:text-white">
+                              <span className="leading-snug break-words flex-1">{n.title}</span>
+                              <span className="text-[10px] text-pink-600 dark:text-pink-300 font-mono shrink-0 bg-pink-100 dark:bg-slate-700 px-2 py-0.5 rounded-full border border-pink-200">{n.completionTime}</span>
                             </div>
 
-                            <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{n.message}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed break-words">
+                              {n.message}
+                            </p>
 
                             <div className="pt-1 flex items-center justify-end">
                               <span className="text-[10px] font-black text-pink-700 dark:text-pink-400 hover:underline flex items-center">
@@ -310,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-slate-400 italic text-center py-4">Chưa có thông báo bài tập mới.</p>
+                        <p className="text-xs text-slate-400 italic text-center py-6">Chưa có thông báo bài tập mới.</p>
                       )}
                     </div>
                   </div>

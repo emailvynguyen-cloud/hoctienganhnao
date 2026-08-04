@@ -537,7 +537,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
                     📘 Nội Dung Bài Học:
                   </span>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs">
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs whitespace-pre-wrap leading-relaxed">
                     {session.lessonContent}
                   </p>
                 </div>
@@ -562,12 +562,12 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                             </div>
 
                             {fb.strengths && (
-                              <p className="text-emerald-800 dark:text-emerald-300">
+                              <p className="text-emerald-800 dark:text-emerald-300 whitespace-pre-wrap leading-relaxed">
                                 🌟 <strong>Điểm mạnh:</strong> {fb.strengths}
                               </p>
                             )}
                             {fb.improvements && (
-                              <p className="text-rose-800 dark:text-rose-300">
+                              <p className="text-rose-800 dark:text-rose-300 whitespace-pre-wrap leading-relaxed">
                                 🎯 <strong>Cần cải thiện:</strong> {fb.improvements}
                               </p>
                             )}
@@ -606,7 +606,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                           <h5 className="font-extrabold text-slate-900 dark:text-white">
                             {hwItem.title}
                           </h5>
-                          {hwItem.content && <p className="text-slate-600 mt-0.5">{hwItem.content}</p>}
+                          {hwItem.content && <p className="text-slate-600 mt-0.5 whitespace-pre-wrap leading-relaxed">{hwItem.content}</p>}
                         </div>
 
                         {hwItem.attachmentUrl && (

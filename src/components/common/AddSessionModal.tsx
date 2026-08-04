@@ -70,8 +70,13 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     ]
   );
 
+  // Memoize classStudents to prevent re-filtering on every keystroke
+  const classStudents = React.useMemo(
+    () => students.filter((s) => s && s.classIds && s.classIds.includes(selectedClassId)),
+    [students, selectedClassId]
+  );
+
   // Per-Student Individual Feedbacks (studentId -> { strengths, improvements })
-  const classStudents = students.filter((s) => s.classIds && s.classIds.includes(selectedClassId));
   const [studentFeedbacks, setStudentFeedbacks] = useState<Record<string, StudentFeedback>>(
     editingSession?.studentFeedbacks || {}
   );
@@ -100,25 +105,27 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   };
 
   const handleUpdateHomeworkItem = (index: number, field: keyof HomeworkTaskItem, value: string) => {
-    const updated = [...homeworkItems];
-    updated[index] = { ...updated[index], [field]: value };
-    setHomeworkItems(updated);
+    setHomeworkItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const handleRemoveHomeworkItem = (index: number) => {
     if (homeworkItems.length <= 1) return;
-    setHomeworkItems(homeworkItems.filter((_, i) => i !== index));
+    setHomeworkItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Student Feedback Handlers
   const handleUpdateStudentFeedback = (studentId: string, field: keyof StudentFeedback, value: string) => {
-    setStudentFeedbacks({
-      ...studentFeedbacks,
+    setStudentFeedbacks((prev) => ({
+      ...prev,
       [studentId]: {
-        ...studentFeedbacks[studentId],
+        ...(prev[studentId] || {}),
         [field]: value,
       },
-    });
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -255,201 +262,211 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             )}
           </div>
 
-          {/* Lesson Content */}
-          <div>
-            <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
-              Nội Dung Học Trong Buổi *
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
-              value={lessonContent}
-              onChange={(e) => setLessonContent(e.target.value)}
-              className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium"
-              required
-            />
-          </div>
-
-          {/* LINKS SECTION: RECORD LINK & QUIZLET LINK */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200">
-            <div>
-              <label className="block font-black text-sky-900 dark:text-sky-300 uppercase mb-1 flex items-center">
-                📹 Link Video Record Buổi Học
-              </label>
-              <input
-                type="url"
-                placeholder="https://zoom.us/... hoặc Drive"
-                value={recordLink}
-                onChange={(e) => setRecordLink(e.target.value)}
-                className="w-full p-3 rounded-xl border border-sky-200 bg-white dark:bg-slate-800 text-xs font-medium"
-              />
+          {/* OPTIONAL CONTENT SECTIONS (AUTOMATICALLY HIDDEN IF CHARGED ABSENCE SESSION IS CHECKED) */}
+          {isChargedAbsenceSession ? (
+            <div className="p-4 rounded-2xl bg-amber-100/90 dark:bg-slate-800 border border-amber-300 text-amber-950 dark:text-amber-200 text-xs font-bold space-y-1">
+              <span>📌 Ca học này đã được đánh dấu là Nghỉ tính phí.</span>
+              <p className="font-normal opacity-90">Nội dung bài học, bài tập về nhà và nhận xét đã được tự động tạm ẩn để giáo viên không cần phải nhập. Khi bỏ tích, dữ liệu đã nhập (nếu có) sẽ hiển thị lại bình thường.</p>
             </div>
-
-            <div>
-              <label className="block font-black text-purple-900 dark:text-purple-300 uppercase mb-1 flex items-center">
-                🎴 Link Quizlet Từ Vựng Buổi Học
-              </label>
-              <input
-                type="url"
-                placeholder="https://quizlet.com/vn/..."
-                value={quizletUrl}
-                onChange={(e) => setQuizletUrl(e.target.value)}
-                className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
-              />
-            </div>
-          </div>
-
-          {/* NO HOMEWORK CHECKBOX */}
-          <div className="p-3.5 rounded-2xl bg-pink-50/80 dark:bg-slate-800 border border-pink-200 flex items-center justify-between">
-            <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-black text-pink-950 dark:text-pink-200">
-              <input
-                type="checkbox"
-                checked={hasNoHomework}
-                onChange={(e) => setHasNoHomework(e.target.checked)}
-                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-400 cursor-pointer"
-              />
-              <span>🚫 Buổi học này KHÔNG CÓ BÀI TẬP VỀ NHÀ</span>
-            </label>
-            <span className="text-[10px] text-pink-700 font-medium">
-              (Tích chọn nếu buổi học này không giao bài tập)
-            </span>
-          </div>
-
-          {/* MULTIPLE HOMEWORK TASKS LIST */}
-          {!hasNoHomework && (
-            <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-black text-xs text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center">
-                <BookOpen className="w-4 h-4 mr-1 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
-              </h4>
-              <button
-                type="button"
-                onClick={handleAddHomeworkItem}
-                className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Bài Tập
-              </button>
-            </div>
-
-            {homeworkItems.map((item, idx) => (
-              <div key={item.id || idx} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 space-y-2 relative">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-xs text-amber-900 dark:text-amber-300">
-                    Bài tập #{idx + 1}
-                  </span>
-                  {homeworkItems.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveHomeworkItem(idx)}
-                      className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-                      title="Xóa bài tập này"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Tiêu đề bài tập (Ví dụ: Bài 1: Thu âm Speaking Part 2)"
-                  value={item.title}
-                  onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-bold"
-                  required
-                />
-
+          ) : (
+            <>
+              {/* Lesson Content */}
+              <div>
+                <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
+                  Nội Dung Học Trong Buổi *
+                </label>
                 <textarea
-                  rows={2}
-                  placeholder="Nội dung/hướng dẫn chi tiết cho bài tập này..."
-                  value={item.content || ''}
-                  onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
-                />
-
-                <input
-                  type="url"
-                  placeholder="Link file đính kèm/đề bài (nếu có: https://...)"
-                  value={item.attachmentUrl || ''}
-                  onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
+                  rows={4}
+                  placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
+                  value={lessonContent}
+                  onChange={(e) => setLessonContent(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y"
+                  required={!isChargedAbsenceSession}
                 />
               </div>
-            ))}
-          </div>
-          )}
 
-          {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
-          <div className="p-4 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 space-y-4">
-            <h4 className="font-black text-xs text-pink-900 dark:text-pink-300 uppercase tracking-wider">
-              💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp ({classStudents.length} em)
-            </h4>
+              {/* LINKS SECTION: RECORD LINK & QUIZLET LINK */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200">
+                <div>
+                  <label className="block font-black text-sky-900 dark:text-sky-300 uppercase mb-1 flex items-center">
+                    📹 Link Video Record Buổi Học
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://zoom.us/... hoặc Drive"
+                    value={recordLink}
+                    onChange={(e) => setRecordLink(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-sky-200 bg-white dark:bg-slate-800 text-xs font-medium"
+                  />
+                </div>
 
-            {classStudents.map((std) => {
-              const fb = studentFeedbacks[std.id] || {};
+                <div>
+                  <label className="block font-black text-purple-900 dark:text-purple-300 uppercase mb-1 flex items-center">
+                    🎴 Link Quizlet Từ Vựng Buổi Học
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://quizlet.com/vn/..."
+                    value={quizletUrl}
+                    onChange={(e) => setQuizletUrl(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
+                  />
+                </div>
+              </div>
 
-              return (
-                <div key={std.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 space-y-3">
-                  <div className="flex items-center space-x-2 border-b border-pink-100 pb-2">
-                    <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
-                    <span className="font-black text-xs text-slate-900 dark:text-white">
-                      Học viên: {std.name}
-                    </span>
+              {/* NO HOMEWORK CHECKBOX */}
+              <div className="p-3.5 rounded-2xl bg-pink-50/80 dark:bg-slate-800 border border-pink-200 flex items-center justify-between">
+                <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-black text-pink-950 dark:text-pink-200">
+                  <input
+                    type="checkbox"
+                    checked={hasNoHomework}
+                    onChange={(e) => setHasNoHomework(e.target.checked)}
+                    className="w-4 h-4 rounded text-pink-600 focus:ring-pink-400 cursor-pointer"
+                  />
+                  <span>🚫 Buổi học này KHÔNG CÓ BÀI TẬP VỀ NHÀ</span>
+                </label>
+                <span className="text-[10px] text-pink-700 font-medium">
+                  (Tích chọn nếu buổi học này không giao bài tập)
+                </span>
+              </div>
+
+              {/* MULTIPLE HOMEWORK TASKS LIST */}
+              {!hasNoHomework && (
+                <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-black text-xs text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center">
+                      <BookOpen className="w-4 h-4 mr-1 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={handleAddHomeworkItem}
+                      className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Bài Tập
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-                        🌟 Điểm mạnh riêng hôm nay:
-                      </label>
+                  {homeworkItems.map((item, idx) => (
+                    <div key={item.id || idx} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 space-y-2 relative">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs text-amber-900 dark:text-amber-300">
+                          Bài tập #{idx + 1}
+                        </span>
+                        {homeworkItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveHomeworkItem(idx)}
+                            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                            title="Xóa bài tập này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Tiêu đề bài tập (Ví dụ: Bài 1: Thu âm Speaking Part 2)"
+                        value={item.title}
+                        onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-bold"
+                        required
+                      />
+
                       <textarea
-                        rows={2}
-                        placeholder="Ví dụ: Phát âm ending sound rất tốt, tự tin trả lời..."
-                        value={fb.strengths || ''}
-                        onChange={(e) => handleUpdateStudentFeedback(std.id, 'strengths', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-emerald-200 text-xs bg-emerald-50/30"
+                        rows={3}
+                        placeholder="Nội dung/hướng dẫn chi tiết cho bài tập này..."
+                        value={item.content || ''}
+                        onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y"
+                      />
+
+                      <input
+                        type="url"
+                        placeholder="Link file đính kèm/đề bài (nếu có: https://...)"
+                        value={item.attachmentUrl || ''}
+                        onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
                       />
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-rose-800 dark:text-rose-300 mb-1">
-                        🎯 Điểm cần cải thiện:
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Ví dụ: Chú ý thì quá khứ đơn khi viết essay..."
-                        value={fb.improvements || ''}
-                        onChange={(e) => handleUpdateStudentFeedback(std.id, 'improvements', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-rose-200 text-xs bg-rose-50/30"
-                      />
-                    </div>
+              {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
+              <div className="p-4 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 space-y-4">
+                <h4 className="font-black text-xs text-pink-900 dark:text-pink-300 uppercase tracking-wider">
+                  💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp ({classStudents.length} em)
+                </h4>
 
-                    {/* Link tài liệu riêng trong buổi học cho học viên này */}
-                    <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
-                      <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
-                        <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {std.name}:
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
-                          value={fb.materialTitle || ''}
-                          onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialTitle', e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs bg-sky-50/20 font-bold text-slate-800 dark:text-white"
-                        />
-                        <input
-                          type="url"
-                          placeholder="Link dẫn đến (https://drive.google.com/...)"
-                          value={fb.materialUrl || ''}
-                          onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialUrl', e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs font-mono text-slate-800 dark:text-white"
-                        />
+                {classStudents.map((std) => {
+                  const fb = studentFeedbacks[std.id] || {};
+
+                  return (
+                    <div key={std.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 space-y-3">
+                      <div className="flex items-center space-x-2 border-b border-pink-100 pb-2">
+                        <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
+                        <span className="font-black text-xs text-slate-900 dark:text-white">
+                          Học viên: {std.name}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+                            🌟 Điểm mạnh riêng hôm nay:
+                          </label>
+                          <textarea
+                            rows={4}
+                            placeholder="Ví dụ: Phát âm ending sound rất tốt, tự tin trả lời..."
+                            value={fb.strengths || ''}
+                            onChange={(e) => handleUpdateStudentFeedback(std.id, 'strengths', e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-emerald-200 text-xs bg-emerald-50/30 whitespace-pre-wrap leading-relaxed resize-y"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-rose-800 dark:text-rose-300 mb-1">
+                            🎯 Điểm cần cải thiện:
+                          </label>
+                          <textarea
+                            rows={4}
+                            placeholder="Ví dụ: Chú ý thì quá khứ đơn khi viết essay..."
+                            value={fb.improvements || ''}
+                            onChange={(e) => handleUpdateStudentFeedback(std.id, 'improvements', e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-rose-200 text-xs bg-rose-50/30 whitespace-pre-wrap leading-relaxed resize-y"
+                          />
+                        </div>
+
+                        {/* Link tài liệu riêng trong buổi học cho học viên này */}
+                        <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
+                          <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
+                            <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {std.name}:
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
+                              value={fb.materialTitle || ''}
+                              onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialTitle', e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs bg-sky-50/20 font-bold text-slate-800 dark:text-white"
+                            />
+                            <input
+                              type="url"
+                              placeholder="Link dẫn đến (https://drive.google.com/...)"
+                              value={fb.materialUrl || ''}
+                              onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialUrl', e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs font-mono text-slate-800 dark:text-white"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           <div className="pt-2">
             <button
