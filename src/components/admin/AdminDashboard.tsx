@@ -80,7 +80,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
+  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
 
   // Expanded Teacher in Teachers Management Tab
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);

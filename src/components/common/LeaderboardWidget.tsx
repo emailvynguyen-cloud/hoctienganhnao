@@ -208,6 +208,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       {/* LEADERBOARD LIST - RANKED STUDENTS */}
       <div className="space-y-3.5">
         {rankedStudents.map((item, index) => {
+          if (!item || !item.student) return null;
           const isTop1 = index === 0;
           const isTop2 = index === 1;
           const isTop3 = index === 2;

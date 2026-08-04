@@ -328,14 +328,16 @@ export default function App() {
       {/* HEADER BAR */}
       <Header
         currentUser={currentUser}
+        currentRole={activeRoleView}
         activePublicHash={activePublicHash}
-        students={students}
-        sessions={sessions}
-        homeworkSubmissions={homeworkSubmissions}
         onOpenLogin={() => setIsLoginOpen(true)}
         onLogout={handleLogout}
         onOpenAccountManagement={() => setIsAccountManagementOpen(true)}
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+        onOpenGeminiSettings={() => setIsGeminiSettingsOpen(true)}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        onResetData={loadData}
         canNavigateBack={canNavigateBack}
         onNavigateBack={() => {
           if (subViewBackHandler) subViewBackHandler();
