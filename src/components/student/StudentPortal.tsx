@@ -72,11 +72,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     setExpandedComments((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const renderExpandableText = (key: string, label: string, text: string, icon: string, textColor: string) => {
+  const renderExpandableText = (key: string, label: string, text: string = '', icon: string, textColor: string) => {
+    const safeText = typeof text === 'string' ? text : String(text || '');
+    if (!safeText.trim()) return null;
+
     const maxLength = 110;
-    const isLong = text.length > maxLength || text.includes('\n');
+    const isLong = safeText.length > maxLength || safeText.includes('\n');
     const isExpanded = !!expandedComments[key];
-    const displayText = isLong && !isExpanded ? text.slice(0, maxLength) + '...' : text;
+    const displayText = isLong && !isExpanded ? safeText.slice(0, maxLength) + '...' : safeText;
 
     return (
       <div className="space-y-1.5">
@@ -340,32 +343,32 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             {/* 2-Column Parallel Grid Layout on Desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              {session.studentFeedbacks[currentStudent.id].strengths ? (
+              {session.studentFeedbacks[currentStudent.id]?.strengths ? (
                 <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-emerald-200/90 shadow-2xs">
                   {renderExpandableText(
                     `fb_str_${session.id}_${currentStudent.id}`,
                     'Điểm mạnh',
-                    session.studentFeedbacks[currentStudent.id].strengths!,
+                    session.studentFeedbacks[currentStudent.id]?.strengths || '',
                     '💪',
                     'text-emerald-800 dark:text-emerald-300'
                   )}
                 </div>
               ) : <div className="hidden md:block"></div>}
 
-              {session.studentFeedbacks[currentStudent.id].improvements && (
+              {session.studentFeedbacks[currentStudent.id]?.improvements ? (
                 <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-amber-200/90 shadow-2xs">
                   {renderExpandableText(
                     `fb_imp_${session.id}_${currentStudent.id}`,
                     'Cần phát huy',
-                    session.studentFeedbacks[currentStudent.id].improvements!,
+                    session.studentFeedbacks[currentStudent.id]?.improvements || '',
                     '🎯',
                     'text-amber-800 dark:text-amber-300'
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {session.studentFeedbacks[currentStudent.id].materialUrl && (
+            {session.studentFeedbacks[currentStudent.id]?.materialUrl && (
               <div className="pt-2 border-t border-pink-200/60">
                 <a
                   href={session.studentFeedbacks[currentStudent.id].materialUrl}
