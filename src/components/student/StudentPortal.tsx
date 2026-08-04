@@ -111,10 +111,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
 
-  // Student's sessions sorted chronologically descending (newest first)
+  // Student's sessions sorted chronologically descending (newest date first, fallback to sessionNumber)
   const studentSessions = (sessions || [])
-    .filter((s) => s && s.classId === primaryClass?.id)
-    .sort((a, b) => b.sessionNumber - a.sessionNumber);
+    .filter((s) => s && primaryClass?.id && s.classId === primaryClass.id)
+    .sort((a, b) => {
+      if (!a || !b) return 0;
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA && dateB && dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      const numA = Number(a.sessionNumber) || 0;
+      const numB = Number(b.sessionNumber) || 0;
+      return numB - numA;
+    });
 
   // Split sessions: 2 Most Recent Sessions vs Older Sessions
   const recent2Sessions = studentSessions.slice(0, 2);
