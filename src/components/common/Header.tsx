@@ -72,6 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // Load Notifications and auto-refresh periodically
   const refreshNotifs = () => {
