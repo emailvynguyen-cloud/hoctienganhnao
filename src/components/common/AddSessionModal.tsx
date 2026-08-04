@@ -376,6 +376,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               </div>
             ))}
           </div>
+          )}
 
           {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
           <div className="p-4 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 space-y-4">
