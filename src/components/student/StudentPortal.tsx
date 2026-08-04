@@ -5,6 +5,7 @@ import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
 import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
+import { formatSessionDate } from '../../lib/dateUtils';
 import {
   Calendar,
   CheckCircle2,
@@ -196,7 +197,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 )}
               </div>
               <span className="text-xs sm:text-sm font-black text-pink-700 dark:text-pink-300">
-                🗓️ Ngày học: {session.date}
+                🗓️ Ngày học: {formatSessionDate(session.date)}
               </span>
             </div>
           </div>

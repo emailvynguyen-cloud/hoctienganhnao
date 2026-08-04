@@ -28,6 +28,7 @@ import {
   Box,
 } from 'lucide-react';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { formatSessionDate } from '../../lib/dateUtils';
 
 interface ClassDetailsViewProps {
   selectedClass: Class;
@@ -452,7 +453,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                         Buổi Học Số {session.sessionNumber}
                       </h4>
                       <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                        Ngày học: {session.date} • GV: {session.teacherName || selectedClass.teacherName}
+                        Ngày học: {formatSessionDate(session.date)} • GV: {session.teacherName || selectedClass.teacherName}
                       </span>
                     </div>
                   </div>

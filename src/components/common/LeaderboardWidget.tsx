@@ -3,6 +3,7 @@ import { Student, Session, HomeworkSubmission } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen, Award } from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { getCurrentWeekRange, getCurrentMonthString } from '../../lib/dateUtils';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -42,45 +43,66 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   const allSessions = StorageEngine.getSessions() || sessions || [];
   const allSubmissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
 
-  const now = new Date();
-  const currentYearMonth = now.toISOString().slice(0, 7); // e.g. "2026-07"
+  const { mondayStr, sundayStr } = getCurrentWeekRange();
+  const currentMonthStr = getCurrentMonthString();
 
-  // RANKING COMPUTATION WITH STRICT 3-TIER TIE-BREAKER
+  // RANKING COMPUTATION WITH STRICT REAL-TIME TIME RANGE & FEEDBACKED HOMEWORK ONLY
   const rankedStudents = activeStudents.map((student) => {
-    // Student's classes sessions
-    const studentSessions = allSessions.filter((s) =>
-      s && student.classIds && student.classIds.includes(s.classId)
+    // 1. Get student's sessions strictly occurring in the current week or current month (real time)
+    const targetSessions = allSessions.filter((s) => {
+      if (!s || !s.date || !student.classIds || !student.classIds.includes(s.classId)) {
+        return false;
+      }
+      if (timeFilter === 'month') {
+        return s.date.startsWith(currentMonthStr);
+      } else {
+        // week filter: strictly within current week (Monday to Sunday)
+        return s.date >= mondayStr && s.date <= sundayStr;
+      }
+    });
+
+    // 2. Homework items in target sessions
+    const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
+
+    // 3. Submissions for this student in target sessions THAT HAVE BEEN FEEDBACK-ED BY TEACHER/ADMIN
+    const targetSessionIds = new Set(targetSessions.map((s) => s.id));
+    const feedbackedSubmissions = allSubmissions.filter((sub) =>
+      sub &&
+      sub.studentId === student.id &&
+      sub.sessionId &&
+      targetSessionIds.has(sub.sessionId) &&
+      (
+        sub.isTeacherFeedbackChecked ||
+        sub.feedbackStatus === 'COMPLETED' ||
+        (typeof sub.ratingStars === 'number' && sub.ratingStars > 0) ||
+        (sub.feedbackText && sub.feedbackText.trim() !== '')
+      )
     );
 
-    let targetSessions = studentSessions;
-    if (timeFilter === 'month') {
-      const monthlySess = studentSessions.filter((s) => s.date && s.date.startsWith(currentYearMonth));
-      if (monthlySess.length > 0) targetSessions = monthlySess;
-    } else {
-      // Weekly filter: recent sessions or last 7 days
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-      const weeklySess = studentSessions.filter((s) => s.date && s.date >= sevenDaysAgo);
-      if (weeklySess.length > 0) targetSessions = weeklySess;
-    }
+    // Filter target hw items that have teacher feedback
+    const feedbackedHwItems = targetHwItems.filter((hw) =>
+      feedbackedSubmissions.some((sub) => sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title)
+    );
 
-    // Homework items in these target sessions
-    const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
-    const totalAssignedCount = targetHwItems.length;
+    // Total feedbacked homework count (or total feedbacked submissions)
+    const totalFeedbackedCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.length : feedbackedSubmissions.length;
 
-    // Completed homework count
+    // Completed & feedbacked count
     const completedHomeworkIds = student.completedHomeworkTaskIds || [];
-    const completedCount = totalAssignedCount > 0
-      ? targetHwItems.filter((item) => completedHomeworkIds.includes(item.id)).length
-      : completedHomeworkIds.length;
+    const completedCount = feedbackedHwItems.length > 0
+      ? feedbackedHwItems.filter((hw) =>
+          completedHomeworkIds.includes(hw.id) ||
+          feedbackedSubmissions.some((sub) => (sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title) && (sub.isStudentChecked || sub.completionStatus === 'COMPLETED'))
+        ).length
+      : feedbackedSubmissions.filter((sub) => sub.isStudentChecked || sub.completionStatus === 'COMPLETED').length;
 
-    // Completion Rate %
-    const completionRate = totalAssignedCount > 0
-      ? Math.min(100, Math.round((completedCount / totalAssignedCount) * 100))
-      : (completedCount > 0 ? 100 : 0);
+    // Completion rate % based strictly on feedbacked homework in the period
+    const completionRate = totalFeedbackedCount > 0
+      ? Math.min(100, Math.round((completedCount / totalFeedbackedCount) * 100))
+      : 0;
 
-    // Feedback Average Stars Calculation
-    const studentSubs = allSubmissions.filter((sub) => sub && sub.studentId === student.id);
-    const ratedSubs = studentSubs.filter((sub) => sub.ratingStars && sub.ratingStars > 0);
+    // Average feedback stars from feedbacked submissions in this period
+    const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
     const averageStars = ratedSubs.length > 0
       ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1))
       : 5.0;
@@ -89,7 +111,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       student,
       completionRate,
       completedCount,
-      totalAssignedCount,
+      totalAssignedCount: totalFeedbackedCount,
       averageStars,
     };
   }).sort((a, b) => {
