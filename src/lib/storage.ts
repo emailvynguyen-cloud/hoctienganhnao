@@ -284,6 +284,17 @@ export const StorageEngine = {
       this.saveStudents(updated);
     }
   },
+  updateStudentAvatar(studentId: string, newAvatar: string) {
+    const students = this.getStudents() || [];
+    const idx = students.findIndex((s) => s && s.id === studentId);
+    if (idx !== -1) {
+      const updated = [...students];
+      updated[idx] = { ...updated[idx], avatar: newAvatar };
+      this.saveStudents(updated);
+      return true;
+    }
+    return false;
+  },
 
   getClasses(): Class[] {
     return getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
@@ -760,6 +771,7 @@ export const StorageEngine = {
     sessionMaterials?: ResourceLink[];
     attendanceList: AttendanceRecord[];
     isChargedAbsenceSession?: boolean;
+    hasNoHomework?: boolean;
   }): Session {
     const sessions = this.getSessions() || [];
     const classes = this.getClasses() || [];
@@ -779,12 +791,13 @@ export const StorageEngine = {
       teacherName: sessionData.teacherName || targetClass?.teacherName,
       attendance: sessionData.attendanceList || [],
       lessonContent: sessionData.lessonContent,
-      homeworkItems: sessionData.homeworkItems || [],
+      homeworkItems: sessionData.hasNoHomework ? [] : (sessionData.homeworkItems || []),
       studentFeedbacks: sessionData.studentFeedbacks || {},
       recordLink: sessionData.recordLink,
       quizletUrl: sessionData.quizletUrl,
       sessionMaterials: sessionData.sessionMaterials || [],
       isChargedAbsenceSession: sessionData.isChargedAbsenceSession || false,
+      hasNoHomework: sessionData.hasNoHomework || false,
       createdAt: new Date().toISOString(),
     };
 

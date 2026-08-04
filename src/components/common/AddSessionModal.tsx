@@ -31,6 +31,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [recordLink, setRecordLink] = useState<string>(editingSession?.recordLink || '');
   const [quizletUrl, setQuizletUrl] = useState<string>(editingSession?.quizletUrl || '');
   const [isChargedAbsenceSession, setIsChargedAbsenceSession] = useState<boolean>(editingSession?.isChargedAbsenceSession || false);
+  const [hasNoHomework, setHasNoHomework] = useState<boolean>(editingSession?.hasNoHomework || false);
 
   useEffect(() => {
     if (editingSession) {
@@ -40,6 +41,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       setRecordLink(editingSession.recordLink || '');
       setQuizletUrl(editingSession.quizletUrl || '');
       setIsChargedAbsenceSession(editingSession.isChargedAbsenceSession || false);
+      setHasNoHomework(editingSession.hasNoHomework || false);
       setHomeworkItems(editingSession.homeworkItems || [
         { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
       ]);
@@ -141,13 +143,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         classId: selectedClassId,
         date,
         lessonContent,
-        homeworkItems,
+        homeworkItems: hasNoHomework ? [] : homeworkItems,
         studentFeedbacks,
         recordLink,
         quizletUrl,
         sessionMaterials: materials,
         attendance: attendanceList,
         isChargedAbsenceSession,
+        hasNoHomework,
       });
       alert(`Đã cập nhật chỉnh sửa Buổi học #${editingSession.sessionNumber} thành công!`);
     } else {
@@ -158,13 +161,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         teacherName: currentClass?.teacherName || 'Giáo viên',
         date,
         lessonContent,
-        homeworkItems,
+        homeworkItems: hasNoHomework ? [] : homeworkItems,
         studentFeedbacks,
         recordLink,
         quizletUrl,
         sessionMaterials: materials,
         attendanceList,
         isChargedAbsenceSession,
+        hasNoHomework,
       });
       alert('Đã tạo buổi học mới thành công!');
     }
@@ -295,8 +299,25 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             </div>
           </div>
 
+          {/* NO HOMEWORK CHECKBOX */}
+          <div className="p-3.5 rounded-2xl bg-pink-50/80 dark:bg-slate-800 border border-pink-200 flex items-center justify-between">
+            <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-black text-pink-950 dark:text-pink-200">
+              <input
+                type="checkbox"
+                checked={hasNoHomework}
+                onChange={(e) => setHasNoHomework(e.target.checked)}
+                className="w-4 h-4 rounded text-pink-600 focus:ring-pink-400 cursor-pointer"
+              />
+              <span>🚫 Buổi học này KHÔNG CÓ BÀI TẬP VỀ NHÀ</span>
+            </label>
+            <span className="text-[10px] text-pink-700 font-medium">
+              (Tích chọn nếu buổi học này không giao bài tập)
+            </span>
+          </div>
+
           {/* MULTIPLE HOMEWORK TASKS LIST */}
-          <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
+          {!hasNoHomework && (
+            <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-black text-xs text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center">
                 <BookOpen className="w-4 h-4 mr-1 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)

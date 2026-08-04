@@ -115,18 +115,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
       });
     }
 
-    // 3. Quizlet Vocabulary link
-    if (s.quizletUrl) {
-      list.push({
-        id: `quizlet_${s.id}`,
-        title: '🎴 Thẻ từ vựng Quizlet',
-        url: s.quizletUrl,
-        sessionNum: s.sessionNumber,
-        date: s.date,
-      });
-    }
-
-    // 4. Record Video link
+    // 3. Record Video link
     if (s.recordLink) {
       list.push({
         id: `record_${s.id}`,

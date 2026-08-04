@@ -132,18 +132,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       });
     }
 
-    // 3. Quizlet Vocabulary link
-    if (s.quizletUrl) {
-      list.push({
-        id: `quizlet_${s.id}`,
-        title: '🎴 Thẻ từ vựng Quizlet',
-        url: s.quizletUrl,
-        sessionNum: s.sessionNumber,
-        date: s.date,
-      });
-    }
-
-    // 4. Record Video link
+    // 3. Record Video link
     if (s.recordLink) {
       list.push({
         id: `record_${s.id}`,
@@ -332,160 +321,166 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         )}
 
-        {/* REDESIGNED HOMEWORK ITEMS LIST (2 INDEPENDENT STATES: COMPLETION STATUS & FEEDBACK STATUS) */}
-        <div className="space-y-3">
-          <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
-            📝 Danh Sách Bài Tập Về Nhà Nền Nổi ({itemsList.length} bài):
-          </span>
+        {/* REDESIGNED HOMEWORK ITEMS LIST */}
+        {session.hasNoHomework ? (
+          <div className="p-4 rounded-2xl bg-pink-50/80 dark:bg-slate-800/80 border border-pink-200 text-xs font-black text-pink-950 dark:text-pink-200 text-center flex items-center justify-center space-x-2 shadow-2xs">
+            <span>✨ Buổi học này không có bài tập về nhà</span>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
+                📝 Danh Sách Bài Tập Về Nhà Nền Nổi ({itemsList.length} bài):
+              </span>
 
-          {itemsList.length > 0 ? (
-            itemsList.map((hwItem) => {
-              const isChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id);
-              const subObj = homeworkSubmissions.find(
-                (sub) => sub.studentId === currentStudent.id && sub.homeworkTaskId === hwItem.id
-              );
-              const isFeedbackDone = subObj?.feedbackStatus === 'COMPLETED' || subObj?.isTeacherFeedbackChecked;
+              {itemsList.length > 0 ? (
+                itemsList.map((hwItem) => {
+                  const isChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id);
+                  const subObj = homeworkSubmissions.find(
+                    (sub) => sub.studentId === currentStudent.id && sub.homeworkTaskId === hwItem.id
+                  );
+                  const isFeedbackDone = subObj?.feedbackStatus === 'COMPLETED' || subObj?.isTeacherFeedbackChecked;
 
-              return (
-                <div
-                  key={hwItem.id}
-                  className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${
-                    isChecked
-                      ? 'bg-emerald-50/70 dark:bg-slate-800/90 border-emerald-300'
-                      : 'bg-white/90 dark:bg-slate-800/90 border-pink-100'
-                  }`}
-                >
-                  {/* Left: Homework details */}
-                  <div className="flex items-start space-x-3">
-                    <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0 mt-0.5">
-                      📚
-                    </div>
-                    <div className="space-y-0.5">
-                      <h5 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                        {hwItem.title}
-                      </h5>
-                      {hwItem.content && (
-                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{hwItem.content}</p>
-                      )}
-                      {hwItem.deadline && (
-                        <span className="text-[10px] text-amber-700 font-bold block">
-                          ⏰ Hạn nộp: {hwItem.deadline}
-                        </span>
-                      )}
-                      {hwItem.attachmentUrl && (
-                        <div className="pt-1">
-                          <a
-                            href={hwItem.attachmentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-2.5 py-1 rounded-lg bg-pink-100 text-pink-900 text-[11px] font-bold hover:bg-pink-200 transition inline-flex items-center"
-                          >
-                            🔗 Xem Link Bài Tập Đính Kèm
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right: 2 Independent States (Completion & Feedback) */}
-                  <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-pink-100">
-                    
-                    {/* STATE 1: COMPLETION STATUS BUTTON (INTERACTIVE FOR STUDENT) */}
-                    <button
-                      onClick={() => handleToggleTaskCheck(session, hwItem.id, hwItem.title)}
-                      className={`px-3.5 py-1.5 rounded-2xl font-black text-xs transition shadow-2xs flex items-center space-x-1 ${
+                  return (
+                    <div
+                      key={hwItem.id}
+                      className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${
                         isChecked
-                          ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 hover:bg-emerald-200'
-                          : 'bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200'
+                          ? 'bg-emerald-50/70 dark:bg-slate-800/90 border-emerald-300'
+                          : 'bg-white/90 dark:bg-slate-800/90 border-pink-100'
                       }`}
                     >
-                      {isChecked ? (
-                        <>
-                          <span>🟢 ĐÃ HOÀN THÀNH</span>
-                          <CheckCircle2 className="w-3.5 h-3.5 ml-1 text-emerald-700" />
-                        </>
-                      ) : (
-                        <>
-                          <span>🔴 CHƯA HOÀN THÀNH</span>
-                        </>
-                      )}
-                    </button>
+                      {/* Left: Homework details */}
+                      <div className="flex items-start space-x-3">
+                        <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0 mt-0.5">
+                          📚
+                        </div>
+                        <div className="space-y-0.5">
+                          <h5 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                            {hwItem.title}
+                          </h5>
+                          {hwItem.content && (
+                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{hwItem.content}</p>
+                          )}
+                          {hwItem.deadline && (
+                            <span className="text-[10px] text-amber-700 font-bold block">
+                              ⏰ Hạn nộp: {hwItem.deadline}
+                            </span>
+                          )}
+                          {hwItem.attachmentUrl && (
+                            <div className="pt-1">
+                              <a
+                                href={hwItem.attachmentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2.5 py-1 rounded-lg bg-pink-100 text-pink-900 text-[11px] font-bold hover:bg-pink-200 transition inline-flex items-center"
+                              >
+                                🔗 Xem Link Bài Tập Đính Kèm
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                    {/* STATE 2: FEEDBACK STATUS BADGE (INDEPENDENT INDICATOR) */}
-                    {isChecked && (
-                      isFeedbackDone ? (
-                        <span className="px-3 py-1 rounded-2xl text-xs font-black bg-sky-100 text-sky-950 border border-sky-300 flex items-center">
-                          🔵 ĐÃ FEEDBACK ✓
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 rounded-2xl text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 flex items-center animate-pulse">
-                          🟡 CHỜ FEEDBACK
-                        </span>
-                      )
-                    )}
+                      {/* Right: 2 Independent States (Completion & Feedback) */}
+                      <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-pink-100">
+                        
+                        {/* STATE 1: COMPLETION STATUS BUTTON */}
+                        <button
+                          onClick={() => handleToggleTaskCheck(session, hwItem.id, hwItem.title)}
+                          className={`px-3.5 py-1.5 rounded-2xl font-black text-xs transition shadow-2xs flex items-center space-x-1 ${
+                            isChecked
+                              ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 hover:bg-emerald-200'
+                              : 'bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200'
+                          }`}
+                        >
+                          {isChecked ? (
+                            <>
+                              <span>🟢 ĐÃ HOÀN THÀNH</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 ml-1 text-emerald-700" />
+                            </>
+                          ) : (
+                            <>
+                              <span>🔴 CHƯA HOÀN THÀNH</span>
+                            </>
+                          )}
+                        </button>
 
-                    {/* VIEW FEEDBACK BUTTON IF TEACHER HAS SUBMITTED FEEDBACK */}
-                    {isFeedbackDone && subObj && (
-                      <button
-                        onClick={() => setViewingFeedbackSub(subObj)}
-                        className="px-3 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 mr-1 text-sky-700" />
-                        XEM FEEDBACK →
-                      </button>
-                    )}
+                        {/* STATE 2: FEEDBACK STATUS BADGE */}
+                        {isChecked && (
+                          isFeedbackDone ? (
+                            <span className="px-3 py-1 rounded-2xl text-xs font-black bg-sky-100 text-sky-950 border border-sky-300 flex items-center">
+                              🔵 ĐÃ FEEDBACK ✓
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 rounded-2xl text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 flex items-center animate-pulse">
+                              🟡 CHỜ FEEDBACK
+                            </span>
+                          )
+                        )}
 
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-xs text-slate-400 italic">Không có bài tập đính kèm cho buổi này.</p>
-          )}
-        </div>
+                        {/* VIEW FEEDBACK BUTTON */}
+                        {isFeedbackDone && subObj && (
+                          <button
+                            onClick={() => setViewingFeedbackSub(subObj)}
+                            className="px-3 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 mr-1 text-sky-700" />
+                            XEM FEEDBACK →
+                          </button>
+                        )}
 
-        {/* MOTIVATING MINI PROGRESS BAR STRIP FOR THIS SESSION */}
-        <div className="pt-3 border-t border-pink-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-2 flex-1 max-w-md">
-            <span className="text-pink-950 dark:text-pink-200 font-black flex items-center shrink-0">
-              <BarChart2 className="w-4 h-4 mr-1 text-pink-500 animate-pulse" /> Tiến độ bài tập buổi #{session.sessionNumber}:
-            </span>
-
-            {/* CUTE MOTIVATING MINI PROGRESS BAR CONTAINER */}
-            <div className="flex-1 bg-pink-100 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-pink-200 shadow-inner">
-              <div
-                className={`h-full rounded-full transition-all duration-700 shadow-xs ${
-                  sessionPercent === 100
-                    ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-400'
-                    : sessionPercent > 0
-                    ? 'bg-gradient-to-r from-amber-300 via-pink-300 to-rose-300'
-                    : 'bg-rose-300'
-                }`}
-                style={{ width: `${sessionPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* MOTIVATIONAL BADGE PILL */}
-          <div className="shrink-0">
-            <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs flex items-center space-x-1.5 ${
-              sessionPercent === 100
-                ? 'bg-emerald-100 text-emerald-950 border border-emerald-300'
-                : sessionPercent > 0
-                ? 'bg-amber-100 text-amber-950 border border-amber-300'
-                : 'bg-rose-100 text-rose-950 border border-rose-300'
-            }`}>
-              <span>Đã làm <strong>{completedItems} / {totalItems}</strong> bài ({sessionPercent}%)</span>
-              {sessionPercent === 100 ? (
-                <span className="text-emerald-700 font-black">🎉 Hoàn Thành 100%!</span>
-              ) : sessionPercent > 0 ? (
-                <span className="text-amber-700 font-black">💪 Cố Lên Em Nhé!</span>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
-                <span className="text-rose-700 font-black">⚡ Tick Bài Ngay!</span>
+                <p className="text-xs text-slate-400 italic">Không có bài tập đính kèm cho buổi này.</p>
               )}
-            </span>
-          </div>
-        </div>
+            </div>
+
+            {/* MOTIVATING MINI PROGRESS BAR STRIP FOR THIS SESSION */}
+            <div className="pt-3 border-t border-pink-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center space-x-2 flex-1 max-w-md">
+                <span className="text-pink-950 dark:text-pink-200 font-black flex items-center shrink-0">
+                  <BarChart2 className="w-4 h-4 mr-1 text-pink-500 animate-pulse" /> Tiến độ bài tập buổi #{session.sessionNumber}:
+                </span>
+
+                <div className="flex-1 bg-pink-100 dark:bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-pink-200 shadow-inner">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 shadow-xs ${
+                      sessionPercent === 100
+                        ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-400'
+                        : sessionPercent > 0
+                        ? 'bg-gradient-to-r from-amber-300 via-pink-300 to-rose-300'
+                        : 'bg-rose-300'
+                    }`}
+                    style={{ width: `${sessionPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="shrink-0">
+                <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs flex items-center space-x-1.5 ${
+                  sessionPercent === 100
+                    ? 'bg-emerald-100 text-emerald-950 border border-emerald-300'
+                    : sessionPercent > 0
+                    ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                    : 'bg-rose-100 text-rose-950 border border-rose-300'
+                }`}>
+                  <span>Đã làm <strong>{completedItems} / {totalItems}</strong> bài ({sessionPercent}%)</span>
+                  {sessionPercent === 100 ? (
+                    <span className="text-emerald-700 font-black">🎉 Hoàn Thành 100%!</span>
+                  ) : sessionPercent > 0 ? (
+                    <span className="text-amber-700 font-black">💪 Cố Lên Em Nhé!</span>
+                  ) : (
+                    <span className="text-rose-700 font-black">⚡ Tick Bài Ngay!</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     );
