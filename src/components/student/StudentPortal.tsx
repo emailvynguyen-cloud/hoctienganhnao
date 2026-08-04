@@ -65,8 +65,36 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
-  const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+
+  const toggleExpandComment = (key: string) => {
+    setExpandedComments((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderExpandableText = (key: string, label: string, text: string, icon: string, textColor: string) => {
+    const maxLength = 110;
+    const isLong = text.length > maxLength || text.includes('\n');
+    const isExpanded = !!expandedComments[key];
+    const displayText = isLong && !isExpanded ? text.slice(0, maxLength) + '...' : text;
+
+    return (
+      <div className="space-y-1.5">
+        <p className={`${textColor} font-semibold whitespace-pre-wrap leading-relaxed`}>
+          {icon} <strong>{label}:</strong> {displayText}
+        </p>
+        {isLong && (
+          <button
+            type="button"
+            onClick={() => toggleExpandComment(key)}
+            className="text-[11px] font-black text-pink-600 dark:text-pink-400 hover:underline inline-flex items-center cursor-pointer pt-0.5"
+          >
+            {isExpanded ? '▲ Thu gọn' : '▼ Đọc thêm'}
+          </button>
+        )}
+      </div>
+    );
+  };
 
   if (!currentStudent) {
     return (
@@ -305,27 +333,45 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
         {/* Teacher Comment for THIS specific student in THIS session */}
         {session.studentFeedbacks?.[currentStudent.id] && (
-          <div className="p-4 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1.5 backdrop-blur-xs">
-            <span className="font-black text-pink-900 dark:text-pink-300 flex items-center">
+          <div className="p-4.5 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-3 backdrop-blur-xs">
+            <span className="font-black text-pink-900 dark:text-pink-300 flex items-center text-xs uppercase tracking-wider">
               💬 Nhận Xét & Tài Liệu Dành Cho Em Hôm Nay
             </span>
-            {session.studentFeedbacks[currentStudent.id].strengths && (
-              <p className="text-emerald-800 dark:text-emerald-300 font-semibold whitespace-pre-wrap leading-relaxed">
-                💪 <strong>Điểm mạnh:</strong> {session.studentFeedbacks[currentStudent.id].strengths}
-              </p>
-            )}
-            {session.studentFeedbacks[currentStudent.id].improvements && (
-              <p className="text-amber-800 dark:text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed">
-                🎯 <strong>Cần phát huy:</strong> {session.studentFeedbacks[currentStudent.id].improvements}
-              </p>
-            )}
+
+            {/* 2-Column Parallel Grid Layout on Desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {session.studentFeedbacks[currentStudent.id].strengths ? (
+                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-emerald-200/90 shadow-2xs">
+                  {renderExpandableText(
+                    `fb_str_${session.id}_${currentStudent.id}`,
+                    'Điểm mạnh',
+                    session.studentFeedbacks[currentStudent.id].strengths!,
+                    '💪',
+                    'text-emerald-800 dark:text-emerald-300'
+                  )}
+                </div>
+              ) : <div className="hidden md:block"></div>}
+
+              {session.studentFeedbacks[currentStudent.id].improvements && (
+                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-amber-200/90 shadow-2xs">
+                  {renderExpandableText(
+                    `fb_imp_${session.id}_${currentStudent.id}`,
+                    'Cần phát huy',
+                    session.studentFeedbacks[currentStudent.id].improvements!,
+                    '🎯',
+                    'text-amber-800 dark:text-amber-300'
+                  )}
+                </div>
+              )}
+            </div>
+
             {session.studentFeedbacks[currentStudent.id].materialUrl && (
-              <div className="pt-1">
+              <div className="pt-2 border-t border-pink-200/60">
                 <a
                   href={session.studentFeedbacks[currentStudent.id].materialUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
+                  className="px-3.5 py-2 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
                 >
                   📎 Link tài liệu đính kèm: {session.studentFeedbacks[currentStudent.id].materialTitle || 'Xem tài liệu ngay'} ↗
                 </a>
@@ -605,6 +651,110 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         studentName={currentStudent.name}
         starsCount={currentStudent.stars}
       />
+
+      {/* 2.5. ABSENCE STATISTICS WIDGET SECTION */}
+      {(() => {
+        const now = new Date();
+        const currYear = now.getFullYear();
+        const currMonthNum = now.getMonth() + 1;
+        const currentMonthStr = `${currYear}-${currMonthNum < 10 ? '0' : ''}${currMonthNum}`;
+        const currentMonthLabel = `${currMonthNum < 10 ? '0' : ''}${currMonthNum}/${currYear}`;
+
+        // Collect all absence records for this student in studentSessions
+        const allAbsences = studentSessions.flatMap((sess) => {
+          // 1. Charged absence session
+          if (sess.isChargedAbsenceSession) {
+            return [{
+              id: `abs_${sess.id}`,
+              sessionNumber: sess.sessionNumber,
+              date: sess.date,
+              type: 'Nghỉ tính phí',
+              reason: 'Nghỉ quá số lần quy định / không vào lớp',
+              badgeColor: 'bg-amber-100 text-amber-950 border-amber-300',
+            }];
+          }
+
+          // 2. Attendance status in attendance array
+          const att = (sess.attendance || []).find((a) => a.studentId === currentStudent.id);
+          if (att && (att.status === 'excused' || att.status === 'unexcused')) {
+            return [{
+              id: `abs_${sess.id}`,
+              sessionNumber: sess.sessionNumber,
+              date: sess.date,
+              type: att.status === 'excused' ? 'Nghỉ có phép' : 'Nghỉ không phép',
+              reason: att.status === 'excused' ? 'Học viên có xin phép trước' : 'Nghỉ không báo trước',
+              badgeColor: att.status === 'excused' ? 'bg-sky-100 text-sky-950 border-sky-300' : 'bg-rose-100 text-rose-950 border-rose-300',
+            }];
+          }
+
+          return [];
+        });
+
+        const monthAbsences = allAbsences.filter((a) => a.date && a.date.startsWith(currentMonthStr));
+
+        return (
+          <div className="bg-gradient-to-r from-amber-50/80 via-orange-50/60 to-amber-50/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-amber-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/80 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 rounded-2xl bg-amber-200 dark:bg-amber-950 text-amber-950 dark:text-amber-200 flex items-center justify-center font-black text-lg border border-amber-300">
+                  📊
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
+                    Thống Kê Buổi Nghỉ Học Tháng {currentMonthLabel}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    Theo dõi tổng số buổi nghỉ và lý do từng buổi nghỉ trong tháng của học viên
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 shrink-0">
+                <span className="px-4 py-2 rounded-2xl bg-amber-200 text-amber-950 font-black text-xs border border-amber-300 shadow-2xs">
+                  Số buổi nghỉ tháng {currentMonthLabel}: <strong>{monthAbsences.length} buổi</strong>
+                </span>
+                <span className="px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-xs border border-amber-200 shadow-2xs">
+                  Tổng số buổi nghỉ: {allAbsences.length} buổi
+                </span>
+              </div>
+            </div>
+
+            {/* Absence Details List */}
+            {allAbsences.length > 0 ? (
+              <div className="space-y-2.5">
+                <span className="text-xs font-black text-amber-950 dark:text-amber-300 uppercase tracking-wider block">
+                  🗓️ Danh Sách Các Buổi Nghỉ Chi Tiết:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {allAbsences.map((abs) => (
+                    <div
+                      key={abs.id}
+                      className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 text-xs flex items-center justify-between gap-2 shadow-2xs"
+                    >
+                      <div className="space-y-0.5 truncate">
+                        <span className="font-black text-slate-900 dark:text-white block">
+                          Buổi #{abs.sessionNumber} • Ngày {formatSessionDate(abs.date)}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium truncate block">
+                          Lý do: {abs.reason}
+                        </span>
+                      </div>
+                      <span className={`px-3 py-1 rounded-xl text-[11px] font-black shrink-0 border ${abs.badgeColor}`}>
+                        {abs.type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-slate-800 border border-emerald-200 text-emerald-950 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
+                <span>🎉 Học viên đi học rất chuyên cần! Chưa nghỉ buổi học nào trong tháng này.</span>
+                <span className="px-3 py-1 rounded-xl bg-emerald-200 text-emerald-950 font-black text-[11px]">Chuyên Cần 100% ⭐</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 3. MOST RECENT SESSION HOMEWORK PROGRESS SUMMARY BAR */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 p-6 shadow-sm space-y-3">

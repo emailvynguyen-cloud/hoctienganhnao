@@ -571,54 +571,6 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   </p>
                 </div>
 
-                {/* PER-STUDENT COMMENTS LIST IN THIS SESSION */}
-                {session.studentFeedbacks && Object.keys(session.studentFeedbacks).length > 0 && (
-                  <div className="space-y-2">
-                    <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
-                      💬 Nhận Xét Chi Tiết Cho Từng Học Viên Trong Buổi:
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {Object.entries(session.studentFeedbacks).map(([stdId, fb]) => {
-                        const stdObj = classStudents.find((s) => s.id === stdId);
-                        if (!fb.strengths && !fb.improvements && !fb.materialUrl) return null;
-
-                        return (
-                          <div key={stdId} className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-1 backdrop-blur-xs">
-                            <div className="flex items-center justify-between border-b border-pink-100 pb-1 font-bold">
-                              <span className="text-pink-950 dark:text-white flex items-center">
-                                👤 {stdObj?.name || 'Học viên'}
-                              </span>
-                            </div>
-
-                            {fb.strengths && (
-                              <p className="text-emerald-800 dark:text-emerald-300 whitespace-pre-wrap leading-relaxed">
-                                🌟 <strong>Điểm mạnh:</strong> {fb.strengths}
-                              </p>
-                            )}
-                            {fb.improvements && (
-                              <p className="text-rose-800 dark:text-rose-300 whitespace-pre-wrap leading-relaxed">
-                                🎯 <strong>Cần cải thiện:</strong> {fb.improvements}
-                              </p>
-                            )}
-                            {fb.materialUrl && (
-                              <div className="pt-1">
-                                <a
-                                  href={fb.materialUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-2.5 py-1 rounded-lg bg-sky-100 text-sky-950 font-extrabold text-[11px] hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
-                                >
-                                  📎 Tài liệu riêng: {fb.materialTitle || 'Xem tài liệu'} ↗
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* HOMEWORK ITEMS LIST */}
                 <div className="space-y-2">
                   <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
