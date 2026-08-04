@@ -66,6 +66,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
 
   const toggleExpandComment = (key: string) => {
@@ -213,7 +214,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // HANDLER: STUDENT TICKS/UNTICKS HOMEWORK COMPLETION
   const handleToggleTaskCheck = (session: Session, hwItemId: string, hwTitle: string) => {
     const isNowChecked = StorageEngine.toggleHomeworkTaskItemCheck(currentStudent.id, session.id, hwItemId, hwTitle);
-    console.log("UPDATE SUCCESS", { studentId: currentStudent.id, homeworkItemId, isNowChecked });
+    console.log("UPDATE SUCCESS", { studentId: currentStudent.id, hwItemId, isNowChecked });
     if (isNowChecked) {
       confetti({
         particleCount: 40,
@@ -223,6 +224,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     }
     onRefreshData();
   };
+
+  // Real-time synchronization for viewingFeedbackSub modal state
+  React.useEffect(() => {
+    if (viewingFeedbackSub) {
+      const updatedSub = homeworkSubmissions.find((s) => s.id === viewingFeedbackSub.id);
+      if (updatedSub) {
+        setViewingFeedbackSub(updatedSub);
+      }
+    }
+  }, [homeworkSubmissions]);
 
   const handleSelectKakaoAvatar = (avatarSvgStr: string) => {
     StorageEngine.updateStudentAvatar(currentStudent.id, avatarSvgStr);
