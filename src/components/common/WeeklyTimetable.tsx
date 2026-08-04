@@ -38,6 +38,84 @@ interface WeeklyTimetableProps {
   onUpdateClassSchedule?: (classId: string, newSchedule: string) => void;
 }
 
+// DETERMINISTIC PASTEL PALETTES FOR CLASSES IN TIMETABLE
+const PASTEL_CLASS_PALETTES = [
+  {
+    bg: 'bg-pink-50/90 dark:bg-pink-950/40',
+    border: 'border-pink-200 dark:border-pink-800',
+    hoverBorder: 'hover:border-pink-400',
+    badgeBg: 'bg-pink-100 dark:bg-pink-900/60 text-pink-900 dark:text-pink-200 border-pink-200',
+    headerText: 'text-pink-950 dark:text-pink-100 group-hover:text-pink-600',
+    timeBg: 'bg-pink-100/80 dark:bg-pink-900/50 text-pink-950 dark:text-pink-200 border-pink-200/80',
+  },
+  {
+    bg: 'bg-sky-50/90 dark:bg-sky-950/40',
+    border: 'border-sky-200 dark:border-sky-800',
+    hoverBorder: 'hover:border-sky-400',
+    badgeBg: 'bg-sky-100 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 border-sky-200',
+    headerText: 'text-sky-950 dark:text-sky-100 group-hover:text-sky-600',
+    timeBg: 'bg-sky-100/80 dark:bg-sky-900/50 text-sky-950 dark:text-sky-200 border-sky-200/80',
+  },
+  {
+    bg: 'bg-emerald-50/90 dark:bg-emerald-950/40',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    hoverBorder: 'hover:border-emerald-400',
+    badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 border-emerald-200',
+    headerText: 'text-emerald-950 dark:text-emerald-100 group-hover:text-emerald-600',
+    timeBg: 'bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-950 dark:text-emerald-200 border-emerald-200/80',
+  },
+  {
+    bg: 'bg-amber-50/90 dark:bg-amber-950/40',
+    border: 'border-amber-200 dark:border-amber-800',
+    hoverBorder: 'hover:border-amber-400',
+    badgeBg: 'bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border-amber-200',
+    headerText: 'text-amber-950 dark:text-amber-100 group-hover:text-amber-600',
+    timeBg: 'bg-amber-100/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-200 border-amber-200/80',
+  },
+  {
+    bg: 'bg-purple-50/90 dark:bg-purple-950/40',
+    border: 'border-purple-200 dark:border-purple-800',
+    hoverBorder: 'hover:border-purple-400',
+    badgeBg: 'bg-purple-100 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 border-purple-200',
+    headerText: 'text-purple-950 dark:text-purple-100 group-hover:text-purple-600',
+    timeBg: 'bg-purple-100/80 dark:bg-purple-900/50 text-purple-950 dark:text-purple-200 border-purple-200/80',
+  },
+  {
+    bg: 'bg-rose-50/90 dark:bg-rose-950/40',
+    border: 'border-rose-200 dark:border-rose-800',
+    hoverBorder: 'hover:border-rose-400',
+    badgeBg: 'bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border-rose-200',
+    headerText: 'text-rose-950 dark:text-rose-100 group-hover:text-rose-600',
+    timeBg: 'bg-rose-100/80 dark:bg-rose-900/50 text-rose-950 dark:text-rose-200 border-rose-200/80',
+  },
+  {
+    bg: 'bg-teal-50/90 dark:bg-teal-950/40',
+    border: 'border-teal-200 dark:border-teal-800',
+    hoverBorder: 'hover:border-teal-400',
+    badgeBg: 'bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-200 border-teal-200',
+    headerText: 'text-teal-950 dark:text-teal-100 group-hover:text-teal-600',
+    timeBg: 'bg-teal-100/80 dark:bg-teal-900/50 text-teal-950 dark:text-teal-200 border-teal-200/80',
+  },
+  {
+    bg: 'bg-indigo-50/90 dark:bg-indigo-950/40',
+    border: 'border-indigo-200 dark:border-indigo-800',
+    hoverBorder: 'hover:border-indigo-400',
+    badgeBg: 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-200 border-indigo-200',
+    headerText: 'text-indigo-950 dark:text-indigo-100 group-hover:text-indigo-600',
+    timeBg: 'bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-950 dark:text-indigo-200 border-indigo-200/80',
+  },
+];
+
+function getClassPastelPalette(cls: Class) {
+  const str = cls.id || cls.className || '';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PASTEL_CLASS_PALETTES.length;
+  return PASTEL_CLASS_PALETTES[index];
+}
+
 // 4 MAJOR SHIFTS (CA DẠY) IN THE WEEKLY TIMETABLE
 const SHIFTS = [
   {
@@ -526,15 +604,16 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                               const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(cls.id));
                               const statusBadges = getClassStatusBadges(cls);
                               const parsedTime = parseScheduleTimeRange(cls.schedule, day.key)?.label || shift.timeLabel;
+                              const palette = getClassPastelPalette(cls);
 
                               return (
                                 <div
                                   key={cls.id}
                                   onClick={() => onSelectClass && onSelectClass(cls)}
-                                  className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-pink-200/90 dark:border-slate-700 shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group"
+                                  className={`p-3.5 rounded-2xl ${palette.bg} ${palette.border} ${palette.hoverBorder} shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-pointer space-y-2 relative group`}
                                 >
                                   <div className="flex items-start justify-between gap-1">
-                                    <h4 className="font-black text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition line-clamp-1 underline decoration-pink-300">
+                                    <h4 className={`font-black text-xs ${palette.headerText} transition line-clamp-1 underline decoration-pink-300/60`}>
                                       {cls.className}
                                     </h4>
 
@@ -552,7 +631,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
                                     </div>
                                   </div>
 
-                                  <div className="text-[11px] font-extrabold text-pink-700 dark:text-pink-300 flex items-center space-x-1 bg-pink-50/80 dark:bg-slate-900/80 p-1.5 rounded-xl border border-pink-100">
+                                  <div className={`text-[11px] font-extrabold flex items-center space-x-1 ${palette.timeBg} p-1.5 rounded-xl`}>
                                     <Clock className="w-3 h-3 text-pink-500 shrink-0" />
                                     <span>{parsedTime}</span>
                                   </div>
