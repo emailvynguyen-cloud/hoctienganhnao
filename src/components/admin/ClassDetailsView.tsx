@@ -75,8 +75,15 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   // Filter students in this class
   const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
 
-  // Filter sessions in this class
-  const classSessions = (sessions || []).filter((s) => s && s.classId === selectedClass.id);
+  // Filter & Sort sessions in this class chronologically descending (newest date first)
+  const classSessions = (sessions || [])
+    .filter((s) => s && s.classId === selectedClass.id)
+    .sort((a, b) => {
+      if (b.date && a.date && b.date !== a.date) {
+        return b.date.localeCompare(a.date);
+      }
+      return b.sessionNumber - a.sessionNumber;
+    });
 
   // Extract all session materials (general session materials + student-specific materials + Quizlet + Record + Homework attachments)
   const allSessionMaterials = classSessions.flatMap((s) => {
@@ -470,6 +477,28 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
         {classSessions.length > 0 ? (
           classSessions.map((session) => {
+            if (session.isChargedAbsenceSession) {
+              return (
+                <div
+                  key={session.id}
+                  className="p-5 rounded-3xl border-2 border-amber-300 bg-amber-50 dark:bg-slate-800 flex items-center justify-between text-xs font-black text-amber-950 dark:text-amber-300 shadow-2xs"
+                >
+                  <span className="truncate mr-2">
+                    ⚠️ Buổi {session.sessionNumber} - Ngày {formatSessionDate(session.date)} - Nghỉ tính phí do vi phạm quy định
+                  </span>
+
+                  {onOpenEditSession && (
+                    <button
+                      onClick={() => onOpenEditSession(session)}
+                      className="px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 border border-amber-400 font-extrabold text-[11px] transition shrink-0"
+                    >
+                      ✏️ Chỉnh Sửa
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
             const itemsList = session.homeworkItems || [];
             const bgStyle = getSessionBgStyle(session.sessionNumber);
 

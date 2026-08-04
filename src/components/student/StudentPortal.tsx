@@ -225,6 +225,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     if (mod === 3) cardBgStyle = 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200';
     if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-sky-50/90 via-blue-50/70 to-sky-50/90 border-sky-200';
 
+    if (session.isChargedAbsenceSession) {
+      return (
+        <div
+          key={session.id}
+          className="rounded-3xl border-2 border-amber-300 bg-amber-50 dark:bg-slate-800 p-5 shadow-xs flex items-center justify-between text-xs sm:text-sm font-black text-amber-950 dark:text-amber-300"
+        >
+          <span>
+            ⚠️ Buổi {session.sessionNumber} - Ngày {formatSessionDate(session.date)} - Nghỉ tính phí do vi phạm quy định
+          </span>
+        </div>
+      );
+    }
+
     const currentTeacherName = session.teacherName || primaryClass?.teacherName || 'Giáo viên';
 
     return (

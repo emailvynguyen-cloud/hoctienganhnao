@@ -261,9 +261,9 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </button>
 
-                {/* Notifications Dropdown (Responsive & Fixed Overflow Layout) */}
+                {/* Notifications Dropdown (Floating Fixed Popup On Top Of Viewport) */}
                 {isNotifDropdownOpen && (
-                  <div className="fixed top-16 right-3 left-3 sm:left-auto sm:right-4 sm:top-auto sm:absolute sm:mt-2 w-auto sm:w-[420px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-2 border-pink-300 dark:border-slate-800 p-4 sm:p-5 space-y-3 z-50 animate-fadeIn text-xs max-h-[85vh] flex flex-col">
+                  <div className="fixed top-16 right-3 sm:right-6 w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border-2 border-pink-300 dark:border-slate-800 p-4 sm:p-5 space-y-3 z-[9999] animate-fadeIn text-xs max-h-[calc(100vh-5rem)] flex flex-col">
                     <div className="flex items-center justify-between border-b border-pink-100 dark:border-slate-800 pb-3 shrink-0">
                       <span className="font-black text-slate-900 dark:text-white flex items-center text-sm">
                         <Bell className="w-4 h-4 mr-2 text-pink-500" /> Thông Báo Bài Tập ({notifications.length})
@@ -273,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({
                       </span>
                     </div>
 
-                    <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 flex-1">
+                    <div className="space-y-2.5 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1 flex-1">
                       {notifications.length > 0 ? (
                         notifications.map((n) => (
                           <div
