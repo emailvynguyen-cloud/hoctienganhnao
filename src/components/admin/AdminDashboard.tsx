@@ -1175,7 +1175,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </button>
 
                       <button
-                        onClick={() => setInspectedStudent(std)}
+                        onClick={() => setInspectedStudentId(std.id)}
                         className="text-xs font-bold text-pink-600 hover:underline"
                       >
                         Xem Học Tập →
