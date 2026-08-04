@@ -101,11 +101,11 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       ? Math.min(100, Math.round((completedCount / totalFeedbackedCount) * 100))
       : 0;
 
-    // Average feedback stars from feedbacked submissions in this period
+    // Average feedback stars from feedbacked submissions in this period (null if no data yet)
     const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
     const averageStars = ratedSubs.length > 0
       ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1))
-      : 5.0;
+      : null;
 
     return {
       student,
@@ -124,7 +124,9 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       return b.completedCount - a.completedCount;
     }
     // TIE-BREAKER 3: Quality of Homework (Average Feedback Stars) (Higher first)
-    return b.averageStars - a.averageStars;
+    const starsA = a.averageStars || 0;
+    const starsB = b.averageStars || 0;
+    return starsB - starsA;
   });
 
   const titlesList = timeFilter === 'week' ? WEEKLY_TITLES : MONTHLY_TITLES;
@@ -333,13 +335,21 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 </div>
 
                 {/* METRIC 3: FEEDBACK QUALITY STARS */}
-                <div className="px-3.5 py-2 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-200 text-center min-w-[95px]">
+                <div className="px-3.5 py-2 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-200 text-center min-w-[100px]">
                   <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-300 block">
                     Chất Lượng
                   </span>
-                  <span className="text-sm font-black text-amber-950 dark:text-white font-mono flex items-center justify-center">
-                    <Star className="w-3.5 h-3.5 mr-1 fill-current text-amber-500" />
-                    {item.averageStars} / 5
+                  <span className="text-sm font-black text-amber-950 dark:text-white font-mono flex items-center justify-center pt-0.5">
+                    {item.averageStars !== null ? (
+                      <>
+                        <Star className="w-3.5 h-3.5 mr-1 fill-current text-amber-500" />
+                        {item.averageStars} / 5
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-bold italic">
+                        Chưa đánh giá
+                      </span>
+                    )}
                   </span>
                 </div>
 

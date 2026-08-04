@@ -27,34 +27,10 @@
   --pastel-cream-100: #FEF9E7;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
 html, body {
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  margin: 0;
-  padding: 0;
-}
-
-#root {
-  width: 100%;
-  max-width: 100vw;
-  min-height: 100vh;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ANTI-OVERFLOW FLEX & GRID RESIZE RESET FIX */
-.flex > *, .grid > * {
-  min-width: 0;
-}
-
-img, video, iframe, canvas, svg {
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {

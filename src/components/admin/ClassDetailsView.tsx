@@ -78,23 +78,33 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   // Filter sessions in this class
   const classSessions = (sessions || []).filter((s) => s && s.classId === selectedClass.id);
 
-  // Extract all session materials (general session materials + student-specific materials in sessions)
+  // Extract all session materials (general session materials + student-specific materials + Quizlet + Record + Homework attachments)
   const allSessionMaterials = classSessions.flatMap((s) => {
-    const generalMaterials = (s.sessionMaterials || []).map((m) => ({
-      ...m,
-      sessionNum: s.sessionNumber,
-      date: s.date,
-    }));
+    const list: { id: string; title: string; url: string; sessionNum: number; date: string }[] = [];
 
-    const studentMaterials: { id: string; title: string; url: string; sessionNum: number; date: string }[] = [];
+    // 1. General session materials
+    if (s.sessionMaterials) {
+      s.sessionMaterials.forEach((m) => {
+        if (m && m.url) {
+          list.push({
+            id: m.id || `mat_${s.id}_${Math.random()}`,
+            title: m.title || 'Tài liệu buổi học',
+            url: m.url,
+            sessionNum: s.sessionNumber,
+            date: s.date,
+          });
+        }
+      });
+    }
 
+    // 2. Student-specific material links
     if (s.studentFeedbacks) {
       Object.entries(s.studentFeedbacks).forEach(([studentId, fb]) => {
         if (fb && fb.materialUrl) {
           const std = classStudents.find((st) => st.id === studentId);
           const stdName = std ? ` - Học viên: ${std.name}` : '';
           const matTitle = fb.materialTitle ? fb.materialTitle : 'Tài liệu riêng học viên';
-          studentMaterials.push({
+          list.push({
             id: `std_mat_${s.id}_${studentId}`,
             title: `${matTitle}${stdName}`,
             url: fb.materialUrl,
@@ -105,7 +115,44 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
       });
     }
 
-    return [...generalMaterials, ...studentMaterials];
+    // 3. Quizlet Vocabulary link
+    if (s.quizletUrl) {
+      list.push({
+        id: `quizlet_${s.id}`,
+        title: '🎴 Thẻ từ vựng Quizlet',
+        url: s.quizletUrl,
+        sessionNum: s.sessionNumber,
+        date: s.date,
+      });
+    }
+
+    // 4. Record Video link
+    if (s.recordLink) {
+      list.push({
+        id: `record_${s.id}`,
+        title: '📹 Video Record buổi học',
+        url: s.recordLink,
+        sessionNum: s.sessionNumber,
+        date: s.date,
+      });
+    }
+
+    // 5. Homework attachments
+    if (s.homeworkItems) {
+      s.homeworkItems.forEach((hw) => {
+        if (hw && hw.attachmentUrl) {
+          list.push({
+            id: `hw_att_${hw.id}`,
+            title: `📝 Link bài tập: ${hw.title}`,
+            url: hw.attachmentUrl,
+            sessionNum: s.sessionNumber,
+            date: s.date,
+          });
+        }
+      });
+    }
+
+    return list;
   });
 
   // Filter materials search query

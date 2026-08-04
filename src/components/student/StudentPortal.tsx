@@ -101,12 +101,76 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     ? Math.min(100, Math.round((latestCompletedCount / latestHomeworkCount) * 100))
     : 100;
 
-  // Extract all session materials
-  const allSessionMaterials = studentSessions.flatMap((s) => (s.sessionMaterials || []).map((m) => ({
-    ...m,
-    sessionNum: s.sessionNumber,
-    date: s.date,
-  })));
+  // Automatically aggregate ALL materials from all sessions of this student's classes in real time
+  const allSessionMaterials = studentSessions.flatMap((s) => {
+    const list: { id: string; title: string; url: string; sessionNum: number; date: string }[] = [];
+
+    // 1. General session materials
+    if (s.sessionMaterials) {
+      s.sessionMaterials.forEach((m) => {
+        if (m && m.url) {
+          list.push({
+            id: m.id || `mat_${s.id}_${Math.random()}`,
+            title: m.title || 'Tài liệu buổi học',
+            url: m.url,
+            sessionNum: s.sessionNumber,
+            date: s.date,
+          });
+        }
+      });
+    }
+
+    // 2. Per-student material link assigned specifically to this student in this session
+    if (s.studentFeedbacks?.[currentStudent.id]?.materialUrl) {
+      const fb = s.studentFeedbacks[currentStudent.id];
+      list.push({
+        id: `std_mat_${s.id}_${currentStudent.id}`,
+        title: fb.materialTitle ? `Tài liệu riêng: ${fb.materialTitle}` : 'Tài liệu đính kèm riêng cho em',
+        url: fb.materialUrl,
+        sessionNum: s.sessionNumber,
+        date: s.date,
+      });
+    }
+
+    // 3. Quizlet Vocabulary link
+    if (s.quizletUrl) {
+      list.push({
+        id: `quizlet_${s.id}`,
+        title: '🎴 Thẻ từ vựng Quizlet',
+        url: s.quizletUrl,
+        sessionNum: s.sessionNumber,
+        date: s.date,
+      });
+    }
+
+    // 4. Record Video link
+    if (s.recordLink) {
+      list.push({
+        id: `record_${s.id}`,
+        title: '📹 Video Record buổi học',
+        url: s.recordLink,
+        sessionNum: s.sessionNumber,
+        date: s.date,
+      });
+    }
+
+    // 5. Homework attachments
+    if (s.homeworkItems) {
+      s.homeworkItems.forEach((hw) => {
+        if (hw && hw.attachmentUrl) {
+          list.push({
+            id: `hw_att_${hw.id}`,
+            title: `📝 Bài tập: ${hw.title}`,
+            url: hw.attachmentUrl,
+            sessionNum: s.sessionNumber,
+            date: s.date,
+          });
+        }
+      });
+    }
+
+    return list;
+  });
 
   const filteredSessionMaterials = allSessionMaterials.filter((mat) =>
     (mat.title || '').toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
