@@ -34,6 +34,8 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [hasNoHomework, setHasNoHomework] = useState<boolean>(editingSession?.hasNoHomework || false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (editingSession) {
       setSelectedClassId(editingSession.classId);
       setDate(editingSession.date);
@@ -61,7 +63,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         setSelectedClassId(classes[0].id);
       }
     }
-  }, [editingSession, initialClassId, defaultClassId, classes]);
+  }, [isOpen, editingSession?.id]);
 
   // Multiple Homework Items List
   const [homeworkItems, setHomeworkItems] = useState<HomeworkTaskItem[]>(

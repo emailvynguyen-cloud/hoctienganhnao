@@ -118,6 +118,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Search Queries
   const [classSearchQuery, setClassSearchQuery] = useState('');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [tuitionSearchQuery, setTuitionSearchQuery] = useState('');
   const [auditLogSearchQuery, setAuditLogSearchQuery] = useState('');
   const [auditLogFilterType, setAuditLogFilterType] = useState('all');
 
@@ -184,6 +185,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setInspectedStudentId(null);
     }
   }, [targetSubmissionId]);
+
+  // AUTO-SCROLL TO SINGLE SEARCH RESULT IN TUITION MANAGEMENT
+  useEffect(() => {
+    if (activeTab === 'invoices' && tuitionSearchQuery.trim() !== '') {
+      const filtered = safeStudents
+        .filter((s) => s && s.status !== 'soft_deleted')
+        .filter((s) => {
+          const q = tuitionSearchQuery.toLowerCase();
+          const cls = safeClasses.find((c) => s.classIds && s.classIds.includes(c.id));
+          const clsName = (cls?.className || '').toLowerCase();
+          const statusText = (s.remainingSessions || 0) <= 0 ? 'hết hạn' : (s.remainingSessions || 0) <= 2 ? 'sắp hết' : 'còn hạn';
+          return (
+            (s.name || '').toLowerCase().includes(q) ||
+            (s.phone || '').toLowerCase().includes(q) ||
+            (s.id || '').toLowerCase().includes(q) ||
+            clsName.includes(q) ||
+            statusText.includes(q)
+          );
+        });
+
+      if (filtered.length === 1) {
+        const el = document.getElementById(`tuition-card-${filtered[0].id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, [tuitionSearchQuery, activeTab, safeStudents, safeClasses]);
 
   // Handle Sub-View Navigation Updates to Parent Header
   useEffect(() => {
@@ -1234,66 +1263,111 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Student Tuition Fee Status Grid */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
                 💳 Danh Sách Theo Dõi Học Phí Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length} Học Viên)
               </h4>
-              <span className="text-xs font-bold text-pink-600 bg-pink-100 px-3 py-1 rounded-full border border-pink-200">
-                Click "Tạo Phiếu Thu / VietQR" để gửi cho Phụ huynh
-              </span>
+
+              {/* FAST REALTIME SEARCH BAR FOR TUITION */}
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm nhanh tên, SĐT, lớp, trạng thái..."
+                  value={tuitionSearchQuery}
+                  onChange={(e) => setTuitionSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {safeStudents.filter(s => s && s.status !== 'soft_deleted').map((std) => {
-                const stdClass = safeClasses.find((c) => std.classIds && std.classIds.includes(c.id)) || safeClasses[0];
+            {(() => {
+              const filteredTuitionList = safeStudents
+                .filter((s) => s && s.status !== 'soft_deleted')
+                .filter((s) => {
+                  if (!tuitionSearchQuery.trim()) return true;
+                  const q = tuitionSearchQuery.toLowerCase();
+                  const cls = safeClasses.find((c) => s.classIds && s.classIds.includes(c.id));
+                  const clsName = (cls?.className || '').toLowerCase();
+                  const statusText = (s.remainingSessions || 0) <= 0 ? 'hết hạn' : (s.remainingSessions || 0) <= 2 ? 'sắp hết' : 'còn hạn';
+                  return (
+                    (s.name || '').toLowerCase().includes(q) ||
+                    (s.phone || '').toLowerCase().includes(q) ||
+                    (s.id || '').toLowerCase().includes(q) ||
+                    clsName.includes(q) ||
+                    statusText.includes(q)
+                  );
+                });
 
+              const isSingleMatch = filteredTuitionList.length === 1 && tuitionSearchQuery.trim() !== '';
+
+              if (filteredTuitionList.length === 0) {
                 return (
-                  <div
-                    key={std.id}
-                    className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 dark:bg-slate-800/40 hover:bg-pink-100/40 transition space-y-3 shadow-xs"
-                  >
-                    <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                      <div className="flex items-center space-x-2">
-                        <img
-                          src={resolveAvatarUrl(std.avatar)}
-                          alt={std.name}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                          }}
-                          className="w-8 h-8 rounded-xl object-cover border border-pink-200"
-                        />
-                        <span className="font-extrabold text-xs text-slate-900 dark:text-white">{std.name}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-200 text-pink-950">
-                        {std.remainingSessions} Buổi Còn
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-600 dark:text-slate-300 font-medium space-y-1">
-                      <p><strong>Lớp:</strong> {stdClass?.className || 'Ms. Vy English'}</p>
-                      <p><strong>SĐT:</strong> {std.phone || 'Chưa có'}</p>
-                      <p><strong>Gói học phí:</strong> <span className="font-bold text-pink-600">{formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</span></p>
-                    </div>
-
-                    <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
-                      <button
-                        onClick={() => setSelectedStudentForReceipt(std)}
-                        className="px-3.5 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
-                      >
-                        <QrCode className="w-3.5 h-3.5 mr-1 text-sky-700" /> Tạo Phiếu Thu / VietQR
-                      </button>
-
-                      <button
-                        onClick={() => setInspectedStudentId(std.id)}
-                        className="text-xs font-bold text-pink-600 hover:underline"
-                      >
-                        Xem Học Tập →
-                      </button>
-                    </div>
+                  <div className="p-8 rounded-3xl bg-pink-50/50 border border-pink-100 text-center space-y-2">
+                    <p className="text-xs font-bold text-slate-500">Không tìm thấy học viên nào phù hợp với từ khóa "{tuitionSearchQuery}"</p>
                   </div>
                 );
-              })}
-            </div>
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTuitionList.map((std) => {
+                    const stdClass = safeClasses.find((c) => std.classIds && std.classIds.includes(c.id)) || safeClasses[0];
+
+                    return (
+                      <div
+                        key={std.id}
+                        id={`tuition-card-${std.id}`}
+                        className={`p-5 rounded-3xl border transition space-y-3 shadow-xs ${
+                          isSingleMatch
+                            ? 'ring-4 ring-pink-400 bg-pink-100/90 border-pink-400 animate-pulse'
+                            : 'border-pink-100 bg-pink-50/30 dark:bg-slate-800/40 hover:bg-pink-100/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                          <div className="flex items-center space-x-2">
+                            <img
+                              src={resolveAvatarUrl(std.avatar)}
+                              alt={std.name}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                              }}
+                              className="w-8 h-8 rounded-xl object-cover border border-pink-200"
+                            />
+                            <span className="font-extrabold text-xs text-slate-900 dark:text-white">{std.name}</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-200 text-pink-950">
+                            {std.remainingSessions} Buổi Còn
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-600 dark:text-slate-300 font-medium space-y-1">
+                          <p><strong>Lớp:</strong> {stdClass?.className || 'Ms. Vy English'}</p>
+                          <p><strong>SĐT:</strong> {std.phone || 'Chưa có'}</p>
+                          <p><strong>Gói học phí:</strong> <span className="font-bold text-pink-600">{formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</span></p>
+                        </div>
+
+                        <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
+                          <button
+                            onClick={() => setSelectedStudentForReceipt(std)}
+                            className="px-3.5 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
+                          >
+                            <QrCode className="w-3.5 h-3.5 mr-1 text-sky-700" /> Tạo Phiếu Thu / VietQR
+                          </button>
+
+                          <button
+                            onClick={() => setInspectedStudentId(std.id)}
+                            className="text-xs font-bold text-pink-600 hover:underline"
+                          >
+                            Xem Học Tập →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
         </div>
