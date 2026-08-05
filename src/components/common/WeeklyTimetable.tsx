@@ -782,6 +782,8 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
             </div>
           </div>
         </div>
+      )}
+
       {/* TIMETABLE IMAGE EXPORT MODAL */}
       <TimetableImageExportModal
         isOpen={isExportImageModalOpen}
