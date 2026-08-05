@@ -348,28 +348,27 @@ export const Header: React.FC<HeaderProps> = ({
                       <span className="hidden sm:inline">Đổi Tài Khoản</span>
                     </button>
 
-                    {/* Super Admin Account Management & Gemini Key Button */}
+                    {/* Super Admin Account Management Button */}
                     {currentUser.role === 'super_admin' && (
-                      <>
-                        <button
-                          onClick={onOpenAccountManagement}
-                          className="px-2.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 transition shadow-2xs border border-sky-300 flex items-center"
-                          title="Quản Lý Cấp Tài Khoản Nhân Sự"
-                        >
-                          <Users className="w-3.5 h-3.5 mr-1" />
-                          <span className="hidden sm:inline">Quản Lý</span> Đội Ngũ
-                        </button>
-
-                        <button
-                          onClick={onOpenGeminiSettings}
-                          className="px-2.5 py-1.5 rounded-xl bg-purple-200 text-purple-950 font-extrabold text-xs hover:bg-purple-300 transition shadow-2xs border border-purple-300 flex items-center shrink-0"
-                          title="Cấu Hình Gemini AI Key (Quyền Super Admin)"
-                        >
-                          <Key className="w-3.5 h-3.5 mr-1 text-purple-700" />
-                          <span className="hidden sm:inline">Cấu Hình </span>AI Key
-                        </button>
-                      </>
+                      <button
+                        onClick={onOpenAccountManagement}
+                        className="px-2.5 py-1.5 rounded-xl bg-sky-200 text-sky-950 font-extrabold text-xs hover:bg-sky-300 transition shadow-2xs border border-sky-300 flex items-center"
+                        title="Quản Lý Cấp Tài Khoản Nhân Sự"
+                      >
+                        <Users className="w-3.5 h-3.5 mr-1" />
+                        <span className="hidden sm:inline">Quản Lý</span> Đội Ngũ
+                      </button>
                     )}
+
+                    {/* ALWAYS VISIBLE GEMINI API KEY BUTTON WITH RED TEXT */}
+                    <button
+                      onClick={onOpenGeminiSettings}
+                      className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-extrabold text-xs transition border border-rose-300 dark:border-rose-800 flex items-center shrink-0 cursor-pointer shadow-xs animate-pulse hover:animate-none"
+                      title="Cấu hình Gemini API Key cá nhân để sử dụng app khi hết quota"
+                    >
+                      <Key className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
+                      <span className="text-rose-600 dark:text-rose-400 font-black">Lấy API key để sử dụng app</span>
+                    </button>
 
                     {/* Logout Button */}
                     <button
@@ -381,12 +380,24 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={onOpenLogin}
-                    className="px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-sky-400 text-white font-black text-xs hover:from-pink-500 hover:to-sky-500 transition shadow-sm flex items-center"
-                  >
-                    <LogIn className="w-4 h-4 mr-1.5" /> Đăng Nhập Hệ Thống
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {/* ALWAYS VISIBLE GEMINI API KEY BUTTON FOR GUESTS/UNAUTHENTICATED */}
+                    <button
+                      onClick={onOpenGeminiSettings}
+                      className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-extrabold text-xs transition border border-rose-300 dark:border-rose-800 flex items-center shrink-0 cursor-pointer shadow-xs animate-pulse hover:animate-none"
+                      title="Cấu hình Gemini API Key cá nhân để sử dụng app"
+                    >
+                      <Key className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
+                      <span className="text-rose-600 dark:text-rose-400 font-black">Lấy API key để sử dụng app</span>
+                    </button>
+
+                    <button
+                      onClick={onOpenLogin}
+                      className="px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-sky-400 text-white font-black text-xs hover:from-pink-500 hover:to-sky-500 transition shadow-sm flex items-center"
+                    >
+                      <LogIn className="w-4 h-4 mr-1.5" /> Đăng Nhập Hệ Thống
+                    </button>
+                  </div>
                 )}
               </>
             )}

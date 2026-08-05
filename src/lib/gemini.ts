@@ -2,20 +2,20 @@ import { GoogleGenAI } from '@google/genai';
 
 export const GEMINI_MODELS = [
   {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    desc: 'Tốc độ siêu nhanh, xử lý tiếng Việt & giải đáp thắc mắc cực chuẩn (Mặc định)',
+    id: 'gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview',
+    desc: 'Tốc độ cực nhanh, phản hồi tức thì (Mặc định)',
     isDefault: true,
   },
   {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    desc: 'Nhận diện ảnh Vision & văn bản ổn định',
+    id: 'gemini-3-pro-preview',
+    name: 'Gemini 3 Pro Preview',
+    desc: 'Suy luận chuyên sâu & giải quyết vấn đề phức tạp',
   },
   {
-    id: 'gemini-2.0-flash-lite',
-    name: 'Gemini 2.0 Flash Lite',
-    desc: 'Tốc độ tối ưu, phản hồi mượt mà',
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    desc: 'Xử lý ổn định, mượt mà',
   },
 ];
 
@@ -49,26 +49,26 @@ function analyzeGeminiError(err: any, modelId: string, promptSummary: string) {
   const errStatus = err?.status || err?.statusCode || err?.code || (errMsg.includes('401') ? 401 : errMsg.includes('403') ? 403 : errMsg.includes('429') ? 429 : errMsg.includes('404') ? 404 : errMsg.includes('400') ? 400 : 'UNKNOWN');
 
   let category: 'API_KEY_INVALID' | 'PERMISSION_DENIED' | 'QUOTA_EXHAUSTED' | 'MODEL_NOT_FOUND' | 'BAD_REQUEST' | 'NETWORK_ERROR' | 'UNKNOWN' = 'UNKNOWN';
-  let userFriendlyText = '⚠️ Hệ thống AI tạm thời gặp sự cố kết nối. Vui lòng thử lại sau.';
+  let userFriendlyText = `⚠️ LỖI GEMINI API (${errStatus}): ${errMsg}`;
 
   if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('invalid API key') || errStatus === 401) {
     category = 'API_KEY_INVALID';
-    userFriendlyText = '⚠️ Gemini API Key không hợp lệ hoặc đã bị hết hạn/vô hiệu hóa. Vui lòng kiểm tra lại API Key!';
+    userFriendlyText = `⚠️ LỖI API KEY: 401 API_KEY_INVALID (${errMsg})`;
   } else if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('forbidden') || errStatus === 403) {
     category = 'PERMISSION_DENIED';
-    userFriendlyText = '⚠️ Tài khoản API Key bị từ chối truy cập hoặc bị giới hạn quốc gia.';
+    userFriendlyText = `⚠️ LỖI QUYỀN TRUY CẬP: 403 PERMISSION_DENIED (${errMsg})`;
   } else if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errStatus === 429) {
     category = 'QUOTA_EXHAUSTED';
-    userFriendlyText = '⚠️ Đã vượt quá hạn mức sử dụng (Quota) miễn phí của Google AI. Vui lòng chờ ít phút rồi thử lại!';
+    userFriendlyText = `⚠️ ĐÃ HẾT LIMIT QUOTA: 429 RESOURCE_EXHAUSTED (${errMsg})`;
   } else if (errMsg.includes('404') || errMsg.includes('NOT_FOUND') || errStatus === 404) {
     category = 'MODEL_NOT_FOUND';
-    userFriendlyText = `⚠️ Model "${modelId}" không khả dụng trên API Key này.`;
+    userFriendlyText = `⚠️ MODEL KHÔNG TỒN TẠI: 404 NOT_FOUND - "${modelId}" (${errMsg})`;
   } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('ENOTFOUND') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     category = 'NETWORK_ERROR';
-    userFriendlyText = '⚠️ Không thể kết nối tới server Google AI. Vui lòng kiểm tra kết nối mạng Internet của bạn!';
+    userFriendlyText = `⚠️ LỖI KẾT NỐI MẠNG: NETWORK_ERROR (${errMsg})`;
   } else if (errMsg.includes('400') || errMsg.includes('INVALID_ARGUMENT') || errStatus === 400) {
     category = 'BAD_REQUEST';
-    userFriendlyText = '⚠️ Yêu cầu câu hỏi không hợp lệ hoặc dung lượng file vượt quá giới hạn.';
+    userFriendlyText = `⚠️ YÊU CẦU KHÔNG HỢP LỆ: 400 INVALID_ARGUMENT (${errMsg})`;
   }
 
   // DETAILED FULL CONSOLE LOGGING (HTTP STATUS, ERROR MESSAGE, RESPONSE BODY, MODEL, CATEGORY)
@@ -311,9 +311,15 @@ export const GeminiEngine = {
 
     // Dynamic Fallback Chain Priority:
     // 1. Cached Working Model (if valid)
-    // 2. User Selected Model (e.g. gemini-2.0-flash)
-    // 3. Fallback list (gemini-2.0-flash, gemini-1.5-flash, gemini-2.0-flash-lite)
-    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
+    // 2. User Selected Model (e.g. gemini-3-flash-preview)
+    // 3. Fallback list (gemini-3-flash-preview -> gemini-3-pro-preview -> gemini-2.5-flash -> gemini-2.0-flash -> gemini-1.5-flash)
+    const standardFallbackChain = [
+      'gemini-3-flash-preview',
+      'gemini-3-pro-preview',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ];
     const candidateModels = Array.from(
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
@@ -395,7 +401,13 @@ export const GeminiEngine = {
     const requestId = 'req_img_' + Math.random().toString(36).substring(2, 9);
     const cachedWorkingModel = this.getCachedWorkingModel();
     const userSelectedModel = this.getSelectedModel();
-    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
+    const standardFallbackChain = [
+      'gemini-3-flash-preview',
+      'gemini-3-pro-preview',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ];
     const candidateModels = Array.from(
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
