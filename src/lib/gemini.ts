@@ -36,24 +36,113 @@ const SMART_FEEDBACK_TEMPLATES = [
 // Helper delay ms
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Helper Error Categorizer & Full Console Error Logger
+function analyzeGeminiError(err: any, modelId: string, promptSummary: string) {
+  const errMsg = err?.message || String(err);
+  const errStatus = err?.status || err?.statusCode || err?.code || (errMsg.includes('401') ? 401 : errMsg.includes('403') ? 403 : errMsg.includes('429') ? 429 : errMsg.includes('404') ? 404 : errMsg.includes('400') ? 400 : 'UNKNOWN');
+
+  let category: 'API_KEY_INVALID' | 'PERMISSION_DENIED' | 'QUOTA_EXHAUSTED' | 'MODEL_NOT_FOUND' | 'BAD_REQUEST' | 'NETWORK_ERROR' | 'UNKNOWN' = 'UNKNOWN';
+  let userFriendlyText = '⚠️ Hệ thống AI tạm thời gặp sự cố kết nối. Vui lòng thử lại sau.';
+
+  if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('invalid API key') || errStatus === 401) {
+    category = 'API_KEY_INVALID';
+    userFriendlyText = '⚠️ Gemini API Key không hợp lệ hoặc đã bị hết hạn/vô hiệu hóa. Vui lòng kiểm tra lại API Key!';
+  } else if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('forbidden') || errStatus === 403) {
+    category = 'PERMISSION_DENIED';
+    userFriendlyText = '⚠️ Tài khoản API Key bị từ chối truy cập hoặc bị giới hạn quốc gia.';
+  } else if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errStatus === 429) {
+    category = 'QUOTA_EXHAUSTED';
+    userFriendlyText = '⚠️ Đã vượt quá hạn mức sử dụng (Quota) miễn phí của Google AI. Vui lòng chờ ít phút rồi thử lại!';
+  } else if (errMsg.includes('404') || errMsg.includes('NOT_FOUND') || errStatus === 404) {
+    category = 'MODEL_NOT_FOUND';
+    userFriendlyText = `⚠️ Model "${modelId}" không khả dụng trên API Key này.`;
+  } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('ENOTFOUND') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    category = 'NETWORK_ERROR';
+    userFriendlyText = '⚠️ Không thể kết nối tới server Google AI. Vui lòng kiểm tra kết nối mạng Internet của bạn!';
+  } else if (errMsg.includes('400') || errMsg.includes('INVALID_ARGUMENT') || errStatus === 400) {
+    category = 'BAD_REQUEST';
+    userFriendlyText = '⚠️ Yêu cầu câu hỏi không hợp lệ hoặc dung lượng file vượt quá giới hạn.';
+  }
+
+  // DETAILED FULL CONSOLE LOGGING (HTTP STATUS, ERROR MESSAGE, RESPONSE BODY, MODEL, CATEGORY)
+  console.error('❌ [GEMINI API ROOT CAUSE ERROR REPORT]', {
+    timestamp: new Date().toISOString(),
+    category,
+    httpStatus: errStatus,
+    modelUsed: modelId,
+    errorMessage: errMsg,
+    rawErrorObject: err,
+    promptSummary: typeof promptSummary === 'string' ? promptSummary.slice(0, 120) + '...' : 'Multimodal Input',
+  });
+
+  return { category, userFriendlyText, errMsg, errStatus };
+}
+
 export const GeminiEngine = {
   getApiKey(): string {
-    const userKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
-    if (userKey) return userKey.trim();
-
+    // 1. Check user-configured key in LocalStorage
     try {
-      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-        return import.meta.env.VITE_GEMINI_API_KEY;
+      const userKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+      if (userKey) {
+        const sanitized = userKey.trim().replace(/^["']|["']$/g, '');
+        if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
+          return sanitized;
+        }
+      }
+    } catch (e) {
+      // LocalStorage access error fallback
+    }
+
+    // 2. Check Environment Variables (Vite, Vercel, Netlify)
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        const envKey =
+          import.meta.env.VITE_GEMINI_API_KEY ||
+          import.meta.env.GEMINI_API_KEY ||
+          import.meta.env.VITE_API_KEY ||
+          import.meta.env.API_KEY;
+
+        if (envKey) {
+          const sanitized = String(envKey).trim().replace(/^["']|["']$/g, '');
+          if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
+            return sanitized;
+          }
+        }
       }
     } catch (e) {
       // Ignore env check error
+    }
+
+    // 3. Check process.env (Node / Server-Side / Build time)
+    try {
+      if (typeof process !== 'undefined' && process.env) {
+        const procKey =
+          process.env.VITE_GEMINI_API_KEY ||
+          process.env.GEMINI_API_KEY ||
+          process.env.VITE_API_KEY ||
+          process.env.API_KEY;
+
+        if (procKey) {
+          const sanitized = String(procKey).trim().replace(/^["']|["']$/g, '');
+          if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
+            return sanitized;
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore process check error
     }
 
     return '';
   },
 
   setApiKey(key: string) {
-    localStorage.setItem(STORAGE_KEYS.API_KEY, key.trim());
+    const sanitized = key ? key.trim().replace(/^["']|["']$/g, '') : '';
+    if (sanitized) {
+      localStorage.setItem(STORAGE_KEYS.API_KEY, sanitized);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.API_KEY);
+    }
   },
 
   getSelectedModel(): string {
@@ -69,14 +158,15 @@ export const GeminiEngine = {
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, modelId);
   },
 
-  // Helper retry 429 with exponential backoff (1s, 2s, 4s) & 404 Debug logging
+  // Helper retry 429 with exponential backoff (1s, 2s, 4s) & Debug logging
   async callWithRetry(
     ai: GoogleGenAI,
     modelId: string,
     contentsData: any,
     requestId: string
-  ): Promise<string | null> {
+  ): Promise<{ text: string | null; lastError: any | null }> {
     const backoffDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
+    let lastErr: any = null;
 
     console.log('[AI REQUEST START]', {
       requestId,
@@ -92,36 +182,19 @@ export const GeminiEngine = {
         });
 
         if (response && response.text) {
-          console.log('[AI REQUEST END]', {
+          console.log('[AI REQUEST END SUCCESS]', {
             requestId,
             timestamp: new Date().toISOString(),
             model: modelId,
           });
-          return response.text;
+          return { text: response.text, lastError: null };
         }
       } catch (err: any) {
+        lastErr = err;
         const errMsg = err?.message || String(err);
         const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
-        const is404 = errMsg.includes('404') || errMsg.includes('NOT_FOUND') || errMsg.includes('not found');
 
-        if (is404) {
-          console.error('[AI DEBUG 404 NOT FOUND]', {
-            requestId,
-            timestamp: new Date().toISOString(),
-            endpoint: 'ai.models.generateContent',
-            model: modelId,
-            requestBody: contentsData,
-            response: err,
-          });
-        }
-
-        console.warn('[AI REQUEST FAILED]', {
-          requestId,
-          timestamp: new Date().toISOString(),
-          model: modelId,
-          attempt: attempt + 1,
-          error: errMsg,
-        });
+        analyzeGeminiError(err, modelId, typeof contentsData === 'string' ? contentsData : 'Multimodal');
 
         if (is429 && attempt < backoffDelays.length) {
           const waitMs = backoffDelays[attempt];
@@ -130,12 +203,12 @@ export const GeminiEngine = {
           continue;
         }
 
-        // If not 429 or retries exhausted for this model
+        // Break on non-429 or retries exhausted
         break;
       }
     }
 
-    return null;
+    return { text: null, lastError: lastErr };
   },
 
   // AI Text Prompt Execution
@@ -143,6 +216,7 @@ export const GeminiEngine = {
     const apiKey = this.getApiKey();
 
     if (!apiKey) {
+      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or VITE_GEMINI_API_KEY is empty.');
       return {
         text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Admin (Ms. Vy) cài đặt Gemini API Key trong hệ thống (miễn phí từ Google AI Studio) để kích hoạt Trợ lý AI giải đáp thắc mắc cho em nhé! ✨',
         modelUsed: 'Yêu cầu API Key',
@@ -153,17 +227,24 @@ export const GeminiEngine = {
     const preferredModel = this.getSelectedModel();
     const candidateModels = Array.from(new Set([preferredModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']));
 
+    let lastError: any = null;
+    let lastAttemptedModel = preferredModel;
+
     for (const modelId of candidateModels) {
+      lastAttemptedModel = modelId;
       const ai = new GoogleGenAI({ apiKey });
-      const text = await this.callWithRetry(ai, modelId, promptText, requestId);
+      const { text, lastError: err } = await this.callWithRetry(ai, modelId, promptText, requestId);
       if (text) {
         return { text, modelUsed: modelId };
       }
+      if (err) lastError = err;
     }
 
+    const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, promptText);
+
     return {
-      text: 'AI hiện đang bận hoặc đã đạt giới hạn sử dụng. Vui lòng thử lại sau.',
-      modelUsed: 'Không thể kết nối',
+      text: userFriendlyText,
+      modelUsed: lastAttemptedModel,
     };
   },
 
@@ -177,6 +258,7 @@ export const GeminiEngine = {
     const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, '') : '';
 
     if (!apiKey) {
+      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or VITE_GEMINI_API_KEY is empty.');
       if (mimeType && mimeType.startsWith('image/')) {
         return {
           text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) bấm nút "⚙️ Cấu Hình API Key" để dán API Key cá nhân từ Google AI Studio (miễn phí) để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!',
@@ -217,17 +299,24 @@ export const GeminiEngine = {
       ];
     }
 
+    let lastError: any = null;
+    let lastAttemptedModel = candidateModels[0];
+
     for (const modelId of candidateModels) {
+      lastAttemptedModel = modelId;
       const ai = new GoogleGenAI({ apiKey });
-      const text = await this.callWithRetry(ai, modelId, contentsData, requestId);
+      const { text, lastError: err } = await this.callWithRetry(ai, modelId, contentsData, requestId);
       if (text) {
         return { text, modelUsed: modelId };
       }
+      if (err) lastError = err;
     }
 
+    const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, typeof contentsData === 'string' ? contentsData : 'Multimodal');
+
     return {
-      text: 'AI hiện đang bận hoặc đã đạt giới hạn sử dụng. Vui lòng thử lại sau.',
-      modelUsed: 'Không thể kết nối',
+      text: userFriendlyText,
+      modelUsed: lastAttemptedModel,
     };
   },
 };
