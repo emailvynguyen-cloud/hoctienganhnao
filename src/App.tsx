@@ -447,7 +447,9 @@ export default function App() {
 
       {isGeminiSettingsOpen && (
         <GeminiSettingsModal
+          isOpen={isGeminiSettingsOpen}
           onClose={() => setIsGeminiSettingsOpen(false)}
+          onSaved={() => setIsGeminiSettingsOpen(false)}
         />
       )}
 
