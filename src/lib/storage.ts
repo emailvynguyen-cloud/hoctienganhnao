@@ -13,6 +13,8 @@ import {
   HomeworkTaskItem,
   StudentFeedback,
   AppNotification,
+  AuditLogRecord,
+  InternalNoteEntry,
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -37,6 +39,7 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'vy_notifications_v4',
   INVOICES: 'vy_invoices_v4',
   USERS: 'vy_users_v4',
+  AUDIT_LOGS: 'vy_audit_logs_v4',
   BANK_CONFIG: 'vy_bank_config_v4',
   CURRENT_USER: 'vy_current_user_v4',
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
@@ -928,5 +931,157 @@ export const StorageEngine = {
     if (updated) {
       this.saveNotifications(notifs);
     }
+  },
+
+  // AUDIT LOG MANAGEMENT FUNCTIONS
+  getAuditLogs(): AuditLogRecord[] {
+    return getItem<AuditLogRecord[]>(STORAGE_KEYS.AUDIT_LOGS, []);
+  },
+
+  saveAuditLogs(logs: AuditLogRecord[]) {
+    updateLiveMemoryStore(STORAGE_KEYS.AUDIT_LOGS, logs);
+    triggerCloudSyncPush();
+  },
+
+  addAuditLog(
+    actorUser: User | null,
+    action: string,
+    targetType: AuditLogRecord['targetType'],
+    targetId?: string,
+    targetName?: string,
+    classId?: string,
+    className?: string,
+    details?: string
+  ) {
+    const logs = this.getAuditLogs() || [];
+    const newLog: AuditLogRecord = {
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      actorUid: actorUser?.uid || 'system',
+      actorName: actorUser?.displayName || 'System / Auto',
+      actorRole: actorUser?.role || 'super_admin',
+      action,
+      targetType,
+      targetId,
+      targetName,
+      classId,
+      className,
+      details: details || '',
+    };
+    logs.unshift(newLog); // latest logs first
+    this.saveAuditLogs(logs.slice(0, 500)); // Keep latest 500 records
+  },
+
+  // INTERNAL STUDENT NOTES MANAGEMENT
+  updateStudentInternalNotes(studentId: string, notes: string, authorUser?: User | null) {
+    const students = this.getStudents() || [];
+    const targetStudent = students.find((s) => s && s.id === studentId);
+    if (!targetStudent) return;
+
+    targetStudent.internalNotes = notes;
+    if (!targetStudent.internalNotesHistory) {
+      targetStudent.internalNotesHistory = [];
+    }
+    targetStudent.internalNotesHistory.unshift({
+      id: `note_${Date.now()}`,
+      content: notes,
+      authorName: authorUser?.displayName || 'Giáo viên / Admin',
+      createdAt: new Date().toISOString(),
+    });
+
+    this.saveStudents(students);
+    this.addAuditLog(
+      authorUser || null,
+      'UPDATE_INTERNAL_NOTES',
+      'note',
+      studentId,
+      targetStudent.name,
+      targetStudent.classIds?.[0],
+      undefined,
+      `Cập nhật ghi chú nội bộ cho học viên ${targetStudent.name}`
+    );
+  },
+
+  // ENTERPRISE SCOPE-BASED ACCESS CONTROL (ASSIGN CLASS MANAGERS)
+  assignClassManagers(
+    classId: string,
+    adminId?: string,
+    adminName?: string,
+    teacherId?: string,
+    teacherName?: string,
+    coTeacherIds?: string[],
+    authorUser?: User | null
+  ) {
+    const classes = this.getClasses() || [];
+    const targetClass = classes.find((c) => c && c.id === classId);
+    if (!targetClass) return;
+
+    if (adminId !== undefined) targetClass.adminId = adminId;
+    if (adminName !== undefined) targetClass.adminName = adminName;
+    if (teacherId !== undefined) targetClass.teacherId = teacherId;
+    if (teacherName !== undefined) targetClass.teacherName = teacherName;
+    if (coTeacherIds !== undefined) targetClass.coTeacherIds = coTeacherIds;
+
+    this.saveClasses(classes);
+
+    this.addAuditLog(
+      authorUser || null,
+      'REASSIGN_CLASS_SCOPE',
+      'permission',
+      classId,
+      targetClass.className,
+      classId,
+      targetClass.className,
+      `Cập nhật quyền quản lý lớp: Admin (${adminName || 'Chưa gán'}), GV (${teacherName || 'Chưa gán'})`
+    );
+  },
+
+  updateUserLockStatus(userId: string, isLocked: boolean, authorUser?: User | null) {
+    const users = this.getUsers() || [];
+    const targetUser = users.find((u) => u && u.uid === userId);
+    if (!targetUser) return;
+
+    targetUser.isLocked = isLocked;
+    this.saveUsers(users);
+
+    this.addAuditLog(
+      authorUser || null,
+      isLocked ? 'LOCK_USER_ACCOUNT' : 'UNLOCK_USER_ACCOUNT',
+      'user',
+      userId,
+      targetUser.displayName,
+      undefined,
+      undefined,
+      `${isLocked ? 'Khóa' : 'Mở khóa'} tài khoản người dùng ${targetUser.displayName} (${targetUser.role})`
+    );
+  },
+
+  // SCOPE FILTERING HELPERS
+  isUserAllowedForClass(user: User | null, cls: Class): boolean {
+    if (!user) return false;
+    if (user.role === 'super_admin') return true;
+
+    if (user.role === 'admin') {
+      return cls.adminId === user.uid || (cls.adminName && cls.adminName === user.displayName);
+    }
+
+    if (user.role === 'teacher') {
+      const isPrimary = cls.teacherId === user.uid || (cls.teacherName && cls.teacherName === user.displayName);
+      const isCoTeacher = cls.coTeacherIds && cls.coTeacherIds.includes(user.uid);
+      return Boolean(isPrimary || isCoTeacher);
+    }
+
+    return false;
+  },
+
+  getScopedClasses(user: User | null, classes: Class[]): Class[] {
+    if (!user || user.role === 'super_admin') return classes;
+    return classes.filter((cls) => cls && this.isUserAllowedForClass(user, cls));
+  },
+
+  getScopedStudents(user: User | null, students: Student[], classes: Class[]): Student[] {
+    if (!user || user.role === 'super_admin') return students;
+    const allowedClassIds = new Set(this.getScopedClasses(user, classes).map((c) => c.id));
+    return students.filter((s) => s && s.classIds && s.classIds.some((cid) => allowedClassIds.has(cid)));
   },
 };

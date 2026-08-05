@@ -80,7 +80,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices'>('timetable');
+  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs'>('timetable');
+
+  // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING
+  const scopedClasses = StorageEngine.getScopedClasses(currentUser, classes || []);
+  const scopedStudents = StorageEngine.getScopedStudents(currentUser, students || [], classes || []);
+  const safeClasses = scopedClasses;
+  const safeStudents = scopedStudents;
+
+  // Class Manager Assignment Modal State
+  const [editingClassManagersModal, setEditingClassManagersModal] = useState<Class | null>(null);
 
   // Expanded Teacher in Teachers Management Tab
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
@@ -109,6 +118,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Search Queries
   const [classSearchQuery, setClassSearchQuery] = useState('');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [auditLogSearchQuery, setAuditLogSearchQuery] = useState('');
+  const [auditLogFilterType, setAuditLogFilterType] = useState('all');
 
   // Form Modals State
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
@@ -547,6 +558,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             Quản Lý Học Phí & VietQR
           </button>
         )}
+
+        <button
+          onClick={() => setActiveTab('audit_logs')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'audit_logs'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-amber-50'
+          }`}
+        >
+          📜 Nhật Ký Thao Tác (Audit Log)
+        </button>
       </div>
 
       {/* TAB 1: WEEKLY TIMETABLE (SUPER ADMIN SHOWS ONLY MS. VY'S CLASSES TO KEEP IT CLEAN & LEAN) */}
@@ -1195,6 +1217,115 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* TAB 8: AI STUDIO PORTAL FOR ADMIN / SUPER ADMIN */}
       {activeTab === 'ai_studio' && (
         <AiStudioPortal currentUser={currentUser} />
+      )}
+
+      {/* TAB 9: SYSTEM AUDIT LOG & ENTERPRISE SCOPE-BASED AUDIT TRAIL */}
+      {activeTab === 'audit_logs' && (
+        <div className="space-y-5 animate-fadeIn">
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 dark:from-slate-900 dark:to-slate-900 border-2 border-amber-200 dark:border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/80 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black text-xl shadow-sm">
+                  📜
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-slate-900 dark:text-white uppercase tracking-wider">
+                    Nhật Ký Thao Tác Hệ Thống (Audit Log System)
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    Ghi lại toàn bộ lịch sử thao tác (Tạo/Sửa/Xóa học viên, Lớp, Điểm danh, Bài tập, Học phí, Ghi chú & Phân quyền)
+                  </p>
+                </div>
+              </div>
+              <span className="px-4 py-2 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-black text-xs border border-amber-300 shadow-2xs">
+                Tổng số bản ghi: {StorageEngine.getAuditLogs().length} thao tác
+              </span>
+            </div>
+
+            {/* Audit Log Filter Bar */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên người thực hiện, thao tác, học viên hoặc lớp học..."
+                  value={auditLogSearchQuery}
+                  onChange={(e) => setAuditLogSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-amber-200 bg-white dark:bg-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+
+              <select
+                value={auditLogFilterType}
+                onChange={(e) => setAuditLogFilterType(e.target.value)}
+                className="w-full sm:w-56 p-2.5 rounded-xl border border-amber-200 bg-white dark:bg-slate-800 text-xs font-extrabold text-slate-800 dark:text-white cursor-pointer"
+              >
+                <option value="all">Tất Cả Loại Thao Tác</option>
+                <option value="student">Học Viên</option>
+                <option value="class">Lớp Học</option>
+                <option value="session">Buổi Học / Điểm Danh</option>
+                <option value="permission">Phân Quyền Scope</option>
+                <option value="note">Ghi Chú Nội Bộ</option>
+                <option value="tuition">Học Phí</option>
+                <option value="user">Tài Khoản User</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Audit Logs List Table / Cards */}
+          <div className="space-y-3">
+            {StorageEngine.getAuditLogs()
+              .filter((log) => {
+                // Scope Check: Super Admin sees all logs; Admin/Teacher only sees logs for their assigned classes
+                if (!isSuperAdmin && log.classId) {
+                  const isAllowed = safeClasses.some((c) => c.id === log.classId);
+                  if (!isAllowed) return false;
+                }
+                if (auditLogFilterType !== 'all' && log.targetType !== auditLogFilterType) return false;
+                if (!auditLogSearchQuery) return true;
+                const query = auditLogSearchQuery.toLowerCase();
+                return (
+                  (log.actorName || '').toLowerCase().includes(query) ||
+                  (log.action || '').toLowerCase().includes(query) ||
+                  (log.targetName || '').toLowerCase().includes(query) ||
+                  (log.details || '').toLowerCase().includes(query)
+                );
+              })
+              .slice(0, 100)
+              .map((log) => (
+                <div
+                  key={log.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:border-amber-400 transition"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2 flex-wrap gap-1">
+                      <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-950 font-black text-[10px] uppercase border border-amber-300">
+                        {log.action}
+                      </span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">
+                        {log.actorName} ({log.actorRole})
+                      </span>
+                      {log.targetName && (
+                        <span className="text-pink-600 font-extrabold">
+                          → {log.targetName}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-300 font-medium text-xs">
+                      {log.details}
+                    </p>
+                  </div>
+
+                  <div className="text-[11px] font-mono text-slate-400 shrink-0 text-right">
+                    <span>{new Date(log.timestamp).toLocaleDateString('vi-VN')}</span>{' '}
+                    <span className="font-black text-slate-600 dark:text-slate-300">
+                      {new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
       )}
 
       {/* RECEIPT GENERATOR MODAL FOR SUPER ADMIN */}

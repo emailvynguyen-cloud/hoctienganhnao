@@ -101,12 +101,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const monthOptions = getTeacherMonthOptions();
   const [teacherSelectedMonth, setTeacherSelectedMonth] = useState<string>(monthOptions.currKey);
 
-  // STRICT TEACHER SCOPING: Filter classes strictly assigned to this teacher
-  const isMsVy = (teacherName?: string, teacherId?: string) => {
-    if (!teacherName && !teacherId) return true;
-    const nameLower = (teacherName || '').toLowerCase();
-    return nameLower.includes('vy') || teacherId === 'u_super_admin' || teacherId === 'u_admin' || nameLower.includes('điều hành');
-  };
+  // ENTERPRISE SCOPE-BASED ACCESS CONTROL FOR TEACHER PORTAL
+  const scopedClasses = StorageEngine.getScopedClasses(currentUser || null, classes || []);
+  const scopedStudents = StorageEngine.getScopedStudents(currentUser || null, students || [], classes || []);
+
+  // Use scopedClasses and scopedStudents to enforce scope boundaries
+  const myClasses = scopedClasses;
+  const myStudents = scopedStudents;
 
   const assignedClasses = (classes || []).filter((c) => {
     if (!c || c.status === 'archived') return false;

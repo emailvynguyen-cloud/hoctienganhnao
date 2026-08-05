@@ -405,21 +405,24 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </span>
 
               {itemsList.length > 0 ? (
-                itemsList.map((hwItem) => {
+                itemsList.map((hwItem, hwIdx) => {
                   const isChecked = currentStudent.completedHomeworkTaskIds?.includes(hwItem.id);
                   const subObj = homeworkSubmissions.find(
                     (sub) => sub.studentId === currentStudent.id && sub.homeworkTaskId === hwItem.id
                   );
                   const isFeedbackDone = subObj?.feedbackStatus === 'COMPLETED' || subObj?.isTeacherFeedbackChecked;
 
+                  // SOFT PASTEL ZEBRA STRIPING STYLING FOR EASY READING
+                  const zebraBgClass = isChecked
+                    ? 'bg-emerald-50/80 dark:bg-slate-800/90 border-emerald-300'
+                    : hwIdx % 2 === 0
+                    ? 'bg-pink-50/90 dark:bg-slate-800/80 border-pink-200/90 hover:border-pink-300'
+                    : 'bg-sky-50/90 dark:bg-slate-800/80 border-sky-200/90 hover:border-sky-300';
+
                   return (
                     <div
                       key={hwItem.id}
-                      className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${
-                        isChecked
-                          ? 'bg-emerald-50/70 dark:bg-slate-800/90 border-emerald-300'
-                          : 'bg-white/90 dark:bg-slate-800/90 border-pink-100'
-                      }`}
+                      className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${zebraBgClass}`}
                     >
                       {/* Left: Homework details */}
                       <div className="flex items-start space-x-3">

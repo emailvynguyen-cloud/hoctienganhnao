@@ -8,6 +8,7 @@ export interface User {
   password?: string;
   avatarUrl?: string;
   phoneNumber?: string;
+  isLocked?: boolean;
   createdAt: string;
 }
 
@@ -34,6 +35,13 @@ export interface StudentFeedback {
   materialUrl?: string; // Link dẫn đến tài liệu riêng cho học viên này
 }
 
+export interface InternalNoteEntry {
+  id: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+}
+
 export interface Student {
   id: string;
   publicHash: string;
@@ -51,6 +59,8 @@ export interface Student {
   badges: string[];
   avatar: string;
   notes?: string;
+  internalNotes?: string; // Ghi chú nội bộ học viên (chỉ dành riêng cho Admin/Super Admin/Giáo viên)
+  internalNotesHistory?: InternalNoteEntry[];
   honorNickname?: string;
   completedHomeworkTaskIds?: string[]; // IDs các homework item mà học viên đã check xong
   resourceLinks?: ResourceLink[];
@@ -63,6 +73,9 @@ export interface Class {
   code: string;
   teacherId: string;
   teacherName: string;
+  coTeacherIds?: string[]; // Danh sách các giáo viên phụ trách cùng
+  adminId?: string; // Admin quản lý phụ trách trực tiếp lớp học
+  adminName?: string;
   schedule: string;
   room: string;
   courseName: string;
@@ -72,6 +85,21 @@ export interface Class {
   zoomLink?: string;
   resourceLinks?: ResourceLink[];
   teacherPayRatePerSession?: number; // Bậc lương từng buổi dạy (VNĐ / buổi học), ví dụ: 150.000đ
+}
+
+export interface AuditLogRecord {
+  id: string;
+  timestamp: string;
+  actorUid: string;
+  actorName: string;
+  actorRole: UserRole;
+  action: string;
+  targetType: 'student' | 'class' | 'session' | 'user' | 'tuition' | 'permission' | 'note';
+  targetId?: string;
+  targetName?: string;
+  classId?: string;
+  className?: string;
+  details: string;
 }
 
 export type AttendanceStatus = 'present' | 'excused' | 'unexcused' | 'late';
