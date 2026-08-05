@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserRole, User } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import logoImg from '../../assets/logo.jpg';
 import { Lock, Mail, Key, Sparkles, UserCheck, Shield, Crown, Info, X, LogIn } from 'lucide-react';
 
 interface LoginModalProps {
@@ -53,7 +54,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/80 border-b border-purple-100 dark:border-purple-800 flex items-center justify-between shrink-0 relative">
           <div className="flex items-center space-x-3 pr-6">
             <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950 p-1 shadow-md border border-purple-200 shrink-0">
-              <img src="/logo.jpg" alt="Ms. Vy Logo" className="w-full h-full object-cover rounded-xl" />
+              <img
+                src={logoImg}
+                alt="Ms. Vy Logo"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== window.location.origin + '/logo.jpg' && target.src !== '/logo.jpg') {
+                    target.src = '/logo.jpg';
+                  } else {
+                    target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23ec4899'/%3E%3Ctext x='50' y='65' font-size='45' font-weight='900' fill='white' text-anchor='middle'%3EVY%3C/text%3E%3C/svg%3E";
+                  }
+                }}
+                className="w-full h-full object-cover rounded-xl"
+              />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">

@@ -191,10 +191,6 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 👑 Xếp Hạng Tháng
               </button>
             </div>
-
-            <span className="px-3 py-1.5 rounded-2xl text-xs font-black bg-pink-100 text-pink-950 border border-pink-200 shrink-0">
-              Toàn bộ {rankedStudents.length} Học Viên
-            </span>
           </div>
 
           <div className="text-[11px] text-slate-500 font-bold hidden md:block">

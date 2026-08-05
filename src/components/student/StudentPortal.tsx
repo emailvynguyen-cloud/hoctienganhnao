@@ -380,15 +380,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
         {/* Teacher Comment for THIS specific student in THIS session */}
         {session.studentFeedbacks?.[currentStudent.id] && (
-          <div className="p-4.5 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-3 backdrop-blur-xs">
-            <span className="font-black text-pink-900 dark:text-pink-300 flex items-center text-xs uppercase tracking-wider">
-              💬 Nhận Xét
-            </span>
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-pink-50/90 via-rose-50/60 to-pink-50/90 dark:from-slate-800 dark:to-slate-800 border border-pink-200 dark:border-slate-700 text-xs space-y-4 shadow-2xs backdrop-blur-xs">
+            {/* Standard Card Header inside the card with bottom border separator */}
+            <div className="flex items-center space-x-2 border-b border-pink-200/80 dark:border-slate-700/80 pb-2.5">
+              <span className="w-7 h-7 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 flex items-center justify-center font-black text-sm shrink-0 border border-pink-200/60">
+                💬
+              </span>
+              <h4 className="font-black text-xs text-pink-950 dark:text-pink-200 uppercase tracking-wider">
+                NHẬN XÉT
+              </h4>
+            </div>
 
-            {/* 2-Column Parallel Grid Layout on Desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {/* 2-Column Parallel Grid Layout for Strengths & Improvements */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {session.studentFeedbacks[currentStudent.id]?.strengths ? (
-                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-emerald-200/90 shadow-2xs">
+                <div className="p-4 rounded-2xl bg-white/95 dark:bg-slate-900/80 border border-emerald-200/90 dark:border-emerald-900/60 shadow-2xs">
                   {renderExpandableText(
                     `fb_str_${session.id}_${currentStudent.id}`,
                     'Điểm mạnh',
@@ -400,7 +406,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               ) : <div className="hidden md:block"></div>}
 
               {session.studentFeedbacks[currentStudent.id]?.improvements ? (
-                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-amber-200/90 shadow-2xs">
+                <div className="p-4 rounded-2xl bg-white/95 dark:bg-slate-900/80 border border-amber-200/90 dark:border-amber-900/60 shadow-2xs">
                   {renderExpandableText(
                     `fb_imp_${session.id}_${currentStudent.id}`,
                     'Cần cải thiện',

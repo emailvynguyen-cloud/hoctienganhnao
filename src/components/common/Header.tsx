@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, User, AppNotification } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import logoImg from '../../assets/logo.jpg';
 import {
   Shield,
   GraduationCap,
@@ -148,8 +149,16 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={onNavigateHome}>
             <div className="relative">
               <img
-                src="/logo.jpg"
+                src={logoImg}
                 alt="Ms. Vy English Logo"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== window.location.origin + '/logo.jpg' && target.src !== '/logo.jpg') {
+                    target.src = '/logo.jpg';
+                  } else {
+                    target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23ec4899'/%3E%3Ctext x='50' y='65' font-size='45' font-weight='900' fill='white' text-anchor='middle'%3EVY%3C/text%3E%3C/svg%3E";
+                  }
+                }}
                 style={{ width: '48px', height: '48px' }}
                 className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shadow-xs group-hover:scale-105 transition duration-300"
               />
@@ -360,15 +369,17 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
-                    {/* ALWAYS VISIBLE GEMINI API KEY BUTTON WITH RED TEXT */}
-                    <button
-                      onClick={onOpenGeminiSettings}
-                      className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-extrabold text-xs transition border border-rose-300 dark:border-rose-800 flex items-center shrink-0 cursor-pointer shadow-xs animate-pulse hover:animate-none"
-                      title="Cấu hình Gemini API Key cá nhân để sử dụng app khi hết quota"
-                    >
-                      <Key className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
-                      <span className="text-rose-600 dark:text-rose-400 font-black">Lấy API key để sử dụng app</span>
-                    </button>
+                    {/* GEMINI API KEY BUTTON - EXCLUSIVELY VISIBLE TO SUPER_ADMIN ONLY */}
+                    {currentUser.role === 'super_admin' && (
+                      <button
+                        onClick={onOpenGeminiSettings}
+                        className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-extrabold text-xs transition border border-rose-300 dark:border-rose-800 flex items-center shrink-0 cursor-pointer shadow-xs animate-pulse hover:animate-none"
+                        title="Cấu hình Gemini API Key cho hệ thống"
+                      >
+                        <Key className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
+                        <span className="text-rose-600 dark:text-rose-400 font-black">Cấu Hình API Key</span>
+                      </button>
+                    )}
 
                     {/* Logout Button */}
                     <button
@@ -381,16 +392,6 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    {/* ALWAYS VISIBLE GEMINI API KEY BUTTON FOR GUESTS/UNAUTHENTICATED */}
-                    <button
-                      onClick={onOpenGeminiSettings}
-                      className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-extrabold text-xs transition border border-rose-300 dark:border-rose-800 flex items-center shrink-0 cursor-pointer shadow-xs animate-pulse hover:animate-none"
-                      title="Cấu hình Gemini API Key cá nhân để sử dụng app"
-                    >
-                      <Key className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
-                      <span className="text-rose-600 dark:text-rose-400 font-black">Lấy API key để sử dụng app</span>
-                    </button>
-
                     <button
                       onClick={onOpenLogin}
                       className="px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-sky-400 text-white font-black text-xs hover:from-pink-500 hover:to-sky-500 transition shadow-sm flex items-center"

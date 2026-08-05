@@ -658,10 +658,15 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               )}
 
               {/* INDIVIDUAL PER-STUDENT FEEDBACKS */}
-              <div className="p-4 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 space-y-4">
-                <h4 className="font-black text-xs text-pink-900 dark:text-pink-300 uppercase tracking-wider">
-                  💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp ({classStudents.length} em)
-                </h4>
+              <div className="p-5 sm:p-6 rounded-3xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-200 dark:border-slate-700 space-y-4">
+                <div className="flex items-center space-x-2 border-b border-pink-200/80 dark:border-slate-700/80 pb-2.5">
+                  <span className="w-7 h-7 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 flex items-center justify-center font-black text-sm shrink-0 border border-pink-200/60">
+                    💬
+                  </span>
+                  <h4 className="font-black text-xs text-pink-950 dark:text-pink-200 uppercase tracking-wider">
+                    NHẬN XÉT RIÊNG CHO TỪNG HỌC VIÊN TRONG LỚP ({classStudents.length} em)
+                  </h4>
+                </div>
 
                 {classStudents.map((std) => (
                   <StudentFeedbackCard
