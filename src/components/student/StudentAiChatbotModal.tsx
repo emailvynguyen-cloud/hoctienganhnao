@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GeminiEngine } from '../../lib/gemini';
+import { GeminiEngine, stripMarkdownFormatting } from '../../lib/gemini';
 import {
   Sparkles,
   MessageSquare,
@@ -62,7 +62,8 @@ export const StudentAiChatbotModal: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const prompt = `Giải đáp thắc mắc tiếng Anh sau bằng tiếng Việt theo phong cách tự nhiên, ngắn gọn, thẳng thắn, không chào mừng lê thê:
+      const prompt = `BẮT BUỘC trả về văn bản thuần (Plain Text). KHÔNG dùng các ký tự Markdown như **, ***, ## để in đậm hoặc làm nổi bật chữ.
+Giải đáp thắc mắc tiếng Anh sau bằng tiếng Việt theo phong cách tự nhiên, ngắn gọn, thẳng thắn, không chào mừng lê thê:
 Câu hỏi: "${msg.trim()}"`;
 
       console.log('[Student AI Chatbot Request]:', msg.trim());
@@ -73,10 +74,12 @@ Câu hỏi: "${msg.trim()}"`;
         throw new Error('Không nhận được phản hồi từ Gemini AI API');
       }
 
+      const cleanText = stripMarkdownFormatting(res.text);
+
       const aiMessage: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'ai',
-        text: res.text,
+        text: cleanText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -181,7 +184,7 @@ Câu hỏi: "${msg.trim()}"`;
                       : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-pink-100 dark:border-slate-700 rounded-tl-none'
                   }`}
                 >
-                  <p>{m.text}</p>
+                  <p>{stripMarkdownFormatting(m.text)}</p>
                   <span
                     className={`text-[9px] block mt-1 ${
                       m.sender === 'user' ? 'text-pink-100 text-right' : 'text-slate-400'
