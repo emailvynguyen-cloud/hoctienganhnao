@@ -207,7 +207,7 @@ export const GeminiEngine = {
     const backoffDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
     let lastErr: any = null;
 
-    console.log('[AI REQUEST START]', {
+    console.log('[AI MODEL ATTEMPT START]', {
       requestId,
       timestamp: new Date().toISOString(),
       model: modelId,
@@ -221,7 +221,7 @@ export const GeminiEngine = {
         });
 
         if (response && response.text) {
-          console.log('[AI REQUEST END SUCCESS]', {
+          console.log('[AI MODEL ATTEMPT SUCCESS]', {
             requestId,
             timestamp: new Date().toISOString(),
             model: modelId,
@@ -233,7 +233,7 @@ export const GeminiEngine = {
         const errMsg = err?.message || String(err);
         const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
 
-        analyzeGeminiError(err, modelId, typeof contentsData === 'string' ? contentsData : 'Multimodal');
+        console.warn(`⚠️ [MODEL ATTEMPT WARNING] "${modelId}" attempt ${attempt + 1} failed:`, errMsg);
 
         if (is429 && attempt < backoffDelays.length) {
           const waitMs = backoffDelays[attempt];
@@ -266,7 +266,10 @@ export const GeminiEngine = {
     const cachedWorkingModel = this.getCachedWorkingModel();
     const userSelectedModel = this.getSelectedModel();
 
-    // Priority chain: 1. Cached Working Model (if valid), 2. User Selected Model, 3. Standard Priority Fallback Chain
+    // Dynamic Fallback Chain Priority:
+    // 1. Cached Working Model (if valid)
+    // 2. User Selected Model (e.g. gemini-1.5-pro, gemini-2.0-flash)
+    // 3. Fallback list (gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro)
     const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     const candidateModels = Array.from(
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
@@ -279,20 +282,24 @@ export const GeminiEngine = {
       const modelId = candidateModels[i];
       lastAttemptedModel = modelId;
 
-      console.log(`🤖 [AI MODEL TRYING ${i + 1}/${candidateModels.length}]: "${modelId}"`);
+      console.log(`🤖 [AI MODEL FALLBACK CHAIN ${i + 1}/${candidateModels.length}]: Testing model "${modelId}"...`);
 
       const ai = new GoogleGenAI({ apiKey });
       const { text, lastError: err } = await this.callWithRetry(ai, modelId, promptText, requestId);
 
       if (text) {
-        console.log(`✅ [AI MODEL IN USE SUCCESS]: Using "${modelId}" for response.`);
+        if (i > 0) {
+          console.log(`🎉 [MODEL FALLBACK SUCCESSFUL]: Model "${candidateModels[0]}" was unavailable, successfully fell back to "${modelId}"!`);
+        } else {
+          console.log(`✅ [AI MODEL IN USE SUCCESS]: Using primary model "${modelId}" for response.`);
+        }
         this.setCachedWorkingModel(modelId);
         return { text, modelUsed: modelId };
       }
 
-      // Model failed -> Log model skipped and switch to next in list
+      // Model failed -> Log fallback transition and try next model
       const nextModel = candidateModels[i + 1];
-      console.warn(`⏭️ [AI MODEL SKIPPED]: "${modelId}" failed.`, {
+      console.warn(`⏭️ [MODEL FALLBACK SWITCHING]: Model "${modelId}" failed.`, {
         reason: err?.message || 'No text response returned',
         switchingToNextModel: nextModel || 'None (List exhausted)',
       });
@@ -304,7 +311,7 @@ export const GeminiEngine = {
       if (err) lastError = err;
     }
 
-    // If all models failed in the chain
+    // ONLY LOG FINAL CONSOLE ERROR IF ALL CANDIDATE MODELS FAILED
     const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, promptText);
 
     return {
@@ -344,9 +351,10 @@ export const GeminiEngine = {
 
     const requestId = 'req_img_' + Math.random().toString(36).substring(2, 9);
     const cachedWorkingModel = this.getCachedWorkingModel();
+    const userSelectedModel = this.getSelectedModel();
     const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     const candidateModels = Array.from(
-      new Set([cachedWorkingModel, ...standardFallbackChain].filter(Boolean) as string[])
+      new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
 
     let contentsData: any = promptText;
@@ -375,19 +383,23 @@ export const GeminiEngine = {
       const modelId = candidateModels[i];
       lastAttemptedModel = modelId;
 
-      console.log(`🤖 [AI MULTIMODAL TRYING ${i + 1}/${candidateModels.length}]: "${modelId}"`);
+      console.log(`🤖 [AI MULTIMODAL FALLBACK CHAIN ${i + 1}/${candidateModels.length}]: Testing model "${modelId}"...`);
 
       const ai = new GoogleGenAI({ apiKey });
       const { text, lastError: err } = await this.callWithRetry(ai, modelId, contentsData, requestId);
 
       if (text) {
-        console.log(`✅ [AI MULTIMODAL SUCCESS]: Using "${modelId}" for response.`);
+        if (i > 0) {
+          console.log(`🎉 [MULTIMODAL FALLBACK SUCCESSFUL]: Model "${candidateModels[0]}" was unavailable, successfully fell back to "${modelId}"!`);
+        } else {
+          console.log(`✅ [AI MULTIMODAL SUCCESS]: Using primary model "${modelId}" for response.`);
+        }
         this.setCachedWorkingModel(modelId);
         return { text, modelUsed: modelId };
       }
 
       const nextModel = candidateModels[i + 1];
-      console.warn(`⏭️ [AI MULTIMODAL MODEL SKIPPED]: "${modelId}" failed.`, {
+      console.warn(`⏭️ [MULTIMODAL MODEL FALLBACK SWITCHING]: Model "${modelId}" failed.`, {
         reason: err?.message || 'No text response returned',
         switchingToNextModel: nextModel || 'None (List exhausted)',
       });
@@ -399,6 +411,7 @@ export const GeminiEngine = {
       if (err) lastError = err;
     }
 
+    // ONLY LOG FINAL CONSOLE ERROR IF ALL CANDIDATE MODELS FAILED
     const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, typeof contentsData === 'string' ? contentsData : 'Multimodal');
 
     return {
