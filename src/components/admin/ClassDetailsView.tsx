@@ -30,6 +30,7 @@ import {
   Box,
 } from 'lucide-react';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
+import { StudentAbsenceManagerModal } from '../common/StudentAbsenceManagerModal';
 import { formatSessionDate } from '../../lib/dateUtils';
 import { getStudentHonorBadge } from '../../lib/rankingUtils';
 
@@ -48,6 +49,7 @@ interface ClassDetailsViewProps {
   onRemoveStudentFromClass?: (studentId: string, classId: string) => void;
   onArchiveClass?: (classId: string) => void;
   onRestoreClass?: (classId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
@@ -64,10 +66,12 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   onRemoveStudentFromClass,
   onArchiveClass,
   onRestoreClass,
+  onRefreshData = () => {},
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [isManageResourcesOpen, setIsManageResourcesOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
+  const [selectedAbsenceStudent, setSelectedAbsenceStudent] = useState<Student | null>(null);
   const [deleteTargetModal, setDeleteTargetModal] = useState<{
     isOpen: boolean;
     type: 'class' | 'student_from_class';
@@ -348,6 +352,20 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-1.5 shrink-0">
+                  {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'teacher') && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAbsenceStudent(std);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-950 hover:bg-amber-500 hover:text-white transition text-xs font-extrabold flex items-center shrink-0 cursor-pointer shadow-2xs border border-amber-300"
+                      title="Quản Lý & Thêm Buổi Nghỉ Học Viên"
+                    >
+                      <Calendar className="w-3.5 h-3.5 mr-1 text-amber-700" />
+                      <span className="hidden sm:inline">Quản Lý</span> Buổi Nghỉ
+                    </button>
+                  )}
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -763,6 +781,16 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
           // Trigger re-render if needed
         }}
       />
+
+      {selectedAbsenceStudent && (
+        <StudentAbsenceManagerModal
+          isOpen={!!selectedAbsenceStudent}
+          onClose={() => setSelectedAbsenceStudent(null)}
+          student={selectedAbsenceStudent}
+          currentUser={currentUser}
+          onRefreshData={onRefreshData}
+        />
+      )}
 
     </div>
   );

@@ -15,6 +15,7 @@ import {
   AppNotification,
   AuditLogRecord,
   InternalNoteEntry,
+  StudentAbsenceRecord,
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -43,7 +44,26 @@ const STORAGE_KEYS = {
   BANK_CONFIG: 'vy_bank_config_v4',
   CURRENT_USER: 'vy_current_user_v4',
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
+  CLASS_RULES: 'vy_class_rules_v4',
 };
+
+export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
+
+1. THỜI GIAN HỌC VÀ ĐIỂM DANH:
+- Học viên vào lớp đúng giờ. Đi trễ quá 15 phút không có lý do chính đáng sẽ tính là nghỉ không phép.
+- Trường hợp nghỉ học, phụ huynh/học viên cần thông báo cho giáo viên trước ít nhất 2 giờ.
+
+2. BÀI TẬP VỀ NHÀ:
+- Hoàn thành đầy đủ bài tập được giao trước buổi học tiếp theo.
+- Nộp bài đúng hạn trên Portal để được giáo viên nhận xét và tích sao thưởng.
+
+3. TRANG PHỤC VÀ THÁI ĐỘ HỌC TẬP:
+- Giữ thái độ tôn trọng giáo viên và các bạn học trong lớp.
+- Tích cực phát biểu và tham gia các hoạt động luyện nói.
+
+4. HỌC BÙ VÀ NGHỈ HỌC:
+- Các buổi nghỉ có lý do hợp lệ sẽ được sắp xếp học bù hoặc hỗ trợ video record.
+- Học phí được tính theo gói buổi học đã đăng ký.`;
 
 const liveMemoryStore: Record<string, any> = {};
 
@@ -114,7 +134,26 @@ export const StorageEngine = {
       [STORAGE_KEYS.INVOICES]: this.getInvoices(),
       [STORAGE_KEYS.USERS]: this.getUsers(),
       [STORAGE_KEYS.BANK_CONFIG]: this.getBankConfig(),
+      [STORAGE_KEYS.CLASS_RULES]: this.getClassRules(),
     };
+  },
+
+  getClassRules(): string {
+    return getItem<string>(STORAGE_KEYS.CLASS_RULES, INITIAL_CLASS_RULES);
+  },
+  saveClassRules(rules: string, authorUser?: User | null) {
+    setItem(STORAGE_KEYS.CLASS_RULES, rules);
+    this.syncAllToCloud();
+    this.addAuditLog(
+      authorUser || null,
+      'UPDATE_CLASS_RULES',
+      'student',
+      'rules',
+      'Nội quy trung tâm',
+      undefined,
+      undefined,
+      'Cập nhật nội quy trung tâm mới'
+    );
   },
 
   syncAllToCloud() {
@@ -305,6 +344,106 @@ export const StorageEngine = {
       return true;
     }
     return false;
+  },
+
+  addStudentAbsence(studentId: string, date: string, reason?: string, isMakeupCompleted?: boolean, actorUser?: User | null) {
+    const students = this.getStudents() || [];
+    const std = students.find((s) => s && s.id === studentId);
+    if (!std) return;
+
+    if (!std.absences) std.absences = [];
+    const newAbsence: StudentAbsenceRecord = {
+      id: `abs_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      date,
+      reason: reason || '',
+      isMakeupCompleted: !!isMakeupCompleted,
+      createdAt: new Date().toISOString(),
+      createdByUserName: actorUser?.displayName || 'Giáo viên',
+    };
+
+    std.absences.push(newAbsence);
+    std.absencesCount = std.absences.length;
+    std.makeupSessionsCount = std.absences.filter((a) => a.isMakeupCompleted).length;
+
+    // Recalculate remaining sessions: deduction accounts for un-made-up absences
+    const unmadeAbsences = std.absencesCount - std.makeupSessionsCount;
+    if (typeof std.remainingSessions === 'number') {
+      std.remainingSessions = Math.max(0, (std.totalPaidSessions || 8) - unmadeAbsences);
+    }
+
+    this.saveStudents(students);
+    this.addAuditLog(
+      actorUser || null,
+      'ADD_STUDENT_ABSENCE',
+      'student',
+      studentId,
+      std.name,
+      undefined,
+      undefined,
+      `Thêm buổi nghỉ ngày ${date} (Lý do: ${reason || 'Không có'})`
+    );
+  },
+
+  updateStudentAbsence(studentId: string, absenceId: string, date: string, reason?: string, isMakeupCompleted?: boolean, actorUser?: User | null) {
+    const students = this.getStudents() || [];
+    const std = students.find((s) => s && s.id === studentId);
+    if (!std || !std.absences) return;
+
+    const absIndex = std.absences.findIndex((a) => a.id === absenceId);
+    if (absIndex !== -1) {
+      std.absences[absIndex] = {
+        ...std.absences[absIndex],
+        date,
+        reason: reason || '',
+        isMakeupCompleted: !!isMakeupCompleted,
+      };
+      std.absencesCount = std.absences.length;
+      std.makeupSessionsCount = std.absences.filter((a) => a.isMakeupCompleted).length;
+
+      const unmadeAbsences = std.absencesCount - std.makeupSessionsCount;
+      if (typeof std.remainingSessions === 'number') {
+        std.remainingSessions = Math.max(0, (std.totalPaidSessions || 8) - unmadeAbsences);
+      }
+
+      this.saveStudents(students);
+      this.addAuditLog(
+        actorUser || null,
+        'UPDATE_STUDENT_ABSENCE',
+        'student',
+        studentId,
+        std.name,
+        undefined,
+        undefined,
+        `Chỉnh sửa buổi nghỉ ngày ${date}`
+      );
+    }
+  },
+
+  deleteStudentAbsence(studentId: string, absenceId: string, actorUser?: User | null) {
+    const students = this.getStudents() || [];
+    const std = students.find((s) => s && s.id === studentId);
+    if (!std || !std.absences) return;
+
+    std.absences = std.absences.filter((a) => a.id !== absenceId);
+    std.absencesCount = std.absences.length;
+    std.makeupSessionsCount = std.absences.filter((a) => a.isMakeupCompleted).length;
+
+    const unmadeAbsences = std.absencesCount - std.makeupSessionsCount;
+    if (typeof std.remainingSessions === 'number') {
+      std.remainingSessions = Math.max(0, (std.totalPaidSessions || 8) - unmadeAbsences);
+    }
+
+    this.saveStudents(students);
+    this.addAuditLog(
+      actorUser || null,
+      'DELETE_STUDENT_ABSENCE',
+      'student',
+      studentId,
+      std.name,
+      undefined,
+      undefined,
+      `Xóa buổi nghỉ khỏi danh sách`
+    );
   },
 
   getClasses(): Class[] {

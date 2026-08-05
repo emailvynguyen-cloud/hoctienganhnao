@@ -4,6 +4,7 @@ import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
 import { StudentAiChatbotModal } from './StudentAiChatbotModal';
+import { ClassRulesModal } from '../common/ClassRulesModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
 import { getStudentHonorBadge } from '../../lib/rankingUtils';
@@ -67,6 +68,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [isClassRulesOpen, setIsClassRulesOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [copiedResId, setCopiedResId] = useState<string | null>(null);
@@ -609,6 +611,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     Chưa có danh hiệu Top
                   </span>
                 )}
+                <button
+                  onClick={() => setIsClassRulesOpen(true)}
+                  className="px-3.5 py-1 rounded-full text-xs font-black bg-pink-500 hover:bg-pink-600 text-white transition shadow-xs flex items-center cursor-pointer border border-pink-400"
+                  title="Bấm để xem Nội quy lớp học đầy đủ"
+                >
+                  📋 Nội quy lớp học
+                </button>
               </div>
 
               {/* 2x2 Grid Info Box with Clear Typography */}
@@ -1367,6 +1376,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* 24/7 AI STUDENT ASSISTANT CHATBOT WIDGET */}
       <StudentAiChatbotModal />
+
+      {/* CLASS RULES POPUP MODAL */}
+      <ClassRulesModal
+        isOpen={isClassRulesOpen}
+        onClose={() => setIsClassRulesOpen(false)}
+        onRefreshData={onRefreshData}
+      />
     </div>
   );
 };
