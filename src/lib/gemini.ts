@@ -61,26 +61,26 @@ function analyzeGeminiError(err: any, modelId: string, promptSummary: string) {
   const errStatus = err?.status || err?.statusCode || err?.code || (errMsg.includes('401') ? 401 : errMsg.includes('403') ? 403 : errMsg.includes('429') ? 429 : errMsg.includes('404') ? 404 : errMsg.includes('400') ? 400 : 'UNKNOWN');
 
   let category: 'API_KEY_INVALID' | 'PERMISSION_DENIED' | 'QUOTA_EXHAUSTED' | 'MODEL_NOT_FOUND' | 'BAD_REQUEST' | 'NETWORK_ERROR' | 'UNKNOWN' = 'UNKNOWN';
-  let userFriendlyText = `⚠️ LỖI GEMINI API (${errStatus}): ${errMsg}`;
+  let userFriendlyText = `🔴 LỖI API GEMINI (${errStatus}): ${errMsg}`;
 
   if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('invalid API key') || errStatus === 401) {
     category = 'API_KEY_INVALID';
-    userFriendlyText = `⚠️ LỖI API KEY: 401 API_KEY_INVALID (${errMsg})`;
+    userFriendlyText = `🔴 LỖI API KEY KHÔNG HỢP LỆ (401 API_KEY_INVALID): ${errMsg}`;
   } else if (errMsg.includes('PERMISSION_DENIED') || errMsg.includes('forbidden') || errStatus === 403) {
     category = 'PERMISSION_DENIED';
-    userFriendlyText = `⚠️ LỖI QUYỀN TRUY CẬP: 403 PERMISSION_DENIED (${errMsg})`;
+    userFriendlyText = `🔴 LỖI TỪ CHỐI TRUY CẬP (403 PERMISSION_DENIED): ${errMsg}`;
   } else if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errStatus === 429) {
     category = 'QUOTA_EXHAUSTED';
-    userFriendlyText = `⚠️ ĐÃ HẾT LIMIT QUOTA: 429 RESOURCE_EXHAUSTED (${errMsg})`;
+    userFriendlyText = `🔴 HẾT HẠN MỨC QUOTA (429 RESOURCE_EXHAUSTED): ${errMsg}`;
   } else if (errMsg.includes('404') || errMsg.includes('NOT_FOUND') || errStatus === 404) {
     category = 'MODEL_NOT_FOUND';
-    userFriendlyText = `⚠️ MODEL KHÔNG TỒN TẠI: 404 NOT_FOUND - "${modelId}" (${errMsg})`;
+    userFriendlyText = `🔴 MODEL KHÔNG TỒN TẠI (404 NOT_FOUND - "${modelId}"): ${errMsg}`;
   } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('ENOTFOUND') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     category = 'NETWORK_ERROR';
-    userFriendlyText = `⚠️ LỖI KẾT NỐI MẠNG: NETWORK_ERROR (${errMsg})`;
+    userFriendlyText = `🔴 LỖI KẾT NỐI MẠNG (NETWORK_ERROR): ${errMsg}`;
   } else if (errMsg.includes('400') || errMsg.includes('INVALID_ARGUMENT') || errStatus === 400) {
     category = 'BAD_REQUEST';
-    userFriendlyText = `⚠️ YÊU CẦU KHÔNG HỢP LỆ: 400 INVALID_ARGUMENT (${errMsg})`;
+    userFriendlyText = `🔴 YÊU CẦU KHÔNG HỢP LỆ (400 INVALID_ARGUMENT): ${errMsg}`;
   }
 
   // DETAILED FULL CONSOLE LOGGING (HTTP STATUS, ERROR MESSAGE, RESPONSE BODY, MODEL, CATEGORY)
@@ -139,7 +139,7 @@ export const GeminiEngine = {
   },
 
   getApiKeyInfo(): { key: string; source: string } {
-    // 1. Primary Source: Super Admin configured key in GeminiSettingsModal (LocalStorage)
+    // 1. Check API Key in localStorage (User UI Input)
     try {
       const userKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
       if (userKey) {
@@ -147,7 +147,7 @@ export const GeminiEngine = {
         if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
           return {
             key: sanitized,
-            source: 'Super Admin GeminiSettingModal (LocalStorage)',
+            source: 'localStorage (User UI Input)',
           };
         }
       }
@@ -155,7 +155,30 @@ export const GeminiEngine = {
       // LocalStorage access error fallback
     }
 
-    // 2. Secondary Fallback Source: Environment Variables (.env / Vercel / Netlify)
+    // 2. Check process.env.GEMINI_API_KEY
+    try {
+      if (typeof process !== 'undefined' && process.env) {
+        const procKey =
+          process.env.GEMINI_API_KEY ||
+          process.env.VITE_GEMINI_API_KEY ||
+          process.env.VITE_API_KEY ||
+          process.env.API_KEY;
+
+        if (procKey) {
+          const sanitized = String(procKey).trim().replace(/^["']|["']$/g, '');
+          if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
+            return {
+              key: sanitized,
+              source: 'process.env.GEMINI_API_KEY',
+            };
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore process check error
+    }
+
+    // 3. Check import.meta.env
     try {
       if (typeof import.meta !== 'undefined' && import.meta.env) {
         const envKey =
@@ -169,36 +192,13 @@ export const GeminiEngine = {
           if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
             return {
               key: sanitized,
-              source: 'Environment Variable (.env / Vercel)',
+              source: 'import.meta.env.VITE_GEMINI_API_KEY',
             };
           }
         }
       }
     } catch (e) {
-      // Ignore env check error
-    }
-
-    // 3. Fallback check for process.env (Node / Server-Side / Build time)
-    try {
-      if (typeof process !== 'undefined' && process.env) {
-        const procKey =
-          process.env.VITE_GEMINI_API_KEY ||
-          process.env.GEMINI_API_KEY ||
-          process.env.VITE_API_KEY ||
-          process.env.API_KEY;
-
-        if (procKey) {
-          const sanitized = String(procKey).trim().replace(/^["']|["']$/g, '');
-          if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
-            return {
-              key: sanitized,
-              source: 'Process Environment (process.env)',
-            };
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore process check error
+      // Ignore import.meta check error
     }
 
     return { key: '', source: 'Chưa cấu hình (Rỗng)' };
