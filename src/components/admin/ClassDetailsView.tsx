@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Class, Student, Session, HomeworkSubmission, BankConfig, User } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { StorageEngine } from '../../lib/storage';
 import {
   ArrowLeft,
   BookOpen,
