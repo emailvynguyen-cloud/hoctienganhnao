@@ -1814,26 +1814,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* ADD NEW STUDENT MODAL (SUPER ADMIN ONLY) */}
       {isAddStudentOpen && (
-                <input
-                  type="email"
-                  placeholder="hocvien@gmail.com"
-                  value={newStudentEmail}
-                  onChange={(e) => setNewStudentEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative text-slate-800 dark:text-white">
+            
+            {/* HEADER - Fixed Top */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-3 pr-6">
+                <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-black shrink-0">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">Thêm Học Viên Mới Vào Lớp</h3>
+                  <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên, SĐT, chọn lớp & gói số buổi đăng ký</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAddStudentOpen(false)}
+                className="p-2 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* FORM CONTAINER - Scrollable Body & Fixed Footer */}
+            <form onSubmit={handleCreateStudent} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+              <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Họ Và Tên Học Viên (*)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nguyễn Văn A"
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Điện Thoại (Tùy chọn)</label>
+                    <input
+                      type="text"
+                      placeholder="0912345678 (Tùy chọn)"
+                      value={newStudentPhone}
+                      onChange={(e) => setNewStudentPhone(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Xếp Vào Lớp Học (*)</label>
+                  <select
+                    value={newStudentClassId}
+                    onChange={(e) => setNewStudentClassId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
+                  >
+                    {safeClasses.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.className} ({cls.code}) - GV: {cls.teacherName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Buổi Học Đăng Ký</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newSessionCount}
+                      onChange={(e) => setNewSessionCount(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tổng Học Phí Gói (VNĐ)</label>
+                    <input
+                      type="number"
+                      step="100000"
+                      value={newTuitionPrice}
+                      onChange={(e) => setNewTuitionPrice(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Email (Tùy chọn)</label>
+                  <input
+                    type="email"
+                    placeholder="hocvien@gmail.com"
+                    value={newStudentEmail}
+                    onChange={(e) => setNewStudentEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end space-x-3">
+              {/* FOOTER - Fixed Bottom */}
+              <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddStudentOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition cursor-pointer"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-sky-400 hover:bg-sky-500 text-white font-black shadow-md transition"
+                  className="px-5 py-2.5 rounded-xl bg-sky-400 hover:bg-sky-500 text-white font-black shadow-md transition cursor-pointer"
                 >
                   ➕ Thêm Học Viên Mới
                 </button>
