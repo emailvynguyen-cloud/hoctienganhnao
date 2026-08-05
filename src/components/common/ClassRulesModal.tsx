@@ -125,6 +125,15 @@ export const ClassRulesModal: React.FC<ClassRulesModalProps> = ({
                 placeholder="Nhập nội quy lớp học tại đây..."
               />
             </div>
+          ) : !rulesText || !rulesText.trim() ? (
+            <div className="p-8 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 text-center space-y-2">
+              <p className="text-sm font-black text-slate-700 dark:text-slate-200">
+                Trung tâm chưa cập nhật nội quy.
+              </p>
+              <p className="text-xs text-slate-400 font-medium">
+                Vui lòng quay lại sau hoặc liên hệ giáo viên phụ trách để biết thêm thông tin chi tiết.
+              </p>
+            </div>
           ) : (
             <div className="bg-pink-50/40 dark:bg-slate-800/50 p-5 rounded-3xl border border-pink-100 dark:border-slate-800 whitespace-pre-wrap font-sans space-y-2 text-slate-800 dark:text-slate-100">
               {rulesText}

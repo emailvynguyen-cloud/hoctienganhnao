@@ -80,7 +80,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs'>('timetable');
+  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules'>('timetable');
+
+  // CLASS RULES MANAGEMENT STATE
+  const [isEditingClassRules, setIsEditingClassRules] = useState(false);
+  const [classRulesEditValue, setClassRulesEditValue] = useState(StorageEngine.getClassRules());
 
   // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING
   const scopedClasses = StorageEngine.getScopedClasses(currentUser, classes || []);
@@ -607,6 +611,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }`}
         >
           📜 Nhật Ký Thao Tác (Audit Log)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('class_rules')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            activeTab === 'class_rules'
+              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5 mr-1" /> 📋 Quản Lý Nội Quy Lớp Học
         </button>
       </div>
 
@@ -1465,7 +1480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {log.actorName} ({log.actorRole})
                       </span>
                       {log.targetName && (
-                        <span className="text-pink-600 font-extrabold">
+                <span className="text-pink-600 font-extrabold">
                           → {log.targetName}
                         </span>
                       )}
@@ -1487,6 +1502,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* TAB: CLASS RULES MANAGEMENT */}
+      {activeTab === 'class_rules' && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-pink-200 dark:border-slate-800 space-y-6 shadow-xs text-slate-800 dark:text-white">
+          
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 dark:border-slate-800 pb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-amber-400 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
+                📋
+              </div>
+              <div>
+                <h3 className="font-black text-lg text-slate-900 dark:text-white">
+                  Quản Lý Nội Quy Lớp Học Trung Tâm
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  {isSuperAdmin
+                    ? 'SUPER ADMIN có thể tạo, chỉnh sửa và cập nhật nội quy lớp học. Tự động đồng bộ thời gian thực đến tất cả học viên & giáo viên.'
+                    : 'Xem nội quy lớp học hiện tại của trung tâm Ms. Vy English.'}
+                </p>
+              </div>
+            </div>
+
+            {isSuperAdmin && (
+              <div className="flex items-center space-x-2 shrink-0">
+                {isEditingClassRules ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsEditingClassRules(false);
+                        setClassRulesEditValue(StorageEngine.getClassRules());
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-extrabold text-xs transition cursor-pointer"
+                    >
+                      Hủy Bỏ
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!classRulesEditValue || !classRulesEditValue.trim()) {
+                          alert('Nội quy không được để rỗng!');
+                          return;
+                        }
+                        StorageEngine.saveClassRules(classRulesEditValue.trim(), currentUser);
+                        setIsEditingClassRules(false);
+                        alert('Đã lưu và cập nhật Nội quy lớp học thành công! Dữ liệu đã được đồng bộ thời gian thực đến tất cả học viên.');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 mr-1.5 hidden" /> 💾 Lưu Cập Nhật Nội Quy
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setClassRulesEditValue(StorageEngine.getClassRules());
+                      setIsEditingClassRules(true);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
+                  >
+                    <Edit2 className="w-4 h-4 mr-1.5" /> ✏️ Chỉnh Sửa Nội Quy
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Rules Editor or Display View */}
+          {isEditingClassRules && isSuperAdmin ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-pink-900 dark:text-pink-300 uppercase tracking-wider">
+                  Nội dung văn bản nội quy (Hỗ trợ xuống dòng, gạch đầu dòng - và đánh số thứ tự 1., 2.):
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  💡 Sử dụng phím Enter xuống dòng để phân đoạn rõ ràng
+                </span>
+              </div>
+              <textarea
+                rows={14}
+                value={classRulesEditValue}
+                onChange={(e) => setClassRulesEditValue(e.target.value)}
+                className="w-full p-4 rounded-2xl border-2 border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-400 bg-pink-50/20 dark:bg-slate-800 text-xs font-mono leading-relaxed text-slate-900 dark:text-white font-semibold"
+                placeholder="Nhập nội quy lớp học tại đây..."
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(() => {
+                const currentRules = StorageEngine.getClassRules();
+                if (!currentRules || !currentRules.trim()) {
+                  return (
+                    <div className="p-8 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 text-center space-y-2">
+                      <p className="text-sm font-black text-slate-700 dark:text-slate-200">
+                        Trung tâm chưa cập nhật nội quy.
+                      </p>
+                      <p className="text-xs text-slate-400 font-medium">
+                        {isSuperAdmin ? 'Hãy nhấn nút "✏️ Chỉnh Sửa Nội Quy" ở trên để tạo nội quy đầu tiên.' : 'Vui lòng quay lại sau!'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="p-6 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 whitespace-pre-wrap font-sans space-y-3 leading-relaxed text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-medium">
+                    {currentRules}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+        </div>
+      )}
+
       {/* RECEIPT GENERATOR MODAL FOR SUPER ADMIN */}
       {selectedStudentForReceipt && (
         <ReceiptGeneratorModal
@@ -1504,170 +1632,177 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* ADD NEW CLASS MODAL (SUPER ADMIN ONLY) */}
       {isAddClassOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto shadow-2xl space-y-5 relative">
-            <button
-              onClick={() => setIsAddClassOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center font-black">
-                <Plus className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative text-slate-800 dark:text-white">
+            
+            {/* HEADER - Fixed Top */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-3 pr-6">
+                <div className="w-10 h-10 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center font-black shrink-0">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">Khởi Tạo Lớp Học Mới</h3>
+                  <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên lớp, mã lớp, lịch học & giáo viên phụ trách</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-lg text-slate-900 dark:text-white">Khởi Tạo Lớp Học Mới</h3>
-                <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên lớp, mã lớp, lịch học & giáo viên phụ trách</p>
-              </div>
+              <button
+                onClick={() => setIsAddClassOpen(false)}
+                className="p-2 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleCreateClass} className="space-y-4 text-xs font-semibold">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tên Lớp Học (*)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: IELTS Masterclass 01"
-                    value={newClassName}
-                    onChange={(e) => setNewClassName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
+            {/* FORM CONTAINER - Scrollable Body & Fixed Footer */}
+            <form onSubmit={handleCreateClass} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+              <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tên Lớp Học (*)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: IELTS Masterclass 01"
+                      value={newClassName}
+                      onChange={(e) => setNewClassName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Mã Lớp Học (*)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: IELTS-MC01"
+                      value={newClassCode}
+                      onChange={(e) => setNewClassCode(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white uppercase font-mono"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Mã Lớp Học (*)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: IELTS-MC01"
-                    value={newClassCode}
-                    onChange={(e) => setNewClassCode(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white uppercase font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp (*)</label>
-                <select
-                  value={newAdminId}
-                  onChange={(e) => {
-                    setNewAdminId(e.target.value);
-                    const selectedObj = adminUsersList.find((a) => a.uid === e.target.value);
-                    if (selectedObj) setNewAdminName(selectedObj.displayName);
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
-                >
-                  {adminUsersList.map((a) => (
-                    <option key={a.uid} value={a.uid}>
-                      👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Viên Phụ Trách (*)</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp (*)</label>
                   <select
-                    value={newTeacherName}
-                    onChange={(e) => setNewTeacherName(e.target.value)}
+                    value={newAdminId}
+                    onChange={(e) => {
+                      setNewAdminId(e.target.value);
+                      const selectedObj = adminUsersList.find((a) => a.uid === e.target.value);
+                      if (selectedObj) setNewAdminName(selectedObj.displayName);
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
                   >
-                    <option value="Ms. Vy">👑 Ms. Vy (Super Admin / Điều Hành)</option>
-                    {otherTeachersList.map((t) => (
-                      <option key={t.id} value={t.name}>
-                        👩‍🏫 {t.name} ({t.email || 'Giáo viên'})
+                    {adminUsersList.map((a) => (
+                      <option key={a.uid} value={a.uid}>
+                        👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
                       </option>
                     ))}
                   </select>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Viên Phụ Trách (*)</label>
+                    <select
+                      value={newTeacherName}
+                      onChange={(e) => setNewTeacherName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
+                    >
+                      <option value="Ms. Vy">👑 Ms. Vy (Super Admin / Điều Hành)</option>
+                      {otherTeachersList.map((t) => (
+                        <option key={t.id} value={t.name}>
+                          👩‍🏫 {t.name} ({t.email || 'Giáo viên'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Trình Học</label>
+                    <input
+                      type="text"
+                      placeholder="IELTS Breakthrough"
+                      value={newCourseName}
+                      onChange={(e) => setNewCourseName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {!newTeacherName.toLowerCase().includes('vy') && (
+                  <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
+                    <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
+                      💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="10000"
+                      required
+                      value={newTeacherPayRate}
+                      onChange={(e) => setNewTeacherPayRate(Number(e.target.value))}
+                      className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
+                      placeholder="Nhập bậc lương, ví dụ: 150000"
+                    />
+                    <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
+                      Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương trên trang điều khiển của giáo viên {newTeacherName}.
+                    </span>
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Giáo Trình Học</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Lịch Học Hàng Tuần (Khung 24 giờ, ví dụ: 18:00 - 19:30)</label>
                   <input
                     type="text"
-                    placeholder="IELTS Breakthrough"
-                    value={newCourseName}
-                    onChange={(e) => setNewCourseName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    placeholder="Ví dụ: T3 (18:00 - 19:30), T5 (18:00 - 19:30), T7 (18:00 - 19:30)"
+                    value={newSchedule}
+                    onChange={(e) => setNewSchedule(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white text-xs font-mono font-bold"
                   />
-                </div>
-              </div>
-
-              {!newTeacherName.toLowerCase().includes('vy') && (
-                <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
-                  <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
-                    💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="10000"
-                    required
-                    value={newTeacherPayRate}
-                    onChange={(e) => setNewTeacherPayRate(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
-                    placeholder="Nhập bậc lương, ví dụ: 150000"
-                  />
-                  <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
-                    Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương trên trang điều khiển của giáo viên {newTeacherName}.
+                  <span className="text-[10px] text-slate-500 font-medium block">
+                    💡 Định dạng chuẩn: <strong>T3 (18:00 - 19:30), T5 (18:00 - 19:30)</strong>
                   </span>
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Lịch Học Hàng Tuần (Khung 24 giờ, ví dụ: 18:00 - 19:30)</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: T3 (18:00 - 19:30), T5 (18:00 - 19:30), T7 (18:00 - 19:30)"
-                  value={newSchedule}
-                  onChange={(e) => setNewSchedule(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white text-xs font-mono font-bold"
-                />
-                <span className="text-[10px] text-slate-500 font-medium block">
-                  💡 Định dạng chuẩn: <strong>T3 (18:00 - 19:30), T5 (18:00 - 19:30)</strong>
-                </span>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Buổi Bắt Đầu Tính Số</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newStartSessionNumber}
+                      onChange={(e) => setNewStartSessionNumber(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Buổi Bắt Đầu Tính Số</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newStartSessionNumber}
-                    onChange={(e) => setNewStartSessionNumber(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Link Zoom Học Online (Tùy chọn)</label>
-                  <input
-                    type="url"
-                    placeholder="https://zoom.us/j/..."
-                    value={newZoomLink}
-                    onChange={(e) => setNewZoomLink(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Link Zoom Học Online (Tùy chọn)</label>
+                    <input
+                      type="url"
+                      placeholder="https://zoom.us/j/..."
+                      value={newZoomLink}
+                      onChange={(e) => setNewZoomLink(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end space-x-3">
+              {/* FOOTER - Fixed Bottom */}
+              <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddClassOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition cursor-pointer"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-pink-400 hover:bg-pink-500 text-white font-black shadow-md transition"
+                  className="px-5 py-2.5 rounded-xl bg-pink-400 hover:bg-pink-500 text-white font-black shadow-md transition cursor-pointer"
                 >
                   ➕ Xác Nhận Tạo Lớp Mới
                 </button>
@@ -1679,92 +1814,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* ADD NEW STUDENT MODAL (SUPER ADMIN ONLY) */}
       {isAddStudentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-pink-300 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
-            <button
-              onClick={() => setIsAddStudentOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-black">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-slate-900 dark:text-white">Thêm Học Viên Mới Vào Lớp</h3>
-                <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên, SĐT, chọn lớp & gói số buổi đăng ký</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateStudent} className="space-y-4 text-xs font-semibold">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Họ Và Tên Học Viên (*)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nguyễn Văn A"
-                    value={newStudentName}
-                    onChange={(e) => setNewStudentName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Điện Thoại (Tùy chọn)</label>
-                  <input
-                    type="text"
-                    placeholder="0912345678 (Tùy chọn)"
-                    value={newStudentPhone}
-                    onChange={(e) => setNewStudentPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Xếp Vào Lớp Học (*)</label>
-                <select
-                  value={newStudentClassId}
-                  onChange={(e) => setNewStudentClassId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                >
-                  {safeClasses.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.className} ({cls.code}) - GV: {cls.teacherName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Buổi Học Đăng Ký</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newSessionCount}
-                    onChange={(e) => setNewSessionCount(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tổng Học Phí Gói (VNĐ)</label>
-                  <input
-                    type="number"
-                    step="100000"
-                    value={newTuitionPrice}
-                    onChange={(e) => setNewTuitionPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Email (Tùy chọn)</label>
                 <input
                   type="email"
                   placeholder="hocvien@gmail.com"

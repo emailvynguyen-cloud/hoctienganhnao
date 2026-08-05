@@ -102,80 +102,122 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
-        <head>
-          <title>Phiếu Thu Học Phí - ${student.name}</title>
-          <style>
-            body { font-family: 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #1e293b; background: #fff; }
-            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #ec4899; padding-bottom: 20px; margin-bottom: 25px; }
-            .title { font-size: 22px; font-weight: 900; color: #831843; margin: 0; }
-            .subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
-            .badge { background: #fce7f3; color: #9d174d; font-family: monospace; font-weight: bold; padding: 6px 14px; border-radius: 8px; font-size: 14px; }
-            .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-            .info-grid td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-            .info-grid td.label { font-weight: 600; color: #64748b; width: 35%; }
-            .info-grid td.val { font-weight: 800; color: #0f172a; }
-            .qr-container { display: flex; align-items: center; justify-content: space-between; border: 2px dashed #f472b6; padding: 20px; border-radius: 16px; background: #fff1f2; margin-bottom: 30px; }
-            .qr-text { max-width: 380px; font-size: 13px; color: #831843; line-height: 1.6; }
-            .qr-img { width: 180px; height: 180px; border-radius: 12px; border: 1px solid #fbcfe8; }
-            .footer { display: flex; justify-content: space-between; margin-top: 40px; text-align: center; font-size: 13px; }
-            .sig-title { font-weight: 800; color: #334155; margin-bottom: 60px; }
-          </style>
-        </head>
-        <body>
+      <head>
+        <title>Phiếu Thu Học Phí #${receiptCode} - Ms. Vy English Center</title>
+        <meta charset="utf-8" />
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #1e293b; background-color: #fff; }
+          .receipt-box { border: 3px solid #f472b6; border-radius: 20px; padding: 30px; background: #fff; max-w: 680px; margin: 0 auto; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px border #fbcfe8; padding-bottom: 15px; margin-bottom: 20px; }
+          .logo { font-size: 22px; font-weight: 900; color: #be185d; text-transform: uppercase; }
+          .sub-title { font-size: 13px; color: #64748b; font-weight: 600; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+          .table td { padding: 10px 0; border-bottom: 1px border #f1f5f9; }
+          .table td.label { color: #64748b; font-weight: 600; width: 40%; }
+          .table td.val { color: #0f172a; font-weight: 800; text-align: right; }
+          .price { color: #047857; font-size: 18px; font-weight: 900; }
+          .qr-section { display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; border: 2px dashed #f472b6; border-radius: 16px; padding: 15px 20px; margin-top: 20px; }
+          .qr-text { font-size: 13px; color: #831843; font-weight: 700; line-height: 1.5; }
+          .qr-img { width: 130px; height: 130px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; padding: 5px; }
+          .footer { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; font-size: 13px; color: #475569; font-weight: 700; }
+          @media print {
+            body { padding: 0; }
+            .receipt-box { border-width: 2px; shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-box">
           <div class="header">
             <div>
-              <h1 class="title">🌸 MS. VY ENGLISH CENTER</h1>
-              <div class="subtitle">PHIẾU THU HỌC PHÍ & MÃ XÁC NHẬN CHUYỂN KHOẢN VIETQR</div>
+              <div class="logo">🌸 MS. VY ENGLISH CENTER</div>
+              <div class="sub-title">Phiếu Thu Học Phí & Mã Chuyển Khoản VIETQR</div>
             </div>
-            <div class="badge">MÃ PHIẾU: #${receiptCode}</div>
+            <div style="text-align: right;">
+              <div style="font-weight: 900; color: #be185d; font-family: monospace; font-size: 16px;">#${receiptCode}</div>
+              <div style="font-size: 12px; color: #64748b;">Ngày lập: ${new Date().toISOString().split('T')[0]}</div>
+            </div>
           </div>
 
-          <table class="info-grid">
-            <tr><td class="label">Họ và tên Học Viên:</td><td class="val" style="font-size: 16px; color: #be185d;">${student.name}</td></tr>
-            <tr><td class="label">Số điện thoại liên hệ:</td><td class="val">${student.phone || 'Chưa cập nhật'}</td></tr>
-            <tr><td class="label">Lớp học đăng ký:</td><td class="val">${targetClass?.className || 'Lớp Ms. Vy English'} (${targetClass?.schedule || ''})</td></tr>
-            <tr><td class="label">Kỳ học / Gói học phí:</td><td class="val" style="color: #6b21a8;">${tuitionPeriod} (${packageSessions} Buổi)</td></tr>
-            <tr><td class="label">Số tiền học phí:</td><td class="val" style="color: #047857; font-size: 18px;">${formatVND(packagePrice)}</td></tr>
-            <tr><td class="label">Hạn thanh toán:</td><td class="val" style="color: #b45309;">${dueDate}</td></tr>
-            <tr><td class="label">Ngân hàng thụ hưởng:</td><td class="val">${activeBankId} - STK: ${activeAccountNo} (${activeAccountName})</td></tr>
-            <tr><td class="label">Nội dung chuyển khoản:</td><td class="val" style="font-family: monospace; background: #fef08a; padding: 4px 8px; border-radius: 4px; display: inline-block;">${transferInfo}</td></tr>
+          <table class="table">
+            <tr>
+              <td class="label">Họ và tên học viên:</td>
+              <td class="val" style="color: #be185d; font-size: 16px;">${student.name}</td>
+            </tr>
+            <tr>
+              <td class="label">Số điện thoại liên hệ:</td>
+              <td class="val">${student.phone || 'Chưa cập nhật'}</td>
+            </tr>
+            <tr>
+              <td class="label">Lớp học đăng ký:</td>
+              <td class="val">${targetClass?.className || 'Lớp Ms. Vy English'} (${targetClass?.schedule || ''})</td>
+            </tr>
+            <tr>
+              <td class="label">Kỳ học / Gói số buổi:</td>
+              <td class="val">${tuitionPeriod} (${packageSessions} Buổi)</td>
+            </tr>
+            <tr>
+              <td class="label">Số tiền học phí:</td>
+              <td class="val price">${formatVND(packagePrice)}</td>
+            </tr>
+            <tr>
+              <td class="label">Hạn nộp học phí:</td>
+              <td class="val" style="color: #b45309;">${dueDate}</td>
+            </tr>
+            <tr>
+              <td class="label">Ngân hàng thụ hưởng:</td>
+              <td class="val">${activeBankId} (${activeAccountNo}) - ${activeAccountName}</td>
+            </tr>
+            <tr>
+              <td class="label">Nội dung chuyển khoản (Bắt buộc):</td>
+              <td class="val" style="font-family: monospace; color: #be185d; font-size: 15px;">${transferInfo}</td>
+            </tr>
           </table>
 
-          <div class="qr-container">
+          <div class="qr-section">
             <div class="qr-text">
-              <strong>📲 MÃ VIETQR CHUYỂN KHOẢN TỰ ĐỘNG:</strong><br/>
-              Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...) quét mã để thanh toán tự động đúng số tiền <strong>${formatVND(packagePrice)}</strong> và cú pháp <strong>${transferInfo}</strong>.
+              📲 <strong>MÃ VIETQR CHUYỂN KHOẢN TỰ ĐỘNG</strong><br/>
+              Mở app Ngân hàng quét mã để thanh toán tự động<br/>
+              Số tiền: <span style="color: #047857;">${formatVND(packagePrice)}</span><br/>
+              Nội dung: <span style="color: #be185d;">${transferInfo}</span>
             </div>
             <img src="${qrUrl}" class="qr-img" />
           </div>
 
           <div class="footer">
             <div>
-              <div class="sig-title">Người Lập Phiếu</div>
-              <div>(Ký & ghi rõ họ tên)</div>
+              <p>Người Lập Phiếu</p>
+              <br/><br/>
+              <p style="font-size: 11px; color: #94a3b8; font-weight: normal;">(Ký & ghi rõ họ tên)</p>
             </div>
             <div>
-              <div class="sig-title">Đại Diện Trung Tâm Ms. Vy</div>
-              <div>(Ký & ghi rõ họ tên)</div>
+              <p>Đại Diện Ms. Vy English Center</p>
+              <br/><br/>
+              <p style="font-size: 11px; color: #94a3b8; font-weight: normal;">(Ký & ghi rõ họ tên)</p>
             </div>
           </div>
+        </div>
 
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
-        </body>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          }
+        </script>
+      </body>
       </html>
     `);
     printWindow.document.close();
   };
 
-  // HANDLE DOWNLOAD FULL TUITION RECEIPT SLIP IMAGE (PNG)
+  // DOWNLOAD FULL RECEIPT AS HD PNG IMAGE (CANVAS DRAWING)
   const handleDownloadFullReceiptImage = async () => {
     try {
-      const width = 800;
-      const height = 920;
       const canvas = document.createElement('canvas');
-      canvas.width = width * 2; // 2x Retina
+      const width = 750;
+      const height = 960;
+      canvas.width = width * 2;
       canvas.height = height * 2;
       const ctx = canvas.getContext('2d');
 
@@ -248,9 +290,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
         ctx.font = row.isBold ? '900 15px system-ui, -apple-system, sans-serif' : '600 14px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(row.val, width - 45, rowY);
-        ctx.textAlign = 'left';
 
-        // Row border
         ctx.strokeStyle = '#f1f5f9';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -261,12 +301,12 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
         rowY += 45;
       });
 
-      // QR Box Container
-      ctx.fillStyle = '#fff1f2';
+      // QR Container Box
+      ctx.fillStyle = '#fdf2f8';
       ctx.strokeStyle = '#f472b6';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(45, rowY + 10, width - 90, 200, 20);
+      ctx.roundRect(45, rowY + 15, width - 90, 190, 20);
       ctx.fill();
       ctx.stroke();
 
@@ -346,154 +386,157 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-purple-100 dark:border-purple-800 p-6 space-y-5 max-h-[92vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-purple-950/60 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-purple-100 dark:border-purple-800 overflow-hidden flex flex-col max-h-[90vh] relative text-slate-800 dark:text-white">
         
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Header */}
-        <div className="flex items-center space-x-3 border-b border-purple-100 pb-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
-            <QrCode className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
-              Hệ Thống Thu Học Phí & Mã VietQR Tự Động
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Học viên: <strong>{student.name}</strong> • SĐT: {student.phone || 'N/A'} • Lớp: {targetClass?.className}
-            </p>
-          </div>
-        </div>
-
-        {/* Dynamic Package Settings Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs">
-          <div>
-            <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học:</label>
-            <input
-              type="text"
-              value={tuitionPeriod}
-              onChange={(e) => setTuitionPeriod(e.target.value)}
-              className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
-              placeholder="Tháng 8/2026"
-            />
-          </div>
-
-          <div>
-            <label className="block font-extrabold text-slate-700 mb-1">Mức học phí (VNĐ):</label>
-            <input
-              type="number"
-              value={packagePrice}
-              onChange={(e) => setPackagePrice(Number(e.target.value))}
-              className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="block font-extrabold text-slate-700 mb-1">Số buổi đăng ký:</label>
-            <input
-              type="number"
-              value={packageSessions}
-              onChange={(e) => setPackageSessions(Number(e.target.value))}
-              className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="block font-extrabold text-slate-700 mb-1">Hạn nộp tiền:</label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
-            />
-          </div>
-        </div>
-
-        {/* OFFICIAL RECEIPT VOUCHER */}
-        <div id="printable-receipt" className="p-5 rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 space-y-3.5 shadow-md text-slate-800">
-          
-          <div className="flex items-center justify-between border-b border-purple-200 pb-2.5">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-pink-400 text-white flex items-center justify-center font-black text-lg">
-                🌸
-              </div>
-              <div>
-                <h4 className="font-black text-sm text-purple-900">MS. VY ENGLISH CENTER</h4>
-                <p className="text-[10px] text-slate-500 font-medium">Phiếu Thu Học Phí & Mã Chuyển Khoản QR Động</p>
-              </div>
+        {/* HEADER - Fixed Top */}
+        <div className="p-4 sm:p-6 bg-purple-50 dark:bg-slate-800/80 border-b border-purple-100 dark:border-purple-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-3 pr-6">
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0">
+              <QrCode className="w-5 h-5" />
             </div>
-
-            <div className="text-right">
-              <span className="text-[11px] font-mono font-black text-pink-600 block">#{receiptCode}</span>
-              <span className="text-[10px] text-slate-400 font-medium">Lập ngày: {new Date().toISOString().split('T')[0]}</span>
-            </div>
-          </div>
-
-          {/* Receipt Details Table */}
-          <div className="space-y-1 text-xs font-medium">
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Họ và tên học viên:</span>
-              <strong className="text-slate-900 font-black text-sm">{student.name}</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Lớp học:</span>
-              <strong>{targetClass?.className || 'Lớp Ms. Vy English'}</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Kỳ học / Gói học phí:</span>
-              <strong className="text-purple-800">{tuitionPeriod} ({packageSessions} Buổi)</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Số tiền học phí:</span>
-              <strong className="text-emerald-700 text-base font-black">{formatVND(packagePrice)}</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Hạn thanh toán:</span>
-              <strong className="text-amber-800">{dueDate}</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
-              <strong>{activeBankId} ({activeAccountNo}) - {activeAccountName}</strong>
-            </div>
-
-            <div className="flex justify-between py-1 border-b border-purple-100">
-              <span className="text-slate-500">Cú pháp chuyển khoản:</span>
-              <strong className="font-mono text-purple-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">{transferInfo}</strong>
-            </div>
-          </div>
-
-          {/* VietQR Display Box */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-purple-200 shadow-xs">
-            <div className="text-center sm:text-left space-y-1">
-              <span className="text-xs font-extrabold text-purple-900 uppercase block">
-                📲 Mã VietQR Chuyển Khoản Tự Động
-              </span>
-              <p className="text-[11px] text-slate-500 max-w-xs">
-                Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...) quét mã để thanh toán tự động đúng số tiền & cú pháp.
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Hệ Thống Thu Học Phí & Mã VietQR Tự Động
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Học viên: <strong>{student.name}</strong> • SĐT: {student.phone || 'N/A'} • Lớp: {targetClass?.className}
               </p>
             </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition shrink-0 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-            <div className="bg-white p-2 rounded-2xl border border-purple-200 shadow-sm shrink-0">
-              <img src={qrUrl} alt="VietQR Payment Code" className="w-36 h-36 object-contain" />
+        {/* BODY - Scrollable Content */}
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 min-h-0 text-xs font-medium">
+          {/* Dynamic Package Settings Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs">
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học:</label>
+              <input
+                type="text"
+                value={tuitionPeriod}
+                onChange={(e) => setTuitionPeriod(e.target.value)}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+                placeholder="Tháng 8/2026"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Mức học phí (VNĐ):</label>
+              <input
+                type="number"
+                value={packagePrice}
+                onChange={(e) => setPackagePrice(Number(e.target.value))}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Số buổi đăng ký:</label>
+              <input
+                type="number"
+                value={packageSessions}
+                onChange={(e) => setPackageSessions(Number(e.target.value))}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Hạn nộp tiền:</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+              />
             </div>
           </div>
 
+          {/* OFFICIAL RECEIPT VOUCHER */}
+          <div id="printable-receipt" className="p-5 rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 space-y-3.5 shadow-md text-slate-800">
+            
+            <div className="flex items-center justify-between border-b border-purple-200 pb-2.5">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-pink-400 text-white flex items-center justify-center font-black text-lg">
+                  🌸
+                </div>
+                <div>
+                  <h4 className="font-black text-sm text-purple-900">MS. VY ENGLISH CENTER</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">Phiếu Thu Học Phí & Mã Chuyển Khoản QR Động</p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[11px] font-mono font-black text-pink-600 block">#{receiptCode}</span>
+                <span className="text-[10px] text-slate-400 font-medium">Lập ngày: {new Date().toISOString().split('T')[0]}</span>
+              </div>
+            </div>
+
+            {/* Receipt Details Table */}
+            <div className="space-y-1 text-xs font-medium">
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Họ và tên học viên:</span>
+                <strong className="text-slate-900 font-black text-sm">{student.name}</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Lớp học:</span>
+                <strong>{targetClass?.className || 'Lớp Ms. Vy English'}</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Kỳ học / Gói học phí:</span>
+                <strong className="text-purple-800">{tuitionPeriod} ({packageSessions} Buổi)</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Số tiền học phí:</span>
+                <strong className="text-emerald-700 text-base font-black">{formatVND(packagePrice)}</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Hạn thanh toán:</span>
+                <strong className="text-amber-800">{dueDate}</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
+                <strong>{activeBankId} ({activeAccountNo}) - {activeAccountName}</strong>
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-purple-100">
+                <span className="text-slate-500">Cú pháp chuyển khoản:</span>
+                <strong className="font-mono text-purple-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">{transferInfo}</strong>
+              </div>
+            </div>
+
+            {/* VietQR Display Box */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-purple-200 shadow-xs">
+              <div className="text-center sm:text-left space-y-1">
+                <span className="text-xs font-extrabold text-purple-900 uppercase block">
+                  📲 Mã VietQR Chuyển Khoản Tự Động
+                </span>
+                <p className="text-[11px] text-slate-500 max-w-xs">
+                  Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...) quét mã để thanh toán tự động đúng số tiền & cú pháp.
+                </p>
+              </div>
+
+              <div className="bg-white p-2 rounded-2xl border border-purple-200 shadow-sm shrink-0">
+                <img src={qrUrl} alt="VietQR Payment Code" className="w-36 h-36 object-contain" />
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        {/* FOOTER - Fixed Bottom */}
+        <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/80 border-t border-purple-100 dark:border-purple-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {

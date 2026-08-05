@@ -49,59 +49,62 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       : 'Học viên sẽ bị gỡ ra khỏi danh sách lớp học hiện tại.';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-rose-300 dark:border-slate-800 p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 relative text-slate-800 dark:text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-rose-300 dark:border-slate-800 max-w-md w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative text-slate-800 dark:text-white">
         
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Warning Icon Badge */}
-        <div className="flex items-center space-x-3.5 border-b border-rose-100 dark:border-slate-800 pb-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center font-black shrink-0 border border-rose-200 animate-pulse">
-            <AlertTriangle className="w-7 h-7 text-rose-600" />
+        {/* HEADER - Fixed Top */}
+        <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/80 border-b border-rose-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-3 pr-6">
+            <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center font-black shrink-0 border border-rose-200 animate-pulse">
+              <AlertTriangle className="w-6 h-6 text-rose-600" />
+            </div>
+            <div>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-200 text-rose-950 uppercase tracking-wider block">
+                ⚠️ CẢNH BÁO SUPER ADMIN
+              </span>
+              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">
+                {title || `Xác Nhận Xóa ${getTypeLabel()}`}
+              </h3>
+            </div>
           </div>
-          <div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-200 text-rose-950 uppercase tracking-wider">
-              ⚠️ CẢNH BÁO BẢO MẬT SUPER ADMIN
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition shrink-0 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* BODY - Scrollable */}
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-medium min-h-0">
+          {/* Target Item Display Card */}
+          <div className="p-4 rounded-2xl bg-rose-50/80 dark:bg-slate-800/80 border border-rose-200 dark:border-slate-700 space-y-1.5">
+            <span className="text-[11px] font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">
+              Đối tượng thực hiện xóa:
             </span>
-            <h3 className="text-base font-black text-slate-900 dark:text-white mt-1">
-              {title || `Xác Nhận Xóa ${getTypeLabel()}`}
-            </h3>
+            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white underline decoration-rose-400">
+              {itemName}
+            </p>
+            {itemDetail && (
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                {itemDetail}
+              </p>
+            )}
+          </div>
+
+          {/* Warning Description */}
+          <div className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed bg-amber-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-800 flex items-start space-x-2">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>{warningMessage || defaultWarning}</span>
           </div>
         </div>
 
-        {/* Target Item Display Card */}
-        <div className="p-4 rounded-2xl bg-rose-50/80 dark:bg-slate-800/80 border border-rose-200 dark:border-slate-700 space-y-1.5">
-          <span className="text-[11px] font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">
-            Đối tượng thực hiện xóa:
-          </span>
-          <p className="text-base font-black text-slate-900 dark:text-white underline decoration-rose-400">
-            {itemName}
-          </p>
-          {itemDetail && (
-            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-              {itemDetail}
-            </p>
-          )}
-        </div>
-
-        {/* Warning Description */}
-        <div className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed bg-amber-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-800 flex items-start space-x-2">
-          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <span>{warningMessage || defaultWarning}</span>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end space-x-3 pt-2">
+        {/* FOOTER - Fixed Bottom */}
+        <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/80 border-t border-rose-100 dark:border-slate-800 flex items-center justify-end space-x-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition cursor-pointer"
           >
             Hủy Bỏ (An Toàn)
           </button>
@@ -111,7 +114,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               onConfirm();
               onClose();
             }}
-            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
           >
             <Trash2 className="w-4 h-4 mr-1.5" /> 🗑️ Đồng Ý Xóa
           </button>
