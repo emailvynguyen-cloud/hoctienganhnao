@@ -285,10 +285,29 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       return (
         <div
           key={session.id}
-          className="rounded-3xl border-2 border-amber-300 bg-amber-50 dark:bg-slate-800 p-5 shadow-xs flex items-center justify-between text-xs sm:text-sm font-black text-amber-950 dark:text-amber-300"
+          className="rounded-3xl border-2 border-amber-300 bg-amber-50/90 dark:bg-slate-800 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm font-semibold text-amber-950 dark:text-amber-300"
         >
-          <span>
-            ⚠️ Buổi {session.sessionNumber} - Ngày {formatSessionDate(session.date)} - Nghỉ tính phí do vi phạm quy định
+          <div className="flex items-center space-x-3">
+            <span className="w-10 h-10 rounded-2xl bg-amber-400 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+              #{session.sessionNumber}
+            </span>
+            <div>
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                <span className="font-black text-slate-900 dark:text-white">
+                  Buổi Học #{session.sessionNumber} • Ngày {formatSessionDate(session.date)}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white uppercase shadow-2xs">
+                  ⚠️ Nghỉ tính phí
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 dark:text-amber-400 font-medium mt-0.5">
+                Ghi chú: Buổi nghỉ tính phí (nghỉ quá số lần quy định hoặc không tham gia ca học).
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[11px] font-black bg-amber-200 text-amber-950 dark:bg-amber-950 dark:text-amber-200 px-3 py-1.5 rounded-xl border border-amber-300 shrink-0 text-center">
+            -1 Buổi trong gói học
           </span>
         </div>
       );
@@ -687,7 +706,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         starsCount={currentStudent.stars}
       />
 
-      {/* 2.5. ABSENCE STATISTICS WIDGET SECTION */}
+      {/* 2.5. EXCUSED ABSENCE STATISTICS WIDGET SECTION */}
       {(() => {
         const now = new Date();
         const currYear = now.getFullYear();
@@ -695,37 +714,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         const currentMonthStr = `${currYear}-${currMonthNum < 10 ? '0' : ''}${currMonthNum}`;
         const currentMonthLabel = `${currMonthNum < 10 ? '0' : ''}${currMonthNum}/${currYear}`;
 
-        // Collect all absence records for this student in studentSessions
-        const allAbsences = studentSessions.flatMap((sess) => {
-          // 1. Charged absence session
-          if (sess.isChargedAbsenceSession) {
-            return [{
-              id: `abs_${sess.id}`,
-              sessionNumber: sess.sessionNumber,
-              date: sess.date,
-              type: 'Nghỉ tính phí',
-              reason: 'Nghỉ quá số lần quy định / không vào lớp',
-              badgeColor: 'bg-amber-100 text-amber-950 border-amber-300',
-            }];
-          }
+        // Per Requirements: ONLY Excused, non-chargeable absences belong to Absence Statistics
+        const excusedAbsences = (currentStudent.absences || []).map((abs) => ({
+          id: abs.id,
+          date: abs.date,
+          reason: abs.reason || 'Nghỉ có phép / Bảo lưu',
+          isMakeupCompleted: abs.isMakeupCompleted,
+          badgeColor: abs.isMakeupCompleted
+            ? 'bg-emerald-100 text-emerald-950 border-emerald-300'
+            : 'bg-sky-100 text-sky-950 border-sky-300',
+          type: abs.isMakeupCompleted ? 'Đã học bù' : 'Nghỉ có phép',
+        }));
 
-          // 2. Attendance status in attendance array
-          const att = (sess.attendance || []).find((a) => a.studentId === currentStudent.id);
-          if (att && (att.status === 'excused' || att.status === 'unexcused')) {
-            return [{
-              id: `abs_${sess.id}`,
-              sessionNumber: sess.sessionNumber,
-              date: sess.date,
-              type: att.status === 'excused' ? 'Nghỉ có phép' : 'Nghỉ không phép',
-              reason: att.status === 'excused' ? 'Học viên có xin phép trước' : 'Nghỉ không báo trước',
-              badgeColor: att.status === 'excused' ? 'bg-sky-100 text-sky-950 border-sky-300' : 'bg-rose-100 text-rose-950 border-rose-300',
-            }];
-          }
-
-          return [];
-        });
-
-        const monthAbsences = allAbsences.filter((a) => a.date && a.date.startsWith(currentMonthStr));
+        const monthExcusedAbsences = excusedAbsences.filter((a) => a.date && a.date.startsWith(currentMonthStr));
 
         return (
           <div className="bg-gradient-to-r from-amber-50/80 via-orange-50/60 to-amber-50/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-amber-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
@@ -736,36 +737,39 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
                 <div>
                   <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
-                    Thống Kê Buổi Nghỉ Học Tháng {currentMonthLabel}
+                    Thống Kê Buổi Nghỉ Học Có Phép Tháng {currentMonthLabel}
                   </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Chỉ thống kê các buổi nghỉ có phép (bảo lưu/học bù). Các buổi nghỉ tính phí không nằm trong thống kê này.
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2 shrink-0">
                 <span className="px-4 py-2 rounded-2xl bg-amber-200 text-amber-950 font-black text-xs border border-amber-300 shadow-2xs">
-                  Số buổi nghỉ tháng {currentMonthLabel}: <strong>{monthAbsences.length} buổi</strong>
+                  Số buổi nghỉ tháng {currentMonthLabel}: <strong>{monthExcusedAbsences.length} buổi</strong>
                 </span>
                 <span className="px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-xs border border-amber-200 shadow-2xs">
-                  Tổng số buổi nghỉ: {allAbsences.length} buổi
+                  Tổng số buổi nghỉ có phép: {excusedAbsences.length} buổi
                 </span>
               </div>
             </div>
 
             {/* Absence Details List */}
-            {allAbsences.length > 0 ? (
+            {excusedAbsences.length > 0 ? (
               <div className="space-y-2.5">
                 <span className="text-xs font-black text-amber-950 dark:text-amber-300 uppercase tracking-wider block">
-                  🗓️ Danh Sách Các Buổi Nghỉ Chi Tiết:
+                  🗓️ Danh Sách Các Buổi Nghỉ Có Phép Chi Tiết:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {allAbsences.map((abs) => (
+                  {excusedAbsences.map((abs) => (
                     <div
                       key={abs.id}
                       className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 text-xs flex items-center justify-between gap-2 shadow-2xs"
                     >
                       <div className="space-y-0.5 truncate">
                         <span className="font-black text-slate-900 dark:text-white block">
-                          Buổi #{abs.sessionNumber} • Ngày {formatSessionDate(abs.date)}
+                          🗓️ Ngày nghỉ: {formatSessionDate(abs.date)}
                         </span>
                         <span className="text-[11px] text-slate-500 font-medium truncate block">
                           Lý do: {abs.reason}
@@ -780,7 +784,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
             ) : (
               <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-slate-800 border border-emerald-200 text-emerald-950 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
-                <span>🎉 Học viên đi học rất chuyên cần! Chưa nghỉ buổi học nào trong tháng này.</span>
+                <span>🎉 Học viên đi học rất chuyên cần! Chưa có buổi nghỉ có phép nào.</span>
                 <span className="px-3 py-1 rounded-xl bg-emerald-200 text-emerald-950 font-black text-[11px]">Chuyên Cần 100% ⭐</span>
               </div>
             )}

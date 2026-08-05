@@ -57,8 +57,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onSetSubViewNavigation,
   targetSubmissionId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'today' | 'grading' | 'schedule' | 'all_classes' | 'revenue'>('today');
-  const [selectedClassForRevenueDetails, setSelectedClassForRevenueDetails] = useState<Class | null>(null);
+  const [selectedClassIdForRevenueDetails, setSelectedClassIdForRevenueDetails] = useState<string | null>(null);
+  const selectedClassForRevenueDetails = selectedClassIdForRevenueDetails
+    ? (classes || []).find((c) => c && c.id === selectedClassIdForRevenueDetails) || null
+    : null;
   const [isAllSessionsRevenueModalOpen, setIsAllSessionsRevenueModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -793,7 +795,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
               const clsMonthSessions = (sessions || []).filter(
                 (s) => s && s.classId === cls.id && s.date && s.date.startsWith(teacherSelectedMonth)
               );
-              const rate = cls.teacherPayRatePerSession || 150000;
+              const rate = typeof cls.teacherPayRatePerSession === 'number' ? cls.teacherPayRatePerSession : 150000;
               const salary = clsMonthSessions.length * rate;
               totalSalary += salary;
               return {
@@ -889,7 +891,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                         </div>
 
                         <button
-                          onClick={() => setSelectedClassForRevenueDetails(item.classObj)}
+                          onClick={() => setSelectedClassIdForRevenueDetails(item.classObj.id)}
                           className="w-full py-2.5 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition border border-pink-300 flex items-center justify-center cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5 mr-1.5 text-pink-700" /> Bấm Xem Chi Tiết Các Buổi Đã Tính Lương →
@@ -916,7 +918,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-emerald-300 p-6 sm:p-7 space-y-5 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setSelectedClassForRevenueDetails(null)}
+              onClick={() => setSelectedClassIdForRevenueDetails(null)}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -931,7 +933,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                   Chi Tiết Lương Lớp: {selectedClassForRevenueDetails.className}
                 </h4>
                 <p className="text-xs text-slate-500 font-semibold">
-                  Bậc lương: <strong className="text-emerald-600">{formatVND(selectedClassForRevenueDetails.teacherPayRatePerSession || 150000)} / buổi</strong>
+                  Bậc lương: <strong className="text-emerald-600">{formatVND(typeof selectedClassForRevenueDetails.teacherPayRatePerSession === 'number' ? selectedClassForRevenueDetails.teacherPayRatePerSession : 150000)} / buổi</strong>
                 </p>
               </div>
             </div>
@@ -941,7 +943,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 const classSesList = (sessions || []).filter(
                   (s) => s && s.classId === selectedClassForRevenueDetails.id && s.date && s.date.startsWith(teacherSelectedMonth)
                 );
-                const rate = selectedClassForRevenueDetails.teacherPayRatePerSession || 150000;
+                const rate = typeof selectedClassForRevenueDetails.teacherPayRatePerSession === 'number' ? selectedClassForRevenueDetails.teacherPayRatePerSession : 150000;
 
                 if (classSesList.length === 0) {
                   return (
@@ -978,7 +980,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
             <div className="text-center pt-2">
               <button
-                onClick={() => setSelectedClassForRevenueDetails(null)}
+                onClick={() => setSelectedClassIdForRevenueDetails(null)}
                 className="px-6 py-2 rounded-2xl bg-emerald-600 text-white font-extrabold text-xs hover:bg-emerald-700 transition"
               >
                 Đóng Cửa Sổ
@@ -1028,7 +1030,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
                 return teacherSessions.map((ses) => {
                   const cls = teacherClassesMap.get(ses.classId);
-                  const rate = cls?.teacherPayRatePerSession || 150000;
+                  const rate = typeof cls?.teacherPayRatePerSession === 'number' ? cls.teacherPayRatePerSession : 150000;
 
                   return (
                     <div
