@@ -13,6 +13,8 @@ import { AccountManagementModal } from './components/auth/AccountManagementModal
 import { LeaderboardWidget } from './components/common/LeaderboardWidget';
 import { AddSessionModal } from './components/common/AddSessionModal';
 import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
+import { GeminiEngine } from './lib/gemini';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Crown, Shield, UserCheck, GraduationCap, Eye, LogIn, Trophy } from 'lucide-react';
 
 const INITIAL_BANK_CONFIG_FALLBACK: BankConfig = {
@@ -50,7 +52,9 @@ export default function App() {
 
   const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
+  const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState<boolean>(() => {
+    return !GeminiEngine.getApiKey();
+  });
   
   const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
   const [addSessionClassId, setAddSessionClassId] = useState<string | undefined>(undefined);
@@ -233,20 +237,25 @@ export default function App() {
 
       if (activeRoleView === 'teacher') {
         return (
-          <TeacherPortal
-            currentUser={currentUser}
-            classes={classes}
-            students={students}
-            sessions={sessions}
-            onRefreshData={loadData}
-            onOpenAddSession={handleOpenAddOrEditSession}
-            onSetSubViewNavigation={(canBack, onBack, onHome) => {
-              setCanNavigateBack(canBack);
-              setSubViewBackHandler(() => onBack);
-              setSubViewHomeHandler(() => onHome);
-            }}
-            targetSubmissionId={selectedNotificationSubmissionId}
-          />
+          <ErrorBoundary
+            fallbackTitle="Lỗi Hiển Thị Giao Diện Teacher Portal"
+            onResetView={() => setActiveRoleView('super_admin')}
+          >
+            <TeacherPortal
+              currentUser={currentUser}
+              classes={classes}
+              students={students}
+              sessions={sessions}
+              onRefreshData={loadData}
+              onOpenAddSession={handleOpenAddOrEditSession}
+              onSetSubViewNavigation={(canBack, onBack, onHome) => {
+                setCanNavigateBack(canBack);
+                setSubViewBackHandler(() => onBack);
+                setSubViewHomeHandler(() => onHome);
+              }}
+              targetSubmissionId={selectedNotificationSubmissionId}
+            />
+          </ErrorBoundary>
         );
       }
 

@@ -109,14 +109,26 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const myClasses = scopedClasses;
   const myStudents = scopedStudents;
 
+  const isMsVyTeacher = (name?: string, id?: string) => !name || name.toLowerCase().includes('vy') || id === 'u_super_admin';
+
+  const allUsers = StorageEngine.getUsers() || [];
+  const otherTeachersList = allUsers.filter((u) => u && u.role === 'teacher');
+
+  const [selectedTeacherPreviewId, setSelectedTeacherPreviewId] = useState<string>('u_super_admin');
+
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
   const assignedClasses = (classes || []).filter((c) => {
     if (!c || c.status === 'archived') return false;
 
-    const userIsMsVy = !currentUser || currentUser.role === 'super_admin' || (currentUser.displayName || '').toLowerCase().includes('vy');
-
-    if (userIsMsVy) {
-      // Ms. Vy (Super Admin) personal assigned classes list: only classes belonging to Ms. Vy
-      return isMsVy(c.teacherName, c.teacherId);
+    if (isSuperAdmin) {
+      if (selectedTeacherPreviewId === 'all') return true;
+      if (selectedTeacherPreviewId === 'u_super_admin') {
+        return isMsVyTeacher(c.teacherName, c.teacherId);
+      }
+      const matchedTeacherObj = otherTeachersList.find((t) => t.uid === selectedTeacherPreviewId);
+      const matchedTeacherName = matchedTeacherObj ? matchedTeacherObj.displayName : '';
+      return c.teacherId === selectedTeacherPreviewId || (matchedTeacherName && c.teacherName?.toLowerCase() === matchedTeacherName.toLowerCase());
     }
 
     // Other teachers (e.g. Ms. Ngọc): strictly match their teacherId or teacherName
@@ -384,6 +396,42 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Super Admin Teacher Preview Switcher */}
+      {isSuperAdmin && (
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-100 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800/90 border-2 border-pink-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs text-pink-950 dark:text-white">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-pink-400 text-white font-black shrink-0 shadow-xs">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-black text-sm block">
+                👀 Chế Độ Xem Giao Diện Giáo Viên (Super Admin Preview Mode)
+              </span>
+              <p className="text-[11px] text-pink-900 dark:text-pink-300 font-medium">
+                Bạn đang trải nghiệm giao diện Teacher Portal với tư cách Super Admin. Có thể chuyển đổi giáo viên bên cạnh để kiểm tra chi tiết.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            <label className="font-extrabold text-xs text-slate-700 dark:text-slate-200">Chọn xem giáo viên:</label>
+            <select
+              value={selectedTeacherPreviewId}
+              onChange={(e) => setSelectedTeacherPreviewId(e.target.value)}
+              className="px-3.5 py-2 rounded-xl border-2 border-pink-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-extrabold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer shadow-2xs"
+            >
+              <option value="u_super_admin">👑 Ms. Vy (Lớp Cá Nhân Ms. Vy)</option>
+              <option value="all">🌐 Tất Cả Các Lớp Trong Trung Tâm</option>
+              {otherTeachersList.map((t) => (
+                <option key={t.uid} value={t.uid}>
+                  👩‍🏫 {t.displayName} ({t.email || 'Giáo viên'})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Teacher Portal Navigation Tabs */}
       <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
         <button

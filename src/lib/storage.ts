@@ -466,8 +466,8 @@ export const StorageEngine = {
       adminName: classData.adminName || 'Admin Trực Thuộc',
       schedule: classData.schedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
       courseName: classData.courseName || 'Tiếng Anh Giao Tiếp',
-      zoomLink: classData.zoomLink || '',
       startSessionNumber: Number(classData.startSessionNumber) || 1,
+      teacherPayRatePerSession: typeof classData.teacherPayRatePerSession === 'number' && !isNaN(classData.teacherPayRatePerSession) ? classData.teacherPayRatePerSession : 150000,
       resourceLinks: classData.resourceLinks || [],
     };
     classes.push(newClass);

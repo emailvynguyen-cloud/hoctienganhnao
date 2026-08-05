@@ -311,9 +311,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       teacherId,
       schedule: newSchedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
       courseName: newCourseName || 'Tiếng Anh Giao Tiếp',
-      zoomLink: newZoomLink,
       startSessionNumber: Number(newStartSessionNumber) || 1,
-      teacherPayRatePerSession: Number(newTeacherPayRate) || 150000,
+      teacherPayRatePerSession: typeof newTeacherPayRate === 'number' && !isNaN(newTeacherPayRate) ? newTeacherPayRate : 0,
       resourceLinks: [],
     });
 
@@ -1731,26 +1730,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                {!newTeacherName.toLowerCase().includes('vy') && (
-                  <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
-                    <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
-                      💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="10000"
-                      required
-                      value={newTeacherPayRate}
-                      onChange={(e) => setNewTeacherPayRate(Number(e.target.value))}
-                      className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
-                      placeholder="Nhập bậc lương, ví dụ: 150000"
-                    />
-                    <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
-                      Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương trên trang điều khiển của giáo viên {newTeacherName}.
-                    </span>
-                  </div>
-                )}
+                <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
+                  <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
+                    💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (Nhập 0 nếu là lớp miễn phí/demo) (*)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    required
+                    value={newTeacherPayRate}
+                    onChange={(e) => setNewTeacherPayRate(e.target.value === '' ? 0 : Number(e.target.value))}
+                    className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
+                    placeholder="Nhập bậc lương (VD: 150000 hoặc 0)"
+                  />
+                  <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
+                    Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương trên trang điều khiển của giáo viên {newTeacherName}. Nhập 0 VND nếu lớp không phát sinh lương.
+                  </span>
+                </div>
 
                 <div className="space-y-1">
                   <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Lịch Học Hàng Tuần (Khung 24 giờ, ví dụ: 18:00 - 19:30)</label>

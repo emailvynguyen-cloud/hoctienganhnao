@@ -106,7 +106,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [courseName, setCourseName] = useState(targetClass.courseName || '');
   const [zoomLink, setZoomLink] = useState(targetClass.zoomLink || '');
   const [startSessionNumber, setStartSessionNumber] = useState(targetClass.startSessionNumber || 1);
-  const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(targetClass.teacherPayRatePerSession || 150000);
+  const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(typeof targetClass.teacherPayRatePerSession === 'number' ? targetClass.teacherPayRatePerSession : 150000);
 
   if (!isOpen) return null;
 
@@ -134,7 +134,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       courseName,
       zoomLink,
       startSessionNumber: Number(startSessionNumber) || 1,
-      teacherPayRatePerSession: Number(teacherPayRatePerSession) || 150000,
+      teacherPayRatePerSession: typeof teacherPayRatePerSession === 'number' && !isNaN(teacherPayRatePerSession) ? teacherPayRatePerSession : 0,
     });
 
     alert(`Đã cập nhật thông tin lớp học "${className}" & gán Admin "${resolvedAdminName}" phụ trách thành công!`);
@@ -241,26 +241,24 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
               </div>
             </div>
 
-            {!teacherName.toLowerCase().includes('vy') && (
-              <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
-                <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
-                  💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (*)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="10000"
-                  required
-                  value={teacherPayRatePerSession}
-                  onChange={(e) => setTeacherPayRatePerSession(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
-                  placeholder="Nhập bậc lương, ví dụ: 150000"
-                />
-                <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
-                  Bậc lương này sẽ dùng để tự động tính tổng doanh thu/lương trên bảng điều khiển của giáo viên {teacherName}.
-                </span>
-              </div>
-            )}
+            <div className="p-3 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 space-y-1">
+              <label className="text-sky-900 dark:text-sky-300 font-black block text-xs">
+                💰 Bậc Lương Cho Từng Buổi Dạy Của Giáo Viên (VNĐ / Buổi Học) (Nhập 0 nếu là lớp miễn phí/demo) (*)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="10000"
+                required
+                value={teacherPayRatePerSession}
+                onChange={(e) => setTeacherPayRatePerSession(e.target.value === '' ? 0 : Number(e.target.value))}
+                className="w-full px-3.5 py-2 rounded-xl border border-sky-300 bg-white dark:bg-slate-900 font-mono font-black text-slate-900 dark:text-white text-xs"
+                placeholder="Nhập bậc lương (VD: 150000 hoặc 0)"
+              />
+              <span className="text-[10px] text-sky-700 dark:text-sky-400 font-semibold block">
+                Bậc lương này sẽ dùng để tự động tính tổng thu nhập/lương cho giáo viên {teacherName}. Nhập 0 VND nếu lớp không phát sinh lương.
+              </span>
+            </div>
 
             {/* MULTI SCHEDULE SLOTS PICKER */}
             <div className="p-3.5 rounded-2xl bg-pink-50/70 dark:bg-slate-800/70 border border-pink-200 dark:border-slate-700 space-y-2.5">
