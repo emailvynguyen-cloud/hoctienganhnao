@@ -79,6 +79,45 @@ function analyzeGeminiError(err: any, modelId: string, promptSummary: string) {
 }
 
 export const GeminiEngine = {
+  // Get cached working model if valid and under 1 hour old
+  getCachedWorkingModel(): string | null {
+    try {
+      const cached = localStorage.getItem(CACHE_KEYS.WORKING_MODEL);
+      const timeStr = localStorage.getItem(CACHE_KEYS.CACHE_TIMESTAMP);
+      if (cached && timeStr) {
+        const age = Date.now() - parseInt(timeStr, 10);
+        if (age < CACHE_TTL_MS && cached !== 'gemini-2.5-flash') {
+          return cached;
+        }
+      }
+    } catch (e) {
+      // LocalStorage error fallback
+    }
+    return null;
+  },
+
+  // Cache working model to prevent re-testing priority list on every request
+  setCachedWorkingModel(modelId: string) {
+    try {
+      localStorage.setItem(CACHE_KEYS.WORKING_MODEL, modelId);
+      localStorage.setItem(CACHE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+      console.log(`💾 [AI MODEL CACHED SUCCESS]: Saved "${modelId}" as active working model.`);
+    } catch (e) {
+      // LocalStorage error fallback
+    }
+  },
+
+  // Clear cache if active model fails
+  invalidateCachedWorkingModel() {
+    try {
+      localStorage.removeItem(CACHE_KEYS.WORKING_MODEL);
+      localStorage.removeItem(CACHE_KEYS.CACHE_TIMESTAMP);
+      console.warn('🔄 [AI MODEL CACHE INVALIDATED]: Cleared cache to re-verify fallback chain.');
+    } catch (e) {
+      // LocalStorage error fallback
+    }
+  },
+
   getApiKey(): string {
     // 1. Check user-configured key in LocalStorage
     try {
@@ -211,12 +250,12 @@ export const GeminiEngine = {
     return { text: null, lastError: lastErr };
   },
 
-  // AI Text Prompt Execution
+  // AI Text Prompt Execution with Dynamic Model Fallback & Caching
   async generateText(promptText: string): Promise<{ text: string; modelUsed: string }> {
     const apiKey = this.getApiKey();
 
     if (!apiKey) {
-      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or VITE_GEMINI_API_KEY is empty.');
+      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or Environment Variables are empty.');
       return {
         text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Admin (Ms. Vy) cài đặt Gemini API Key trong hệ thống (miễn phí từ Google AI Studio) để kích hoạt Trợ lý AI giải đáp thắc mắc cho em nhé! ✨',
         modelUsed: 'Yêu cầu API Key',
@@ -224,22 +263,48 @@ export const GeminiEngine = {
     }
 
     const requestId = 'req_' + Math.random().toString(36).substring(2, 9);
-    const preferredModel = this.getSelectedModel();
-    const candidateModels = Array.from(new Set([preferredModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']));
+    const cachedWorkingModel = this.getCachedWorkingModel();
+    const userSelectedModel = this.getSelectedModel();
+
+    // Priority chain: 1. Cached Working Model (if valid), 2. User Selected Model, 3. Standard Priority Fallback Chain
+    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const candidateModels = Array.from(
+      new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
+    );
 
     let lastError: any = null;
-    let lastAttemptedModel = preferredModel;
+    let lastAttemptedModel = candidateModels[0];
 
-    for (const modelId of candidateModels) {
+    for (let i = 0; i < candidateModels.length; i++) {
+      const modelId = candidateModels[i];
       lastAttemptedModel = modelId;
+
+      console.log(`🤖 [AI MODEL TRYING ${i + 1}/${candidateModels.length}]: "${modelId}"`);
+
       const ai = new GoogleGenAI({ apiKey });
       const { text, lastError: err } = await this.callWithRetry(ai, modelId, promptText, requestId);
+
       if (text) {
+        console.log(`✅ [AI MODEL IN USE SUCCESS]: Using "${modelId}" for response.`);
+        this.setCachedWorkingModel(modelId);
         return { text, modelUsed: modelId };
       }
+
+      // Model failed -> Log model skipped and switch to next in list
+      const nextModel = candidateModels[i + 1];
+      console.warn(`⏭️ [AI MODEL SKIPPED]: "${modelId}" failed.`, {
+        reason: err?.message || 'No text response returned',
+        switchingToNextModel: nextModel || 'None (List exhausted)',
+      });
+
+      if (modelId === cachedWorkingModel) {
+        this.invalidateCachedWorkingModel();
+      }
+
       if (err) lastError = err;
     }
 
+    // If all models failed in the chain
     const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, promptText);
 
     return {
@@ -248,7 +313,7 @@ export const GeminiEngine = {
     };
   },
 
-  // Multimodal AI (Image OCR / Audio Pronunciation Analysis)
+  // Multimodal AI with Dynamic Model Fallback & Caching
   async generateMultimodal(
     promptText: string,
     fileBase64?: string,
@@ -258,7 +323,7 @@ export const GeminiEngine = {
     const apiKey = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, '') : '';
 
     if (!apiKey) {
-      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or VITE_GEMINI_API_KEY is empty.');
+      console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or Environment Variables are empty.');
       if (mimeType && mimeType.startsWith('image/')) {
         return {
           text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) bấm nút "⚙️ Cấu Hình API Key" để dán API Key cá nhân từ Google AI Studio (miễn phí) để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!',
@@ -278,7 +343,11 @@ export const GeminiEngine = {
     }
 
     const requestId = 'req_img_' + Math.random().toString(36).substring(2, 9);
-    const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const cachedWorkingModel = this.getCachedWorkingModel();
+    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const candidateModels = Array.from(
+      new Set([cachedWorkingModel, ...standardFallbackChain].filter(Boolean) as string[])
+    );
 
     let contentsData: any = promptText;
     if (fileBase64 && mimeType) {
@@ -302,13 +371,31 @@ export const GeminiEngine = {
     let lastError: any = null;
     let lastAttemptedModel = candidateModels[0];
 
-    for (const modelId of candidateModels) {
+    for (let i = 0; i < candidateModels.length; i++) {
+      const modelId = candidateModels[i];
       lastAttemptedModel = modelId;
+
+      console.log(`🤖 [AI MULTIMODAL TRYING ${i + 1}/${candidateModels.length}]: "${modelId}"`);
+
       const ai = new GoogleGenAI({ apiKey });
       const { text, lastError: err } = await this.callWithRetry(ai, modelId, contentsData, requestId);
+
       if (text) {
+        console.log(`✅ [AI MULTIMODAL SUCCESS]: Using "${modelId}" for response.`);
+        this.setCachedWorkingModel(modelId);
         return { text, modelUsed: modelId };
       }
+
+      const nextModel = candidateModels[i + 1];
+      console.warn(`⏭️ [AI MULTIMODAL MODEL SKIPPED]: "${modelId}" failed.`, {
+        reason: err?.message || 'No text response returned',
+        switchingToNextModel: nextModel || 'None (List exhausted)',
+      });
+
+      if (modelId === cachedWorkingModel) {
+        this.invalidateCachedWorkingModel();
+      }
+
       if (err) lastError = err;
     }
 
