@@ -302,7 +302,9 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
                     {std.name}
                   </h4>
-                  <p className="text-[10px] text-pink-600 font-bold">{std.honorNickname || 'Học viên active'}</p>
+                  {std.honorNickname && std.honorNickname.trim() !== '' && (
+                    <p className="text-[10px] text-pink-600 font-bold">{std.honorNickname}</p>
+                  )}
                   <p className="text-[10px] text-slate-500">SĐT: {std.phone}</p>
                 </div>
               </div>

@@ -223,29 +223,37 @@ export const StorageEngine = {
       stars: 0,
       completedHomeworkTaskIds: [],
       avatar: studentData.avatar || KAKAOTALK_SVG_AVATARS.ryan,
-      honorNickname: '🥇 Ngôi Sao Chăm Chỉ 👑',
+      honorNickname: '',
       status: 'active',
     };
     students.push(newStudent);
     this.saveStudents(students);
 
-    // Auto-create student user account for login
-    const users = this.getUsers() || [];
-    const existingUser = users.find((u) => u.email === newStudent.email);
-    if (!existingUser) {
-      const newUser: User = {
-        uid: `u_${newId}`,
-        email: newStudent.email,
-        password: newStudent.phone || 'hocvien123',
-        displayName: newStudent.name,
-        role: 'student',
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      users.push(newUser);
-      this.saveUsers(users);
-    }
+    // Note: User account is NOT created automatically per system specifications.
+    // Use createStudentUserAccount(student) for explicit account generation.
 
     return newStudent;
+  },
+  createStudentUserAccount(student: Student, customPassword?: string): { success: boolean; message: string; user?: User } {
+    const users = this.getUsers() || [];
+    const existingUser = users.find((u) => u.email === student.email || u.uid === `u_${student.id}`);
+    if (existingUser) {
+      return { success: false, message: `Tài khoản đăng nhập cho học viên "${student.name}" đã tồn tại! (${existingUser.email})`, user: existingUser };
+    }
+
+    const newUser: User = {
+      uid: `u_${student.id}`,
+      email: student.email || `${student.id}@gmail.com`,
+      password: customPassword || student.phone || 'hocvien123',
+      displayName: student.name,
+      role: 'student',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+
+    users.push(newUser);
+    this.saveUsers(users);
+
+    return { success: true, message: `Đã tạo tài khoản đăng nhập thành công cho học viên "${student.name}"!`, user: newUser };
   },
   deleteStudent(id: string) {
     this.deleteStudentPermanently(id);

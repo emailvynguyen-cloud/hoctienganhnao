@@ -51,6 +51,17 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
     onClose();
   };
 
+  const handleCreateAuthAccount = () => {
+    const result = StorageEngine.createStudentUserAccount({
+      ...student,
+      name,
+      phone,
+      email,
+    });
+    alert(result.message);
+    onRefreshData();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
       <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-sky-300 dark:border-slate-800 p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative text-slate-800 dark:text-white">
@@ -162,6 +173,21 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 focus:outline-none focus:ring-2 focus:ring-sky-300 bg-sky-50/30 dark:bg-slate-800 text-slate-900 dark:text-white"
             />
+          </div>
+
+          {/* EXPLICIT AUTH ACCOUNT CREATION SECTION */}
+          <div className="p-3.5 rounded-2xl bg-purple-50/80 dark:bg-slate-800/80 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-black text-purple-950 dark:text-purple-300 block">Tài Khoản Đăng Nhập App:</span>
+              <p className="text-[11px] text-slate-500 font-medium">Tách biệt dữ liệu hồ sơ và tài khoản authentication.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateAuthAccount}
+              className="px-3.5 py-2 rounded-xl bg-purple-200 hover:bg-purple-300 text-purple-950 font-black text-xs transition border border-purple-300 shrink-0 cursor-pointer shadow-2xs"
+            >
+              🔑 Tạo Tài Khoản Đăng Nhập
+            </button>
           </div>
 
           <div className="pt-3 flex items-center justify-end space-x-3">

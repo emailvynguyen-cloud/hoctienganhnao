@@ -604,9 +604,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   {currentStudent.name}
                 </h2>
-                <span className="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 text-white shadow-xs inline-block">
-                  {currentStudent.honorNickname || '🥇 Vua/ Nữ Hoàng Chăm Chỉ 👑'}
-                </span>
+                {currentStudent.honorNickname && currentStudent.honorNickname.trim() !== '' && (
+                  <span className="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 text-white shadow-xs inline-block">
+                    {currentStudent.honorNickname}
+                  </span>
+                )}
               </div>
 
               {/* 2x2 Grid Info Box with Clear Typography */}
