@@ -2,20 +2,20 @@ import { GoogleGenAI } from '@google/genai';
 
 export const GEMINI_MODELS = [
   {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    desc: 'Đọc chữ viết tay siêu tốc, hoàn toàn miễn phí & ổn định nhất (Mặc định)',
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    desc: 'Tốc độ siêu nhanh, xử lý tiếng Việt & giải đáp thắc mắc cực chuẩn (Mặc định)',
     isDefault: true,
   },
   {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    desc: 'Thế hệ AI mới, nhận diện hình ảnh & văn bản chính xác',
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    desc: 'Nhận diện ảnh Vision & văn bản ổn định',
   },
   {
     id: 'gemini-1.5-pro',
     name: 'Gemini 1.5 Pro',
-    desc: 'Suy luận sâu cho ngữ pháp dài & IELTS',
+    desc: 'Mô hình cao cấp, suy luận chuyên sâu',
   },
 ];
 
@@ -32,6 +32,9 @@ const SMART_FEEDBACK_TEMPLATES = [
   "Bài làm chỉn chu, kiến thức chắc chắn! Chú ý một số từ vựng nâng cao đã học trên lớp để đạt điểm tối đa ở các bài tiếp theo. 🏆",
   "Rất biểu dương tinh thần làm bài đúng hạn của em! Em hãy tiếp tục luyện tập và hoàn thành đầy đủ các bài tập về nhà nhé. 👑",
 ];
+
+// Helper delay ms
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const GeminiEngine = {
   getApiKey(): string {
@@ -55,59 +58,112 @@ export const GeminiEngine = {
 
   getSelectedModel(): string {
     const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL);
-    if (saved && saved.includes('pro')) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-1.5-flash');
-      return 'gemini-1.5-flash';
+    if (!saved || saved === 'gemini-2.5-flash') {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-2.0-flash');
+      return 'gemini-2.0-flash';
     }
-    return saved || 'gemini-1.5-flash';
+    return saved;
   },
 
   setSelectedModel(modelId: string) {
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, modelId);
   },
 
-  // AI Prompt Execution with Built-in Auto Fallback
+  // Helper retry 429 with exponential backoff (1s, 2s, 4s) & 404 Debug logging
+  async callWithRetry(
+    ai: GoogleGenAI,
+    modelId: string,
+    contentsData: any,
+    requestId: string
+  ): Promise<string | null> {
+    const backoffDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
+
+    console.log('[AI REQUEST START]', {
+      requestId,
+      timestamp: new Date().toISOString(),
+      model: modelId,
+    });
+
+    for (let attempt = 0; attempt <= backoffDelays.length; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelId,
+          contents: contentsData,
+        });
+
+        if (response && response.text) {
+          console.log('[AI REQUEST END]', {
+            requestId,
+            timestamp: new Date().toISOString(),
+            model: modelId,
+          });
+          return response.text;
+        }
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        const is429 = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
+        const is404 = errMsg.includes('404') || errMsg.includes('NOT_FOUND') || errMsg.includes('not found');
+
+        if (is404) {
+          console.error('[AI DEBUG 404 NOT FOUND]', {
+            requestId,
+            timestamp: new Date().toISOString(),
+            endpoint: 'ai.models.generateContent',
+            model: modelId,
+            requestBody: contentsData,
+            response: err,
+          });
+        }
+
+        console.warn('[AI REQUEST FAILED]', {
+          requestId,
+          timestamp: new Date().toISOString(),
+          model: modelId,
+          attempt: attempt + 1,
+          error: errMsg,
+        });
+
+        if (is429 && attempt < backoffDelays.length) {
+          const waitMs = backoffDelays[attempt];
+          console.log(`[AI RETRY 429] Backoff delay ${waitMs}ms before attempt ${attempt + 2}...`, { requestId });
+          await delay(waitMs);
+          continue;
+        }
+
+        // If not 429 or retries exhausted for this model
+        break;
+      }
+    }
+
+    return null;
+  },
+
+  // AI Text Prompt Execution
   async generateText(promptText: string): Promise<{ text: string; modelUsed: string }> {
     const apiKey = this.getApiKey();
 
     if (!apiKey) {
-      const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
-      const generatedTemplate = SMART_FEEDBACK_TEMPLATES[randomIndex];
       return {
-        text: generatedTemplate,
-        modelUsed: 'Smart AI Auto Generator (Built-in)',
+        text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Admin (Ms. Vy) cài đặt Gemini API Key trong hệ thống (miễn phí từ Google AI Studio) để kích hoạt Trợ lý AI giải đáp thắc mắc cho em nhé! ✨',
+        modelUsed: 'Yêu cầu API Key',
       };
     }
 
-    const fallbackList = [
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.5-flash',
-      'gemini-1.5-pro',
-    ];
+    const requestId = 'req_' + Math.random().toString(36).substring(2, 9);
+    const preferredModel = this.getSelectedModel();
+    const candidateModels = Array.from(new Set([preferredModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']));
 
-    const uniqueModels = Array.from(new Set(fallbackList));
-
-    for (const modelId of uniqueModels) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: modelId,
-          contents: promptText,
-        });
-
-        if (response && response.text) {
-          return { text: response.text, modelUsed: modelId };
-        }
-      } catch (err: any) {
-        console.warn(`Model ${modelId} failed, trying fallback...`, err);
+    for (const modelId of candidateModels) {
+      const ai = new GoogleGenAI({ apiKey });
+      const text = await this.callWithRetry(ai, modelId, promptText, requestId);
+      if (text) {
+        return { text, modelUsed: modelId };
       }
     }
 
-    const randomIndex = Math.floor(Math.random() * SMART_FEEDBACK_TEMPLATES.length);
     return {
-      text: SMART_FEEDBACK_TEMPLATES[randomIndex],
-      modelUsed: 'Smart AI Auto Generator (Quota Fallback)',
+      text: 'AI hiện đang bận hoặc đã đạt giới hạn sử dụng. Vui lòng thử lại sau.',
+      modelUsed: 'Không thể kết nối',
     };
   },
 
@@ -123,12 +179,12 @@ export const GeminiEngine = {
     if (!apiKey) {
       if (mimeType && mimeType.startsWith('image/')) {
         return {
-          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nHệ thống chưa ghi nhận Gemini API Key hợp lệ.\n\n👉 **Vui lòng liên hệ Người Điều Hành (Super Admin / Ms. Vy)** để bấm nút **"⚙️ Cấu Hình API Key"** và dán API Key miễn phí từ **https://aistudio.google.com/api-keys** để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!`,
+          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) bấm nút "⚙️ Cấu Hình API Key" để dán API Key cá nhân từ Google AI Studio (miễn phí) để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!',
           modelUsed: 'Yêu cầu API Key',
         };
       } else if (mimeType && (mimeType.startsWith('audio/') || mimeType.startsWith('video/'))) {
         return {
-          text: `⚠️ **CHƯA CẤU HÌNH GEMINI API KEY!**\n\nVui lòng liên hệ Super Admin (Ms. Vy) để nhập Gemini API Key cá nhân từ Google AI Studio (miễn phí) để AI có thể lắng nghe và chấm điểm bài phát âm thực tế!`,
+          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) nhập Gemini API Key từ Google AI Studio (miễn phí) để AI chấm điểm bài phát âm!',
           modelUsed: 'Yêu cầu API Key',
         };
       }
@@ -139,66 +195,39 @@ export const GeminiEngine = {
       };
     }
 
-    // For Multimodal (Image OCR / Audio), ONLY use Flash models which have 100% free high quotas (gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash)
-    const visionModels = [
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.5-flash',
-    ];
+    const requestId = 'req_img_' + Math.random().toString(36).substring(2, 9);
+    const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
-    let lastErrorMsg = '';
-    let isQuotaError = false;
+    let contentsData: any = promptText;
+    if (fileBase64 && mimeType) {
+      let cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+      cleanBase64 = cleanBase64.replace(/\s/g, '');
 
-    for (const modelId of visionModels) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        let contentsData: any = promptText;
+      let normalizedMime = mimeType.toLowerCase();
+      if (normalizedMime === 'image/jpg') normalizedMime = 'image/jpeg';
 
-        if (fileBase64 && mimeType) {
-          let cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
-          cleanBase64 = cleanBase64.replace(/\s/g, '');
+      contentsData = [
+        promptText,
+        {
+          inlineData: {
+            data: cleanBase64,
+            mimeType: normalizedMime,
+          },
+        },
+      ];
+    }
 
-          let normalizedMime = mimeType.toLowerCase();
-          if (normalizedMime === 'image/jpg') normalizedMime = 'image/jpeg';
-
-          contentsData = [
-            promptText,
-            {
-              inlineData: {
-                data: cleanBase64,
-                mimeType: normalizedMime,
-              },
-            },
-          ];
-        }
-
-        const response = await ai.models.generateContent({
-          model: modelId,
-          contents: contentsData,
-        });
-
-        if (response && response.text) {
-          return { text: response.text, modelUsed: modelId };
-        }
-      } catch (err: any) {
-        lastErrorMsg = err?.message || String(err);
-        if (lastErrorMsg.includes('429') || lastErrorMsg.includes('RESOURCE_EXHAUSTED') || lastErrorMsg.includes('quota')) {
-          isQuotaError = true;
-        }
-        console.warn(`Vision Model ${modelId} failed:`, lastErrorMsg);
+    for (const modelId of candidateModels) {
+      const ai = new GoogleGenAI({ apiKey });
+      const text = await this.callWithRetry(ai, modelId, contentsData, requestId);
+      if (text) {
+        return { text, modelUsed: modelId };
       }
     }
 
-    if (isQuotaError) {
-      return {
-        text: `⚠️ **VƯỢT QUÁ TẦN SUẤT TRUY CẬP (Rate Limit 429 / Quota Limit):**\n\nTài khoản Google AI Studio miễn phí quy định gửi tối đa 15 ảnh/phút. Bạn vừa nhấn nút hoặc gửi ảnh liên tục quá nhanh trong thời gian ngắn.\n\n👉 **Cách khắc phục:**\n1. Vui lòng **chờ 5 - 10 giây** rồi bấm nút **"Phân Tích & Chấm Bài Tập Ngay"** lại một lần nữa.\n2. Hoặc nếu bạn muốn chấm số lượng lớn không bị giới hạn, hãy tạo 1 API Key mới tại **https://aistudio.google.com/api-keys** và dán vào phần Cấu Hình API Key nhé!`,
-        modelUsed: 'Rate Limit (429)',
-      };
-    }
-
     return {
-      text: `⚠️ **KHÔNG THỂ PHÂN TÍCH ẢNH:**\n\nChi tiết phản hồi từ Google Gemini: *${lastErrorMsg || 'Kết nối không thành công'}*\n\n👉 **Cách khắc phục:** Vui lòng nhờ Super Admin (Ms. Vy) kiểm tra lại API Key tại **https://aistudio.google.com/api-keys** và cập nhật Key mới vào nút **"⚙️ Cấu Hình API Key"** nhé!`,
-      modelUsed: 'Lỗi API Key / Quota',
+      text: 'AI hiện đang bận hoặc đã đạt giới hạn sử dụng. Vui lòng thử lại sau.',
+      modelUsed: 'Không thể kết nối',
     };
   },
 };

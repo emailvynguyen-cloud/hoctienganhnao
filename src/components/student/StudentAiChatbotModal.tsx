@@ -65,7 +65,13 @@ export const StudentAiChatbotModal: React.FC = () => {
       const prompt = `Bạn là Trợ Lý Học Tập AI dễ thương, tận tụy tại trung tâm Ms. Vy English. Hãy giải đáp thắc mắc tiếng Anh cho học viên bằng tiếng Việt một cách dễ hiểu, sinh động, truyền cảm hứng và mang tính giáo dục cao.
 Câu hỏi của học viên: "${msg.trim()}"`;
 
+      console.log('[Student AI Chatbot Request]:', msg.trim());
       const res = await GeminiEngine.generateText(prompt);
+      console.log('[Student AI Chatbot Response]:', res);
+
+      if (!res || !res.text) {
+        throw new Error('Không nhận được phản hồi từ Gemini AI API');
+      }
 
       const aiMessage: ChatMessage = {
         id: `ai_${Date.now()}`,
@@ -75,14 +81,14 @@ Câu hỏi của học viên: "${msg.trim()}"`;
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('[Student AI Chatbot Error]:', err);
       setMessages((prev) => [
         ...prev,
         {
           id: `err_${Date.now()}`,
           sender: 'ai',
-          text: 'Rất tiếc, cô chưa thể trả lời ngay lúc này. Em hãy thử đặt câu hỏi khác hoặc kiểm tra lại kết nối mạng nhé!',
+          text: `Rất tiếc, Trợ lý AI gặp gián đoạn kết nối (${err?.message || 'Lỗi hệ thống'}). Em hãy thử lại hoặc kiểm tra kết nối mạng nhé!`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
