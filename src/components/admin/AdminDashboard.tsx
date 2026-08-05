@@ -161,9 +161,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newSessionCount, setNewSessionCount] = useState(8);
   const [newTuitionPrice, setNewTuitionPrice] = useState(2000000);
 
-  const safeStudents = students || [];
-  const safeClasses = classes || [];
-
   useEffect(() => {
     if (safeClasses.length > 0 && !newStudentClassId) {
       setNewStudentClassId(safeClasses[0].id);
