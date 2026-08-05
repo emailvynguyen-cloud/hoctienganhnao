@@ -25,6 +25,8 @@ import {
   Sunset,
 } from 'lucide-react';
 
+import { TimetableImageExportModal } from './TimetableImageExportModal';
+
 interface WeeklyTimetableProps {
   classes: Class[];
   students: Student[];
@@ -311,6 +313,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
 
   const [editingClassForSchedule, setEditingClassForSchedule] = useState<Class | null>(null);
   const [customScheduleInput, setCustomScheduleInput] = useState<string>('');
+  const [isExportImageModalOpen, setIsExportImageModalOpen] = useState(false);
 
   // EXTRACT TEACHERS FOR TABS
   const activeClasses = (classes || []).filter((c) => c && c.status !== 'archived');
@@ -349,9 +352,9 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
     return c.teacherId === currentTeacherObj.id || c.teacherName === currentTeacherObj.name;
   });
 
-  // HELPER: Map classes to specific Day & Shift Range
+  // HELPER: Map classes to specific Day & Shift Range (CHRONOLOGICALLY SORTED BY START TIME -> END TIME -> CLASS NAME)
   const getClassesForShiftAndDay = (dayKey: string, shiftRange: { startMin: number; endMin: number }) => {
-    return teacherClasses.filter((cls) => {
+    const list = teacherClasses.filter((cls) => {
       if (!cls || !cls.schedule) return false;
       const schedUpper = cls.schedule.toUpperCase();
       const matchesDay =
@@ -369,6 +372,26 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
       if (!clsRange) return true;
 
       return checkTimeConflict(shiftRange, clsRange);
+    });
+
+    // CHRONOLOGICAL TIME SORTING (06:00 -> 07:00 -> 08:30 -> 18:00...)
+    return list.sort((a, b) => {
+      const rangeA = parseScheduleTimeRange(a.schedule, dayKey);
+      const rangeB = parseScheduleTimeRange(b.schedule, dayKey);
+
+      const startA = rangeA ? rangeA.startMin : 0;
+      const startB = rangeB ? rangeB.startMin : 0;
+      if (startA !== startB) return startA - startB;
+
+      const endA = rangeA ? rangeA.endMin : 0;
+      const endB = rangeB ? rangeB.endMin : 0;
+      if (endA !== endB) return endA - endB;
+
+      const orderA = (a as any).displayOrder ?? 0;
+      const orderB = (b as any).displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+
+      return (a.className || '').localeCompare(b.className || '', 'vi');
     });
   };
 
@@ -482,6 +505,14 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsExportImageModalOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-amber-950 dark:text-amber-200 font-extrabold text-xs border border-amber-300 shadow-xs transition flex items-center shrink-0 cursor-pointer"
+            title="Xuất thời khóa biểu thành ảnh poster chất lượng cao PNG/JPG"
+          >
+            📸 Xuất Ảnh TKB (PNG/JPG)
+          </button>
+
           {(isSuperAdmin || isAdmin) && (
             <button
               onClick={() => onOpenAddSession()}
@@ -751,7 +782,15 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
             </div>
           </div>
         </div>
-      )}
+      {/* TIMETABLE IMAGE EXPORT MODAL */}
+      <TimetableImageExportModal
+        isOpen={isExportImageModalOpen}
+        onClose={() => setIsExportImageModalOpen(false)}
+        classes={classes}
+        currentUser={currentUser}
+        teacherTabs={teacherTabs}
+        activeTeacherId={activeTeacherId}
+      />
 
     </div>
   );
