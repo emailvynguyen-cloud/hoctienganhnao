@@ -78,12 +78,12 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
     setIsGeneratingAI(true);
     try {
       const studentObj = students.find((s) => s.id === sub.studentId);
-      const prompt = `Bạn là giáo viên Tiếng Anh Ms. Vy cực kỳ tâm huyết và dễ thương. Hãy viết 1 câu nhận xét ngắn gọn (khoảng 2 câu) động viên em học viên "${studentObj?.name || 'em'}" đã hoàn thành bài tập về nhà "${sub.homeworkTitle}". Nhận xét mang tính khuyến khích, khen ngợi và góp ý nhẹ nhàng.`;
+      const prompt = `Viết 1 nhận xét ngắn gọn (1-2 câu), thẳng thắn, chính xác về bài tập "${sub.homeworkTitle}" của học viên "${studentObj?.name || 'học viên'}". Không xưng hô quá đà, đi thẳng vào đánh giá.`;
       
       const res = await GeminiEngine.generateText(prompt);
       setFeedbackText(res.text.trim());
     } catch (err: any) {
-      setFeedbackText('Em làm bài tập rất đầy đủ và chăm chỉ! Tiếp tục phát huy nhé em! 🌟');
+      setFeedbackText('Bài làm hoàn thành tốt. Cần tiếp tục duy trì tinh thần học tập và làm bài đều đặn.');
     } finally {
       setIsGeneratingAI(false);
     }

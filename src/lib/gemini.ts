@@ -29,15 +29,27 @@ const CACHE_KEYS = {
   CACHE_TIMESTAMP: 'gemini_cached_model_timestamp',
 };
 
+export const SYSTEM_PERSONA_INSTRUCTION = `Bạn là Trợ lý AI Hỗ trợ Học tập Tiếng Anh. Hãy tuân thủ nghiêm ngặt các quy tắc sau khi trả lời:
+1. Phong cách trả lời: Tự nhiên, ngắn gọn, thẳng thắn và tập trung vào câu hỏi chính. Không viết dài dòng lê thê.
+2. Tuyệt đối KHÔNG SẾN:
+   - Không xưng hô quá đà (CẤM dùng các từ như "học viên thân yêu", "câu hỏi đáng yêu", "học sinh yêu quý"...).
+   - Không tự động thêm lời chào mừng rườm rà hay tên trung tâm vào mỗi câu trả lời trừ khi người dùng yêu cầu.
+   - Hạn chế tối đa việc lạm dụng icon (emoji) vô lý (chỉ dùng tối đa 1 emoji nếu thực sự cần thiết).
+3. Độ chính xác: Kiểm tra kỹ chính tả tiếng Anh và tiếng Việt trước khi trả về kết quả.
+4. Cấu trúc câu trả lời chuẩn:
+   - Nghĩa của từ / Giải đáp chính
+   - Ví dụ minh họa
+   - Mở rộng ngắn gọn (nếu cần).`;
+
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour Cache TTL
 
 // Built-in Smart Feedback Generator Fallback (No API Key Required)
 const SMART_FEEDBACK_TEMPLATES = [
-  "Em làm bài tập rất đầy đủ và chăm chỉ! Chú ý ôn lại các từ vựng mới của buổi học và phát huy phong độ ở buổi tiếp theo nhé. 🌟",
-  "Bài làm rất tốt! Em nắm vững ngữ pháp và từ vựng của buổi học. Cần luyện tập thêm phản xạ nói để tự tin hơn nữa nhé! 💪",
-  "Em đã hoàn thành tốt các câu hỏi bài tập. Kỹ năng làm bài ngày càng tiến bộ rõ rệt! Cố gắng duy trì tinh thần học tập tuyệt vời này nhé. ✨",
-  "Bài làm chỉn chu, kiến thức chắc chắn! Chú ý một số từ vựng nâng cao đã học trên lớp để đạt điểm tối đa ở các bài tiếp theo. 🏆",
-  "Rất biểu dương tinh thần làm bài đúng hạn của em! Em hãy tiếp tục luyện tập và hoàn thành đầy đủ các bài tập về nhà nhé. 👑",
+  "Bài làm hoàn thành tốt. Cần tiếp tục ôn luyện từ vựng bài học và duy trì phong độ.",
+  "Bài làm khá tốt, nắm vững ngữ pháp chính. Luyện tập thêm phản xạ nói để tự tin hơn.",
+  "Bài làm chính xác, trình bày rõ ràng. Tiếp tục duy trì tinh thần học tập.",
+  "Kiến thức chắc chắn. Lưu ý một số từ vựng nâng cao đã học để hoàn thiện hơn.",
+  "Hoàn thành bài đúng hạn. Tiếp tục luyện tập bài tập về nhà thường xuyên.",
 ];
 
 // Helper delay ms
@@ -211,8 +223,8 @@ export const GeminiEngine = {
     const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL);
     const validIds = GEMINI_MODELS.map((m) => m.id);
     if (!saved || !validIds.includes(saved)) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-2.0-flash');
-      return 'gemini-2.0-flash';
+      localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-3-flash-preview');
+      return 'gemini-3-flash-preview';
     }
     return saved;
   },
@@ -300,7 +312,7 @@ export const GeminiEngine = {
     if (!apiKey) {
       console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or Environment Variables are empty.');
       return {
-        text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Admin (Ms. Vy) cài đặt Gemini API Key trong hệ thống (miễn phí từ Google AI Studio) để kích hoạt Trợ lý AI giải đáp thắc mắc cho em nhé! ✨',
+        text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng dán Gemini API Key từ Google AI Studio để kích hoạt Trợ lý AI.',
         modelUsed: 'Yêu cầu API Key',
       };
     }
@@ -308,6 +320,11 @@ export const GeminiEngine = {
     const requestId = 'req_' + Math.random().toString(36).substring(2, 9);
     const cachedWorkingModel = this.getCachedWorkingModel();
     const userSelectedModel = this.getSelectedModel();
+
+    // Inject System Persona Instructions into Prompt
+    const fullPrompt = promptText.includes('SYSTEM_PERSONA_INSTRUCTION') || promptText.includes('Tuyệt đối KHÔNG SẾN')
+      ? promptText
+      : `${SYSTEM_PERSONA_INSTRUCTION}\n\n[Nội dung yêu cầu]:\n${promptText}`;
 
     // Dynamic Fallback Chain Priority:
     // 1. Cached Working Model (if valid)
@@ -334,7 +351,7 @@ export const GeminiEngine = {
       console.log(`🤖 [AI MODEL FALLBACK CHAIN ${i + 1}/${candidateModels.length}]: Testing model "${modelId}"...`);
 
       const ai = new GoogleGenAI({ apiKey });
-      const { text, lastError: err } = await this.callWithRetry(ai, modelId, promptText, requestId);
+      const { text, lastError: err } = await this.callWithRetry(ai, modelId, fullPrompt, requestId);
 
       if (text) {
         if (i > 0) {
@@ -361,7 +378,7 @@ export const GeminiEngine = {
     }
 
     // ONLY LOG FINAL CONSOLE ERROR IF ALL CANDIDATE MODELS FAILED
-    const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, promptText);
+    const { userFriendlyText } = analyzeGeminiError(lastError, lastAttemptedModel, fullPrompt);
 
     return {
       text: userFriendlyText,
@@ -382,12 +399,12 @@ export const GeminiEngine = {
       console.warn('⚠️ [GEMINI API KEY MISSING]: LocalStorage or Environment Variables are empty.');
       if (mimeType && mimeType.startsWith('image/')) {
         return {
-          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) bấm nút "⚙️ Cấu Hình API Key" để dán API Key cá nhân từ Google AI Studio (miễn phí) để kích hoạt mắt thần AI đọc chữ trên ảnh nhé!',
+          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng dán Gemini API Key từ Google AI Studio để kích hoạt mắt thần AI đọc ảnh.',
           modelUsed: 'Yêu cầu API Key',
         };
       } else if (mimeType && (mimeType.startsWith('audio/') || mimeType.startsWith('video/'))) {
         return {
-          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhờ Super Admin (Ms. Vy) nhập Gemini API Key từ Google AI Studio (miễn phí) để AI chấm điểm bài phát âm!',
+          text: '⚠️ CHƯA CẤU HÌNH GEMINI API KEY!\nVui lòng nhập Gemini API Key từ Google AI Studio để AI chấm phát âm!',
           modelUsed: 'Yêu cầu API Key',
         };
       }
@@ -412,7 +429,11 @@ export const GeminiEngine = {
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
 
-    let contentsData: any = promptText;
+    const fullPromptText = typeof promptText === 'string' && (promptText.includes('SYSTEM_PERSONA_INSTRUCTION') || promptText.includes('Tuyệt đối KHÔNG SẾN'))
+      ? promptText
+      : `${SYSTEM_PERSONA_INSTRUCTION}\n\n[Nội dung yêu cầu]:\n${promptText}`;
+
+    let contentsData: any = fullPromptText;
     if (fileBase64 && mimeType) {
       let cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
       cleanBase64 = cleanBase64.replace(/\s/g, '');
@@ -421,7 +442,7 @@ export const GeminiEngine = {
       if (normalizedMime === 'image/jpg') normalizedMime = 'image/jpeg';
 
       contentsData = [
-        promptText,
+        fullPromptText,
         {
           inlineData: {
             data: cleanBase64,

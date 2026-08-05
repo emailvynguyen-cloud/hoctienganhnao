@@ -62,8 +62,8 @@ export const StudentAiChatbotModal: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const prompt = `Bạn là Trợ Lý Học Tập AI dễ thương, tận tụy tại trung tâm Ms. Vy English. Hãy giải đáp thắc mắc tiếng Anh cho học viên bằng tiếng Việt một cách dễ hiểu, sinh động, truyền cảm hứng và mang tính giáo dục cao.
-Câu hỏi của học viên: "${msg.trim()}"`;
+      const prompt = `Giải đáp thắc mắc tiếng Anh sau bằng tiếng Việt theo phong cách tự nhiên, ngắn gọn, thẳng thắn, không chào mừng lê thê:
+Câu hỏi: "${msg.trim()}"`;
 
       console.log('[Student AI Chatbot Request]:', msg.trim());
       const res = await GeminiEngine.generateText(prompt);
