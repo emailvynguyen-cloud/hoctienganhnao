@@ -29,17 +29,30 @@ const CACHE_KEYS = {
   CACHE_TIMESTAMP: 'gemini_cached_model_timestamp',
 };
 
-export const SYSTEM_PERSONA_INSTRUCTION = `Bạn là Trợ lý AI Hỗ trợ Học tập Tiếng Anh. Hãy tuân thủ nghiêm ngặt các quy tắc sau khi trả lời:
-1. Phong cách trả lời: Tự nhiên, ngắn gọn, thẳng thắn và tập trung vào câu hỏi chính. Không viết dài dòng lê thê.
-2. Tuyệt đối KHÔNG SẾN:
+export const SYSTEM_PERSONA_INSTRUCTION = `Bạn là Trợ lý AI Hỗ trợ Học tập Tiếng Anh. Hãy tuân thủ nghiêm ngặt các quy tắc trình bày sau:
+1. ĐỊNH DẠNG VĂN BẢN THUẦN (PLAIN TEXT):
+   - Trả về câu trả lời ở dạng văn bản thuần. CẤM SỬ DỤNG bất kỳ ký tự Markdown nào như **, ***, ##, ###, hoặc __ để in đậm hay làm nổi bật chữ.
+   - Chỉ dùng xuống dòng, gạch đầu dòng (-) hoặc đánh số (1., 2.) để phân chia các đoạn cho rõ ràng.
+2. Phong cách trả lời: Tự nhiên, ngắn gọn, thẳng thắn và tập trung vào câu hỏi chính. Không viết dài dòng lê thê.
+3. Tuyệt đối KHÔNG SẾN:
    - Không xưng hô quá đà (CẤM dùng các từ như "học viên thân yêu", "câu hỏi đáng yêu", "học sinh yêu quý"...).
    - Không tự động thêm lời chào mừng rườm rà hay tên trung tâm vào mỗi câu trả lời trừ khi người dùng yêu cầu.
    - Hạn chế tối đa việc lạm dụng icon (emoji) vô lý (chỉ dùng tối đa 1 emoji nếu thực sự cần thiết).
-3. Độ chính xác: Kiểm tra kỹ chính tả tiếng Anh và tiếng Việt trước khi trả về kết quả.
-4. Cấu trúc câu trả lời chuẩn:
+4. Độ chính xác: Kiểm tra kỹ chính tả tiếng Anh và tiếng Việt trước khi trả về kết quả.
+5. Cấu trúc câu trả lời chuẩn:
    - Nghĩa của từ / Giải đáp chính
    - Ví dụ minh họa
    - Mở rộng ngắn gọn (nếu cần).`;
+
+export function stripMarkdownFormatting(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\*{2,3}/g, '') // remove ** or ***
+    .replace(/_{2,3}/g, '') // remove __ or ___
+    .replace(/^#{1,6}\s+/gm, '') // remove # or ## headers
+    .replace(/`{1,3}[^`]*`{1,3}/g, (match) => match.replace(/`/g, '')) // remove code backticks
+    .trim();
+}
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour Cache TTL
 
@@ -360,7 +373,8 @@ export const GeminiEngine = {
           console.log(`✅ [AI MODEL IN USE SUCCESS]: Using primary model "${modelId}" for response.`);
         }
         this.setCachedWorkingModel(modelId);
-        return { text, modelUsed: modelId };
+        const cleanedText = stripMarkdownFormatting(text);
+        return { text: cleanedText, modelUsed: modelId };
       }
 
       // Model failed -> Log fallback transition and try next model
@@ -471,7 +485,8 @@ export const GeminiEngine = {
           console.log(`✅ [AI MULTIMODAL SUCCESS]: Using primary model "${modelId}" for response.`);
         }
         this.setCachedWorkingModel(modelId);
-        return { text, modelUsed: modelId };
+        const cleanedText = stripMarkdownFormatting(text);
+        return { text: cleanedText, modelUsed: modelId };
       }
 
       const nextModel = candidateModels[i + 1];
