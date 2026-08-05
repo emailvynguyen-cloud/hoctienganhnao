@@ -126,21 +126,24 @@ export const GeminiEngine = {
     }
   },
 
-  getApiKey(): string {
-    // 1. Check user-configured key in LocalStorage
+  getApiKeyInfo(): { key: string; source: string } {
+    // 1. Primary Source: Super Admin configured key in GeminiSettingsModal (LocalStorage)
     try {
       const userKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
       if (userKey) {
         const sanitized = userKey.trim().replace(/^["']|["']$/g, '');
         if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
-          return sanitized;
+          return {
+            key: sanitized,
+            source: 'Super Admin GeminiSettingModal (LocalStorage)',
+          };
         }
       }
     } catch (e) {
       // LocalStorage access error fallback
     }
 
-    // 2. Check Environment Variables (Vite, Vercel, Netlify)
+    // 2. Secondary Fallback Source: Environment Variables (.env / Vercel / Netlify)
     try {
       if (typeof import.meta !== 'undefined' && import.meta.env) {
         const envKey =
@@ -152,7 +155,10 @@ export const GeminiEngine = {
         if (envKey) {
           const sanitized = String(envKey).trim().replace(/^["']|["']$/g, '');
           if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
-            return sanitized;
+            return {
+              key: sanitized,
+              source: 'Environment Variable (.env / Vercel)',
+            };
           }
         }
       }
@@ -160,7 +166,7 @@ export const GeminiEngine = {
       // Ignore env check error
     }
 
-    // 3. Check process.env (Node / Server-Side / Build time)
+    // 3. Fallback check for process.env (Node / Server-Side / Build time)
     try {
       if (typeof process !== 'undefined' && process.env) {
         const procKey =
@@ -172,7 +178,10 @@ export const GeminiEngine = {
         if (procKey) {
           const sanitized = String(procKey).trim().replace(/^["']|["']$/g, '');
           if (sanitized && sanitized !== 'undefined' && sanitized !== 'null') {
-            return sanitized;
+            return {
+              key: sanitized,
+              source: 'Process Environment (process.env)',
+            };
           }
         }
       }
@@ -180,15 +189,21 @@ export const GeminiEngine = {
       // Ignore process check error
     }
 
-    return '';
+    return { key: '', source: 'Chưa cấu hình (Rỗng)' };
+  },
+
+  getApiKey(): string {
+    return this.getApiKeyInfo().key;
   },
 
   setApiKey(key: string) {
     const sanitized = key ? key.trim().replace(/^["']|["']$/g, '') : '';
     if (sanitized) {
       localStorage.setItem(STORAGE_KEYS.API_KEY, sanitized);
+      console.log('💾 [SUPER ADMIN API KEY SAVED SUCCESS]: Saved new API Key to LocalStorage.');
     } else {
       localStorage.removeItem(STORAGE_KEYS.API_KEY);
+      console.warn('🗑️ [SUPER ADMIN API KEY REMOVED]: Cleared API Key from LocalStorage.');
     }
   },
 
@@ -216,10 +231,29 @@ export const GeminiEngine = {
     const backoffDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
     let lastErr: any = null;
 
-    console.log('[AI MODEL ATTEMPT START]', {
-      requestId,
+    const { key: currentApiKey, source: keySource } = this.getApiKeyInfo();
+    const maskedKey = currentApiKey.length >= 10
+      ? `${currentApiKey.slice(0, 6)}...${currentApiKey.slice(-4)}`
+      : currentApiKey
+      ? `${currentApiKey.slice(0, 3)}...`
+      : '(Key Rỗng / Chưa Cấu Hình)';
+
+    const cachedWorking = this.getCachedWorkingModel();
+    const userSelected = this.getSelectedModel();
+    const modelSource = modelId === cachedWorking
+      ? 'Cached Working Model (1h Memory)'
+      : modelId === userSelected
+      ? 'User Selected Model'
+      : 'Priority Fallback Chain';
+
+    // MANDATORY AUDIT LOG BEFORE CALLING GEMINI API
+    console.log('🔑 [GEMINI API KEY & MODEL AUDIT LOG]', {
       timestamp: new Date().toISOString(),
-      model: modelId,
+      apiKeySource: keySource,
+      maskedApiKey: maskedKey,
+      actualModelCalled: modelId,
+      modelConfigSource: modelSource,
+      requestId,
     });
 
     for (let attempt = 0; attempt <= backoffDelays.length; attempt++) {
