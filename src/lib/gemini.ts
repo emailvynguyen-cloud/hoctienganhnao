@@ -13,9 +13,9 @@ export const GEMINI_MODELS = [
     desc: 'Nhận diện ảnh Vision & văn bản ổn định',
   },
   {
-    id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    desc: 'Mô hình cao cấp, suy luận chuyên sâu',
+    id: 'gemini-2.0-flash-lite',
+    name: 'Gemini 2.0 Flash Lite',
+    desc: 'Tốc độ tối ưu, phản hồi mượt mà',
   },
 ];
 
@@ -23,6 +23,13 @@ const STORAGE_KEYS = {
   API_KEY: 'gemini_api_key',
   SELECTED_MODEL: 'gemini_selected_model',
 };
+
+const CACHE_KEYS = {
+  WORKING_MODEL: 'gemini_cached_working_model',
+  CACHE_TIMESTAMP: 'gemini_cached_model_timestamp',
+};
+
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour Cache TTL
 
 // Built-in Smart Feedback Generator Fallback (No API Key Required)
 const SMART_FEEDBACK_TEMPLATES = [
@@ -84,9 +91,10 @@ export const GeminiEngine = {
     try {
       const cached = localStorage.getItem(CACHE_KEYS.WORKING_MODEL);
       const timeStr = localStorage.getItem(CACHE_KEYS.CACHE_TIMESTAMP);
-      if (cached && timeStr) {
+      const validIds = GEMINI_MODELS.map((m) => m.id);
+      if (cached && timeStr && validIds.includes(cached)) {
         const age = Date.now() - parseInt(timeStr, 10);
-        if (age < CACHE_TTL_MS && cached !== 'gemini-2.5-flash') {
+        if (age < CACHE_TTL_MS) {
           return cached;
         }
       }
@@ -186,7 +194,8 @@ export const GeminiEngine = {
 
   getSelectedModel(): string {
     const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL);
-    if (!saved || saved === 'gemini-2.5-flash') {
+    const validIds = GEMINI_MODELS.map((m) => m.id);
+    if (!saved || !validIds.includes(saved)) {
       localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, 'gemini-2.0-flash');
       return 'gemini-2.0-flash';
     }
@@ -268,9 +277,9 @@ export const GeminiEngine = {
 
     // Dynamic Fallback Chain Priority:
     // 1. Cached Working Model (if valid)
-    // 2. User Selected Model (e.g. gemini-1.5-pro, gemini-2.0-flash)
-    // 3. Fallback list (gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro)
-    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    // 2. User Selected Model (e.g. gemini-2.0-flash)
+    // 3. Fallback list (gemini-2.0-flash, gemini-1.5-flash, gemini-2.0-flash-lite)
+    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
     const candidateModels = Array.from(
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
@@ -352,7 +361,7 @@ export const GeminiEngine = {
     const requestId = 'req_img_' + Math.random().toString(36).substring(2, 9);
     const cachedWorkingModel = this.getCachedWorkingModel();
     const userSelectedModel = this.getSelectedModel();
-    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const standardFallbackChain = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
     const candidateModels = Array.from(
       new Set([cachedWorkingModel, userSelectedModel, ...standardFallbackChain].filter(Boolean) as string[])
     );
