@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
@@ -16,8 +16,64 @@ interface AddSessionModalProps {
 }
 
 // ----------------------------------------------------------------------
+// MEMOIZED DEBOUNCED INPUT COMPONENTS FOR 60FPS TYPING PERFORMANCE
+// ----------------------------------------------------------------------
+interface DebouncedTextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
+  value: string;
+  onDebouncedChange: (val: string) => void;
+  delay?: number;
+}
+
+const DebouncedTextArea = memo<DebouncedTextAreaProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
+  const [localValue, setLocalValue] = useState(value);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onDebouncedChange(val);
+    }, delay);
+  };
+
+  return <textarea {...props} value={localValue} onChange={handleChange} />;
+});
+DebouncedTextArea.displayName = 'DebouncedTextArea';
+
+interface DebouncedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  value: string;
+  onDebouncedChange: (val: string) => void;
+  delay?: number;
+}
+
+const DebouncedInput = memo<DebouncedInputProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
+  const [localValue, setLocalValue] = useState(value);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onDebouncedChange(val);
+    }, delay);
+  };
+
+  return <input {...props} value={localValue} onChange={handleChange} />;
+});
+DebouncedInput.displayName = 'DebouncedInput';
+
+// ----------------------------------------------------------------------
 // MEMOIZED SUBCOMPONENT: ISOLATED STUDENT FEEDBACK CARD
-// Typing inside a student's feedback textareas only re-renders THIS card!
 // ----------------------------------------------------------------------
 interface StudentFeedbackCardProps {
   student: Student;
@@ -38,24 +94,35 @@ const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFe
     setMaterialUrl(initialFeedback?.materialUrl || '');
   }, [initialFeedback]);
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackRef = useRef({ strengths, improvements, materialTitle, materialUrl });
+  feedbackRef.current = { strengths, improvements, materialTitle, materialUrl };
+
+  const triggerDebouncedSync = useCallback((updated: StudentFeedback) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onChange(student.id, updated);
+    }, 300);
+  }, [student.id, onChange]);
+
   const handleStrengthsChange = (val: string) => {
     setStrengths(val);
-    onChange(student.id, { strengths: val, improvements, materialTitle, materialUrl });
+    triggerDebouncedSync({ ...feedbackRef.current, strengths: val });
   };
 
   const handleImprovementsChange = (val: string) => {
     setImprovements(val);
-    onChange(student.id, { strengths, improvements: val, materialTitle, materialUrl });
+    triggerDebouncedSync({ ...feedbackRef.current, improvements: val });
   };
 
   const handleMaterialTitleChange = (val: string) => {
     setMaterialTitle(val);
-    onChange(student.id, { strengths, improvements, materialTitle: val, materialUrl });
+    triggerDebouncedSync({ ...feedbackRef.current, materialTitle: val });
   };
 
   const handleMaterialUrlChange = (val: string) => {
     setMaterialUrl(val);
-    onChange(student.id, { strengths, improvements, materialTitle, materialUrl: val });
+    triggerDebouncedSync({ ...feedbackRef.current, materialUrl: val });
   };
 
   return (
@@ -101,7 +168,6 @@ const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFe
           />
         </div>
 
-        {/* Link tài liệu riêng */}
         <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
           <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
             <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {student.name}:
@@ -127,10 +193,7 @@ const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFe
     </div>
   );
 }, (prevProps, nextProps) => {
-  return (
-    prevProps.student.id === nextProps.student.id &&
-    prevProps.initialFeedback === nextProps.initialFeedback
-  );
+  return prevProps.student.id === nextProps.student.id;
 });
 
 StudentFeedbackCard.displayName = 'StudentFeedbackCard';
@@ -155,21 +218,30 @@ const HomeworkItemCard = memo<HomeworkItemCardProps>(({ item, index, canRemove, 
     setTitle(item.title || '');
     setContent(item.content || '');
     setAttachmentUrl(item.attachmentUrl || '');
-  }, [item]);
+  }, [item.id]);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerDebouncedSync = useCallback((field: keyof HomeworkTaskItem, val: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onUpdate(index, field, val);
+    }, 300);
+  }, [index, onUpdate]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    onUpdate(index, 'title', val);
+    triggerDebouncedSync('title', val);
   };
 
   const handleContentChange = (val: string) => {
     setContent(val);
-    onUpdate(index, 'content', val);
+    triggerDebouncedSync('content', val);
   };
 
   const handleUrlChange = (val: string) => {
     setAttachmentUrl(val);
-    onUpdate(index, 'attachmentUrl', val);
+    triggerDebouncedSync('attachmentUrl', val);
   };
 
   return (
@@ -216,6 +288,8 @@ const HomeworkItemCard = memo<HomeworkItemCardProps>(({ item, index, canRemove, 
       />
     </div>
   );
+}, (prevProps, nextProps) => {
+  return prevProps.item.id === nextProps.item.id && prevProps.index === nextProps.index && prevProps.canRemove === nextProps.canRemove;
 });
 
 HomeworkItemCard.displayName = 'HomeworkItemCard';
@@ -499,11 +573,11 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                 <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
                   Nội Dung Học Trong Buổi *
                 </label>
-                <textarea
+                <DebouncedTextArea
                   rows={4}
                   placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
                   value={lessonContent}
-                  onChange={(e) => setLessonContent(e.target.value)}
+                  onDebouncedChange={setLessonContent}
                   className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-pink-300"
                   required={!isChargedAbsenceSession}
                 />
@@ -515,11 +589,11 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   <label className="block font-black text-sky-900 dark:text-sky-300 uppercase mb-1 flex items-center">
                     📹 Link Video Record Buổi Học
                   </label>
-                  <input
+                  <DebouncedInput
                     type="url"
                     placeholder="https://zoom.us/... hoặc Drive"
                     value={recordLink}
-                    onChange={(e) => setRecordLink(e.target.value)}
+                    onDebouncedChange={setRecordLink}
                     className="w-full p-3 rounded-xl border border-sky-200 bg-white dark:bg-slate-800 text-xs font-medium"
                   />
                 </div>
@@ -528,11 +602,11 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   <label className="block font-black text-purple-900 dark:text-purple-300 uppercase mb-1 flex items-center">
                     🎴 Link Quizlet Từ Vựng Buổi Học
                   </label>
-                  <input
+                  <DebouncedInput
                     type="url"
                     placeholder="https://quizlet.com/vn/..."
                     value={quizletUrl}
-                    onChange={(e) => setQuizletUrl(e.target.value)}
+                    onDebouncedChange={setQuizletUrl}
                     className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
                   />
                 </div>
