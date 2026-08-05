@@ -6,6 +6,7 @@ import { MascotWidget } from '../common/MascotWidget';
 import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
+import { getStudentHonorBadge } from '../../lib/rankingUtils';
 import {
   Calendar,
   CheckCircle2,
@@ -359,7 +360,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {session.studentFeedbacks?.[currentStudent.id] && (
           <div className="p-4.5 rounded-2xl bg-pink-50/90 dark:bg-slate-800/90 border border-pink-200 text-xs space-y-3 backdrop-blur-xs">
             <span className="font-black text-pink-900 dark:text-pink-300 flex items-center text-xs uppercase tracking-wider">
-              💬 Nhận Xét & Tài Liệu Dành Cho Em Hôm Nay
+              💬 Nhận Xét
             </span>
 
             {/* 2-Column Parallel Grid Layout on Desktop */}
@@ -380,7 +381,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-amber-200/90 shadow-2xs">
                   {renderExpandableText(
                     `fb_imp_${session.id}_${currentStudent.id}`,
-                    'Cần phát huy',
+                    'Cần cải thiện',
                     session.studentFeedbacks[currentStudent.id]?.improvements || '',
                     '🎯',
                     'text-amber-800 dark:text-amber-300'
@@ -388,19 +389,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               ) : null}
             </div>
-
-            {session.studentFeedbacks[currentStudent.id]?.materialUrl && (
-              <div className="pt-2 border-t border-pink-200/60">
-                <a
-                  href={session.studentFeedbacks[currentStudent.id].materialUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3.5 py-2 rounded-xl bg-sky-100 text-sky-950 font-extrabold text-xs hover:bg-sky-200 transition inline-flex items-center border border-sky-300 shadow-2xs"
-                >
-                  📎 Link tài liệu đính kèm: {session.studentFeedbacks[currentStudent.id].materialTitle || 'Xem tài liệu ngay'} ↗
-                </a>
-              </div>
-            )}
           </div>
         )}
 
@@ -413,7 +401,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           <>
             <div className="space-y-3">
               <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
-                📝 Danh Sách Bài Tập Về Nhà Nền Nổi ({itemsList.length} bài):
+                📝 Bài tập về nhà cần làm ({itemsList.length} bài):
               </span>
 
               {itemsList.length > 0 ? (
@@ -569,14 +557,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     );
   };
 
+  // Dynamic Single Source of Truth Honor Badge Computation from Leaderboard Rankings
+  const freshStudents = StorageEngine.getStudents() || [];
+  const currentHonorBadge = currentStudent ? getStudentHonorBadge(currentStudent.id, freshStudents, sessions, homeworkSubmissions) : null;
+
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 animate-fadeIn pb-12">
       
-      {/* 1. GENERAL INFO CARD - BALANCED, BEAUTIFUL & CLEAR TYPOGRAPHY */}
-      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-sky-100/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-7 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
+      {/* 1. STUDENT HEADER HERO CARD WITH SOFT PINK GRADIENT & FULL DETAILS */}
+      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-pink-100/90 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200/90 dark:border-slate-800 p-6 sm:p-7 shadow-xs relative space-y-6">
+        
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           
-          {/* LEFT & CENTER: AVATAR & DETAILED INFO */}
           <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 flex-1 w-full text-center sm:text-left">
             
             {/* Avatar with Camera Overlay */}
@@ -604,9 +596,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   {currentStudent.name}
                 </h2>
-                {currentStudent.honorNickname && currentStudent.honorNickname.trim() !== '' && (
-                  <span className="px-3.5 py-1 rounded-full text-xs font-black bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 text-white shadow-xs inline-block">
-                    {currentStudent.honorNickname}
+                {currentHonorBadge ? (
+                  <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs inline-block ${currentHonorBadge.badgeColor}`}>
+                    {currentHonorBadge.title}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 inline-block">
+                    Chưa có danh hiệu Top
                   </span>
                 )}
               </div>
@@ -729,9 +725,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
                     Thống Kê Buổi Nghỉ Học Tháng {currentMonthLabel}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                    Theo dõi tổng số buổi nghỉ và lý do từng buổi nghỉ trong tháng của học viên
-                  </p>
                 </div>
               </div>
 

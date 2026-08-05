@@ -131,8 +131,18 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedClassId || !lessonContent) {
-      alert('Vui lòng chọn Lớp học và nhập Nội dung bài học!');
+    if (!selectedClassId) {
+      alert('Vui lòng chọn Lớp học!');
+      return;
+    }
+
+    let finalLessonContent = lessonContent;
+    if (isChargedAbsenceSession) {
+      if (!finalLessonContent || !finalLessonContent.trim()) {
+        finalLessonContent = 'Nghỉ tính phí do vi phạm quy định / học viên không vào lớp';
+      }
+    } else if (!finalLessonContent || !finalLessonContent.trim()) {
+      alert('Vui lòng nhập Nội dung bài học!');
       return;
     }
 
@@ -149,7 +159,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       StorageEngine.updateSession(editingSession.id, {
         classId: selectedClassId,
         date,
-        lessonContent,
+        lessonContent: finalLessonContent,
         homeworkItems: hasNoHomework ? [] : homeworkItems,
         studentFeedbacks,
         recordLink,
@@ -167,7 +177,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         teacherId: currentClass?.teacherId || 'u_teacher_01',
         teacherName: currentClass?.teacherName || 'Giáo viên',
         date,
-        lessonContent,
+        lessonContent: finalLessonContent,
         homeworkItems: hasNoHomework ? [] : homeworkItems,
         studentFeedbacks,
         recordLink,
@@ -183,6 +193,8 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     onSessionAdded();
     onClose();
   };
+
+  const isLockedToSingleClass = !!(initialClassId || defaultClassId || editingSession);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
@@ -214,20 +226,25 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
-                Chọn Lớp Học *
+                Lớp Học
               </label>
-              <select
-                value={selectedClassId}
-                onChange={(e) => setSelectedClassId(e.target.value)}
-                disabled={!!editingSession}
-                className="w-full p-3 rounded-xl border border-pink-200 bg-pink-50/50 font-extrabold text-xs"
-              >
-                {classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.className} ({cls.schedule})
-                  </option>
-                ))}
-              </select>
+              {isLockedToSingleClass ? (
+                <div className="w-full p-3 rounded-xl border border-pink-300 bg-pink-100/80 font-black text-xs text-pink-950 flex items-center shadow-2xs">
+                  <span>🎓 {classes.find((c) => c.id === selectedClassId)?.className || 'Lớp Hiện Tại'}</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-pink-200 bg-pink-50/50 font-extrabold text-xs"
+                >
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.className} ({cls.schedule})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { formatSessionDate } from '../../lib/dateUtils';
+import { getStudentHonorBadge } from '../../lib/rankingUtils';
 
 interface ClassDetailsViewProps {
   selectedClass: Class;
@@ -283,67 +284,71 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {classStudents.map((std) => (
-            <div
-              key={std.id}
-              onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
-              className="p-4 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer flex items-center justify-between group shadow-xs"
-            >
-              <div className="flex items-center space-x-3">
-                <img
-                  src={resolveAvatarUrl(std.avatar)}
-                  alt={std.name}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                  }}
-                  className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shrink-0 group-hover:scale-105 transition"
-                />
-                <div>
-                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
-                    {std.name}
-                  </h4>
-                  {std.honorNickname && std.honorNickname.trim() !== '' && (
-                    <p className="text-[10px] text-pink-600 font-bold">{std.honorNickname}</p>
-                  )}
-                  <p className="text-[10px] text-slate-500">SĐT: {std.phone}</p>
+          {classStudents.map((std) => {
+            const stdBadge = getStudentHonorBadge(std.id, students, sessions, homeworkSubmissions);
+
+            return (
+              <div
+                key={std.id}
+                onClick={() => onOpenPublicStudentLink && onOpenPublicStudentLink(std.publicHash)}
+                className="p-4 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer flex items-center justify-between group shadow-xs"
+              >
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={resolveAvatarUrl(std.avatar)}
+                    alt={std.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                    }}
+                    className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shrink-0 group-hover:scale-105 transition"
+                  />
+                  <div>
+                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
+                      {std.name}
+                    </h4>
+                    {stdBadge && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-300 font-black">{stdBadge.title}</p>
+                    )}
+                    <p className="text-[10px] text-slate-500">SĐT: {std.phone}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center space-x-1.5 shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const shareUrl = `${window.location.origin}/?student=${std.publicHash}`;
-                    navigator.clipboard.writeText(shareUrl);
-                    alert(`Đã sao chép link trang học tập công khai của em ${std.name} vào bộ nhớ tạm!\n\nLink: ${shareUrl}`);
-                  }}
-                  className="p-2 rounded-xl bg-emerald-100 text-emerald-950 hover:bg-emerald-500 hover:text-white transition text-xs font-bold cursor-pointer"
-                  title="Sao chép đường link xem trang học tập cho Phụ huynh / Học viên"
-                >
-                  <Share2 className="w-4 h-4 text-emerald-700" />
-                </button>
-
-                {currentUser?.role === 'super_admin' && (
+                <div className="flex items-center space-x-1.5 shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDeleteTargetModal({
-                        isOpen: true,
-                        type: 'student_from_class',
-                        name: std.name,
-                        detail: `Gỡ khỏi lớp: ${selectedClass.className} (${selectedClass.code})`,
-                        studentId: std.id,
-                      });
+                      const shareUrl = `${window.location.origin}/?student=${std.publicHash}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert(`Đã sao chép link trang học tập công khai của em ${std.name} vào bộ nhớ tạm!\n\nLink: ${shareUrl}`);
                     }}
-                    className="p-2 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition text-xs font-bold cursor-pointer"
-                    title="Quyền Super Admin: Xóa học viên này ra khỏi lớp"
+                    className="p-2 rounded-xl bg-emerald-100 text-emerald-950 hover:bg-emerald-500 hover:text-white transition text-xs font-bold cursor-pointer"
+                    title="Sao chép đường link xem trang học tập cho Phụ huynh / Học viên"
                   >
-                    <UserX className="w-4 h-4" />
+                    <Share2 className="w-4 h-4 text-emerald-700" />
                   </button>
-                )}
+
+                  {currentUser?.role === 'super_admin' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTargetModal({
+                          isOpen: true,
+                          type: 'student_from_class',
+                          name: std.name,
+                          detail: `Gỡ khỏi lớp: ${selectedClass.className} (${selectedClass.code})`,
+                          studentId: std.id,
+                        });
+                      }}
+                      className="p-2 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white transition text-xs font-bold cursor-pointer"
+                      title="Quyền Super Admin: Xóa học viên này ra khỏi lớp"
+                    >
+                      <UserX className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
