@@ -323,6 +323,8 @@ export const StorageEngine = {
       code: classData.code || `CLASS-${Date.now()}`,
       teacherName: classData.teacherName || 'Ms. Vy',
       teacherId: classData.teacherId || 'u_admin',
+      adminId: classData.adminId || 'u_admin',
+      adminName: classData.adminName || 'Admin Trực Thuộc',
       schedule: classData.schedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
       courseName: classData.courseName || 'Tiếng Anh Giao Tiếp',
       zoomLink: classData.zoomLink || '',
@@ -1034,6 +1036,31 @@ export const StorageEngine = {
       targetClass.className,
       `Cập nhật quyền quản lý lớp: Admin (${adminName || 'Chưa gán'}), GV (${teacherName || 'Chưa gán'})`
     );
+  },
+
+  batchAssignClassAdmin(classIds: string[], adminId: string, adminName: string, authorUser?: User | null) {
+    const classes = this.getClasses() || [];
+    let count = 0;
+    classes.forEach((cls) => {
+      if (cls && classIds.includes(cls.id)) {
+        cls.adminId = adminId;
+        cls.adminName = adminName;
+        count++;
+      }
+    });
+    if (count > 0) {
+      this.saveClasses(classes);
+      this.addAuditLog(
+        authorUser || null,
+        'BATCH_ASSIGN_ADMIN',
+        'permission',
+        undefined,
+        `${count} lớp học`,
+        undefined,
+        undefined,
+        `Gán Admin "${adminName}" phụ trách cho ${count} lớp học hàng loạt`
+      );
+    }
   },
 
   updateUserLockStatus(userId: string, isLocked: boolean, authorUser?: User | null) {

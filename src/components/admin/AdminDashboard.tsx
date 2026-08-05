@@ -121,6 +121,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [auditLogSearchQuery, setAuditLogSearchQuery] = useState('');
   const [auditLogFilterType, setAuditLogFilterType] = useState('all');
 
+  // Super Admin Batch Class Assignment State
+  const [selectedBatchClassIds, setSelectedBatchClassIds] = useState<string[]>([]);
+  const [batchTargetAdminId, setBatchTargetAdminId] = useState<string>('');
+
   // Form Modals State
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -143,9 +147,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editingStudentModal, setEditingStudentModal] = useState<Student | null>(null);
   const [classStatusFilter, setClassStatusFilter] = useState<'active' | 'archived'>('active');
 
+  const allSystemUsers = StorageEngine.getUsers() || [];
+  const adminUsersList = allSystemUsers.filter((u) => u && (u.role === 'admin' || u.role === 'super_admin'));
+
   // New Class Form State
   const [newClassName, setNewClassName] = useState('');
   const [newClassCode, setNewClassCode] = useState('');
+  const [newAdminId, setNewAdminId] = useState(adminUsersList[0]?.uid || 'u_admin');
+  const [newAdminName, setNewAdminName] = useState(adminUsersList[0]?.displayName || 'Admin Trực Thuộc');
   const [newTeacherName, setNewTeacherName] = useState('Ms. Vy');
   const [newSchedule, setNewSchedule] = useState('T2 - T4 - T6 (18:00 - 19:30)');
   const [newCourseName, setNewCourseName] = useState('IELTS Breakthrough');
@@ -257,10 +266,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const selectedTeacherObj = otherTeachersList.find((t) => t.name === newTeacherName);
     const teacherId = newTeacherName.includes('Vy') ? 'u_super_admin' : (selectedTeacherObj?.id || 'u_admin');
+    const selectedAdminObj = adminUsersList.find((a) => a.uid === newAdminId);
+    const resolvedAdminName = selectedAdminObj ? selectedAdminObj.displayName : (newAdminName || 'Admin Trực Thuộc');
 
     StorageEngine.addClass({
       className: newClassName,
       code: newClassCode,
+      adminId: newAdminId || 'u_admin',
+      adminName: resolvedAdminName,
       teacherName: newTeacherName || 'Ms. Vy',
       teacherId,
       schedule: newSchedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
@@ -848,73 +861,148 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
+          {/* SUPER ADMIN BATCH ADMIN REASSIGNMENT BAR */}
+          {isSuperAdmin && (
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center space-x-2">
+                <span className="font-black text-purple-950 dark:text-purple-300">
+                  👑 Gán Hàng Loạt Admin Phụ Trách Lớp Học ({selectedBatchClassIds.length} lớp đã chọn):
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={batchTargetAdminId}
+                  onChange={(e) => setBatchTargetAdminId(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-purple-300 bg-white dark:bg-slate-900 font-extrabold text-xs text-purple-950 dark:text-white cursor-pointer"
+                >
+                  <option value="">-- Chọn Admin Phụ Trách --</option>
+                  {adminUsersList.map((a) => (
+                    <option key={a.uid} value={a.uid}>
+                      👑 {a.displayName} ({a.email})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    if (selectedBatchClassIds.length === 0) {
+                      alert('Vui lòng tích chọn ít nhất 1 lớp học để gán!');
+                      return;
+                    }
+                    if (!batchTargetAdminId) {
+                      alert('Vui lòng chọn Admin phụ trách từ danh sách!');
+                      return;
+                    }
+                    const targetAdminObj = adminUsersList.find((a) => a.uid === batchTargetAdminId);
+                    const targetName = targetAdminObj ? targetAdminObj.displayName : 'Admin';
+                    StorageEngine.batchAssignClassAdmin(selectedBatchClassIds, batchTargetAdminId, targetName, currentUser);
+                    onUpdateClasses();
+                    setSelectedBatchClassIds([]);
+                    alert(`Đã gán Admin "${targetName}" phụ trách cho ${selectedBatchClassIds.length} lớp thành công!`);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs transition cursor-pointer shadow-md shrink-0"
+                >
+                  🚀 Áp Dụng Gán Hàng Loạt
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {safeClasses
               .filter((cls) => cls && (classStatusFilter === 'archived' ? cls.status === 'archived' : cls.status !== 'archived'))
               .filter((cls) => (
                 (cls.className || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
                 (cls.code || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
-                (cls.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
+                (cls.teacherName || '').toLowerCase().includes(classSearchQuery.toLowerCase()) ||
+                (cls.adminName || '').toLowerCase().includes(classSearchQuery.toLowerCase())
               ))
-              .map((cls) => (
-                <div
-                  key={cls.id}
-                  onClick={() => setInspectedClassId(cls.id)}
-                  className="p-5 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer space-y-3 group shadow-xs relative"
-                >
-                  <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
-                        {cls.code}
-                      </span>
-                      {cls.status === 'archived' && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 border border-amber-300">
-                          📦 Đã Lưu Trữ
+              .map((cls) => {
+                const isSelectedForBatch = selectedBatchClassIds.includes(cls.id);
+
+                return (
+                  <div
+                    key={cls.id}
+                    onClick={() => setInspectedClassId(cls.id)}
+                    className={`p-5 rounded-3xl border transition cursor-pointer space-y-3 group shadow-xs relative ${
+                      isSelectedForBatch
+                        ? 'bg-purple-50/90 border-purple-400 ring-2 ring-purple-400'
+                        : 'bg-pink-50/30 hover:bg-pink-100/50 border-pink-100 hover:border-pink-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-pink-100 pb-2">
+                      <div className="flex items-center space-x-2">
+                        {isSuperAdmin && (
+                          <input
+                            type="checkbox"
+                            checked={isSelectedForBatch}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedBatchClassIds([...selectedBatchClassIds, cls.id]);
+                              } else {
+                                setSelectedBatchClassIds(selectedBatchClassIds.filter((id) => id !== cls.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-purple-600 rounded focus:ring-purple-400 cursor-pointer"
+                            title="Tích chọn lớp để gán Admin phụ trách hàng loạt"
+                          />
+                        )}
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
+                          {cls.code}
                         </span>
-                      )}
+                        {cls.status === 'archived' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 border border-amber-300">
+                            📦 Đã Lưu Trữ
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
                     </div>
-                    <span className="text-xs font-extrabold text-slate-600">{cls.schedule}</span>
-                  </div>
 
-                  <div>
-                    <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
-                      {cls.className}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">GV phụ trách: {cls.teacherName}</p>
-                  </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
+                        {cls.className}
+                      </h4>
+                      <p className="text-xs text-pink-950 font-bold mt-1 flex items-center flex-wrap gap-1">
+                        <span className="text-amber-600 font-black">👑 Admin:</span> {cls.adminName || 'Admin Trực Thuộc'}
+                        <span className="text-slate-300">•</span>
+                        <span className="text-sky-600 font-black">GV:</span> {cls.teacherName}
+                      </p>
+                    </div>
 
-                  <div className="pt-2 border-t border-pink-100 flex items-center justify-between gap-1.5">
-                    <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
-                      Mở Xem Chi Tiết →
-                    </span>
+                    <div className="pt-2 border-t border-pink-100 flex items-center justify-between gap-1.5">
+                      <span className="text-xs font-bold text-pink-600 group-hover:translate-x-1 transition flex items-center">
+                        Mở Xem Chi Tiết →
+                      </span>
 
-                    <div className="flex items-center space-x-1">
-                      {isSuperAdmin && (
+                      <div className="flex items-center space-x-1">
+                        {isSuperAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingClassModal(cls);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-sky-100 text-sky-900 hover:bg-sky-200 transition text-xs font-bold flex items-center cursor-pointer"
+                            title="Quyền Super Admin: Chỉnh sửa thông tin lớp học & gán Admin"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Lớp
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditingClassModal(cls);
+                            onOpenAddSession(cls.id);
                           }}
-                          className="px-2.5 py-1.5 rounded-xl bg-sky-100 text-sky-900 hover:bg-sky-200 transition text-xs font-bold flex items-center cursor-pointer"
-                          title="Quyền Super Admin: Chỉnh sửa thông tin lớp học"
+                          className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
                         >
-                          <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Lớp
+                          <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
                         </button>
-                      )}
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenAddSession(cls.id);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-pink-400 text-white font-bold text-xs hover:bg-pink-500 transition flex items-center"
-                      >
-                        <PlusCircle className="w-3.5 h-3.5 mr-1" /> Thêm Buổi
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         </div>
       )}
@@ -1386,6 +1474,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white uppercase font-mono"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp (*)</label>
+                <select
+                  value={newAdminId}
+                  onChange={(e) => {
+                    setNewAdminId(e.target.value);
+                    const selectedObj = adminUsersList.find((a) => a.uid === e.target.value);
+                    if (selectedObj) setNewAdminName(selectedObj.displayName);
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold cursor-pointer"
+                >
+                  {adminUsersList.map((a) => (
+                    <option key={a.uid} value={a.uid}>
+                      👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -201,6 +201,37 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
               {selectedClass.className}
             </h2>
             <div className="text-xs text-pink-900 font-medium space-y-0.5 pt-1">
+              <p className="flex items-center space-x-1 flex-wrap">
+                <strong>👑 Admin phụ trách:</strong>
+                {currentUser?.role === 'super_admin' ? (
+                  <select
+                    value={selectedClass.adminId || ''}
+                    onChange={(e) => {
+                      const allUsers = StorageEngine.getUsers() || [];
+                      const adminUsers = allUsers.filter((u) => u && (u.role === 'admin' || u.role === 'super_admin'));
+                      const selectedUser = adminUsers.find((u) => u.uid === e.target.value);
+                      if (selectedUser) {
+                        StorageEngine.assignClassManagers(selectedClass.id, selectedUser.uid, selectedUser.displayName, undefined, undefined, undefined, currentUser);
+                        onRefreshData();
+                        alert(`Đã đổi Admin phụ trách lớp ${selectedClass.className} sang: ${selectedUser.displayName}`);
+                      }
+                    }}
+                    className="px-2 py-0.5 rounded-lg border border-pink-300 bg-white/90 text-xs font-black text-pink-950 cursor-pointer shadow-2xs"
+                  >
+                    {(StorageEngine.getUsers() || [])
+                      .filter((u) => u && (u.role === 'admin' || u.role === 'super_admin'))
+                      .map((a) => (
+                        <option key={a.uid} value={a.uid}>
+                          👑 {a.displayName} ({a.email})
+                        </option>
+                      ))}
+                  </select>
+                ) : (
+                  <span className="font-extrabold text-pink-950 underline decoration-pink-400 ms-1">
+                    {selectedClass.adminName || 'Admin Trực Thuộc'}
+                  </span>
+                )}
+              </p>
               <p><strong>Giáo viên phụ trách:</strong> {selectedClass.teacherName}</p>
               <p><strong>Lịch học:</strong> {selectedClass.schedule}</p>
               <p><strong>Giáo trình:</strong> {selectedClass.courseName}</p>

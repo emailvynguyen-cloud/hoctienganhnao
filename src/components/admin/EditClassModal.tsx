@@ -91,6 +91,11 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   otherTeachersList,
   onRefreshData,
 }) => {
+  const allUsers = StorageEngine.getUsers() || [];
+  const adminUsers = allUsers.filter((u) => u && (u.role === 'admin' || u.role === 'super_admin'));
+
+  const [adminId, setAdminId] = useState(targetClass.adminId || adminUsers[0]?.uid || 'u_admin');
+  const [adminName, setAdminName] = useState(targetClass.adminName || adminUsers[0]?.displayName || 'Admin');
   const [className, setClassName] = useState(targetClass.className || '');
   const [code, setCode] = useState(targetClass.code || '');
   const [teacherName, setTeacherName] = useState(targetClass.teacherName || 'Ms. Vy');
@@ -114,11 +119,15 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
 
     const selectedTeacherObj = otherTeachersList.find((t) => t.name === teacherName);
     const teacherId = teacherName.toLowerCase().includes('vy') ? 'u_super_admin' : (selectedTeacherObj?.id || 'u_admin');
+    const selectedAdminObj = adminUsers.find((a) => a.uid === adminId);
+    const resolvedAdminName = selectedAdminObj ? selectedAdminObj.displayName : adminName;
 
     StorageEngine.updateClass({
       ...targetClass,
       className,
       code,
+      adminId,
+      adminName: resolvedAdminName,
       teacherName,
       teacherId,
       schedule,
@@ -128,7 +137,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       teacherPayRatePerSession: Number(teacherPayRatePerSession) || 150000,
     });
 
-    alert(`Đã cập nhật thông tin lớp học "${className}" thành công!`);
+    alert(`Đã cập nhật thông tin lớp học "${className}" & gán Admin "${resolvedAdminName}" phụ trách thành công!`);
     onRefreshData();
     onClose();
   };
@@ -177,6 +186,25 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-mono"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp Học (*)</label>
+            <select
+              value={adminId}
+              onChange={(e) => {
+                setAdminId(e.target.value);
+                const selectedObj = adminUsers.find((a) => a.uid === e.target.value);
+                if (selectedObj) setAdminName(selectedObj.displayName);
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold cursor-pointer"
+            >
+              {adminUsers.map((a) => (
+                <option key={a.uid} value={a.uid}>
+                  👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
