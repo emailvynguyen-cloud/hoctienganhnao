@@ -69,6 +69,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [copiedResId, setCopiedResId] = useState<string | null>(null);
 
   const toggleExpandComment = (key: string) => {
     setExpandedComments((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -838,24 +839,59 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           {/* Direct Action Link Buttons */}
           <div className="pt-2 flex flex-col space-y-2">
-            {primaryClass?.resourceLinks && primaryClass.resourceLinks.length > 0 ? (
-              primaryClass.resourceLinks.map((res) => (
-                <a
-                  key={res.id}
-                  href={res.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-3 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-extrabold text-xs transition shadow-xs flex items-center justify-between border border-sky-300 group"
-                >
-                  <span className="flex items-center truncate mr-2">
-                    <ExternalLink className="w-4 h-4 mr-2 text-sky-600 shrink-0" />
-                    <span className="truncate">{res.title}</span>
-                  </span>
-                  <span className="text-[10px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full shrink-0 group-hover:bg-sky-200 transition">
-                    Mở GG Drive ↗
-                  </span>
-                </a>
-              ))
+            {primaryClass?.resourceLinks && primaryClass.resourceLinks.filter((res) => !res.isHidden).length > 0 ? (
+              primaryClass.resourceLinks
+                .filter((res) => !res.isHidden)
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((res) => {
+                  const isCopied = copiedResId === res.id;
+
+                  return (
+                    <div
+                      key={res.id}
+                      className="p-3.5 rounded-2xl bg-white hover:bg-sky-50 text-sky-950 font-extrabold text-xs transition shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-sky-300 group"
+                    >
+                      <div className="flex items-center space-x-3 truncate">
+                        <span className="text-xl shrink-0">{res.icon || '📁'}</span>
+                        <div className="truncate">
+                          <h5 className="font-extrabold text-xs text-slate-900 dark:text-slate-800 truncate">
+                            {res.title}
+                          </h5>
+                          {res.description && (
+                            <p className="text-[11px] text-slate-500 font-medium truncate">{res.description}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0 justify-end pt-1 sm:pt-0">
+                        {/* Copy Link Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            copyToClipboard(res.url);
+                            setCopiedResId(res.id);
+                            setTimeout(() => setCopiedResId(null), 2000);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition flex items-center cursor-pointer"
+                          title="Sao chép đường dẫn link này"
+                        >
+                          {isCopied ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                          {isCopied ? 'Đã Copy' : 'Copy'}
+                        </button>
+
+                        {/* Open Link Button */}
+                        <a
+                          href={res.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] transition shadow-xs flex items-center"
+                        >
+                          Mở ↗
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })
             ) : (
               <a
                 href="https://drive.google.com"

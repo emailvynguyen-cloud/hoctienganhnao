@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Class, Student, Session, HomeworkSubmission, BankConfig, User } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { StorageEngine } from '../../lib/storage';
+import { ManageResourceLinksModal } from './ManageResourceLinksModal';
 import {
   ArrowLeft,
   BookOpen,
@@ -65,6 +66,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   onRestoreClass,
 }) => {
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
+  const [isManageResourcesOpen, setIsManageResourcesOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
   const [deleteTargetModal, setDeleteTargetModal] = useState<{
     isOpen: boolean;
@@ -389,15 +391,26 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
         
         {/* PHẦN 1: LINK TÀI LIỆU CHÍNH */}
         <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <FolderOpen className="w-5 h-5 text-sky-500 animate-pulse" />
-            <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
-              Kho Tài Liệu & Giáo Trình Chính
-            </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <FolderOpen className="w-5 h-5 text-sky-500 animate-pulse" />
+              <h3 className="font-black text-base text-sky-950 dark:text-white uppercase tracking-wider">
+                Kho Tài Liệu & Giáo Trình Tổng
+              </h3>
+            </div>
+
+            {(currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+              <button
+                onClick={() => setIsManageResourcesOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-950 text-xs font-black transition border border-pink-300 shadow-2xs flex items-center shrink-0 cursor-pointer"
+              >
+                ⚙️ Quản Lý Kho Tài Liệu Tổng
+              </button>
+            )}
           </div>
 
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-100 via-blue-50 to-emerald-100 text-sky-950 shadow-xs border border-sky-200">
-            <div className="flex flex-wrap gap-2.5">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-100 via-blue-50 to-emerald-100 dark:from-slate-800 dark:to-slate-800 text-sky-950 shadow-xs border border-sky-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {selectedClass.resourceLinks && selectedClass.resourceLinks.length > 0 ? (
                 selectedClass.resourceLinks.map((res) => (
                   <a
@@ -405,10 +418,25 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                     href={res.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-4 py-2 rounded-xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center shrink-0 border border-sky-200"
+                    className={`p-3 rounded-2xl bg-white dark:bg-slate-900 text-sky-950 dark:text-white hover:bg-sky-50 transition shadow-2xs flex items-center justify-between space-x-3 border ${
+                      res.isHidden ? 'opacity-50 border-slate-300' : 'border-sky-200'
+                    }`}
                   >
-                    <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-sky-600" />
-                    {res.title}
+                    <div className="flex items-center space-x-2.5 truncate">
+                      <span className="text-lg shrink-0">{res.icon || '📁'}</span>
+                      <div className="truncate">
+                        <h5 className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                          {res.title}
+                        </h5>
+                        {res.description && (
+                          <p className="text-[10px] text-slate-500 font-medium truncate">{res.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-black text-sky-700 bg-sky-100 px-2 py-1 rounded-lg shrink-0">
+                      Mở ↗
+                    </span>
                   </a>
                 ))
               ) : (
@@ -416,10 +444,10 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                   href="https://drive.google.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-xs flex items-center border border-sky-200"
+                  className="p-3 rounded-2xl bg-white text-sky-950 font-extrabold text-xs hover:bg-sky-50 transition shadow-2xs flex items-center border border-sky-200 col-span-full"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-sky-600" />
-                  Mở Thư Mục Giáo Trình Chính
+                  <ExternalLink className="w-4 h-4 mr-2 text-sky-600 shrink-0" />
+                  <span>Mở Thư Mục Google Drive Giáo Trình Chính</span>
                 </a>
               )}
             </div>
@@ -723,6 +751,16 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
           } else if (deleteTargetModal.type === 'student_from_class' && onRemoveStudentFromClass && deleteTargetModal.studentId) {
             onRemoveStudentFromClass(deleteTargetModal.studentId, selectedClass.id);
           }
+        }}
+      />
+
+      <ManageResourceLinksModal
+        isOpen={isManageResourcesOpen}
+        onClose={() => setIsManageResourcesOpen(false)}
+        targetClass={selectedClass}
+        currentUser={currentUser}
+        onRefreshData={() => {
+          // Trigger re-render if needed
         }}
       />
 

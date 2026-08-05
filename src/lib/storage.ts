@@ -344,6 +344,25 @@ export const StorageEngine = {
       this.saveClasses(updated);
     }
   },
+  updateClassResourceLinks(classId: string, resourceLinks: ResourceLink[], authorUser?: User | null) {
+    const classes = this.getClasses() || [];
+    const cls = classes.find((c) => c && c.id === classId);
+    if (!cls) return;
+
+    cls.resourceLinks = resourceLinks;
+    this.saveClasses(classes);
+
+    this.addAuditLog(
+      authorUser || null,
+      'UPDATE_RESOURCE_LINKS',
+      'class',
+      classId,
+      cls.className,
+      classId,
+      cls.className,
+      `Cập nhật kho tài liệu tổng (${resourceLinks.length} tài liệu)`
+    );
+  },
   archiveClass(classId: string) {
     const classes = this.getClasses() || [];
     const updated = classes.map((c) => {

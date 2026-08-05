@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3 } from 'lucide-react';
 
 interface AddSessionModalProps {
@@ -14,6 +15,214 @@ interface AddSessionModalProps {
   onSessionAdded: () => void;
 }
 
+// ----------------------------------------------------------------------
+// MEMOIZED SUBCOMPONENT: ISOLATED STUDENT FEEDBACK CARD
+// Typing inside a student's feedback textareas only re-renders THIS card!
+// ----------------------------------------------------------------------
+interface StudentFeedbackCardProps {
+  student: Student;
+  initialFeedback?: StudentFeedback;
+  onChange: (studentId: string, updatedFb: StudentFeedback) => void;
+}
+
+const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFeedback, onChange }) => {
+  const [strengths, setStrengths] = useState(initialFeedback?.strengths || '');
+  const [improvements, setImprovements] = useState(initialFeedback?.improvements || '');
+  const [materialTitle, setMaterialTitle] = useState(initialFeedback?.materialTitle || '');
+  const [materialUrl, setMaterialUrl] = useState(initialFeedback?.materialUrl || '');
+
+  useEffect(() => {
+    setStrengths(initialFeedback?.strengths || '');
+    setImprovements(initialFeedback?.improvements || '');
+    setMaterialTitle(initialFeedback?.materialTitle || '');
+    setMaterialUrl(initialFeedback?.materialUrl || '');
+  }, [initialFeedback]);
+
+  const handleStrengthsChange = (val: string) => {
+    setStrengths(val);
+    onChange(student.id, { strengths: val, improvements, materialTitle, materialUrl });
+  };
+
+  const handleImprovementsChange = (val: string) => {
+    setImprovements(val);
+    onChange(student.id, { strengths, improvements: val, materialTitle, materialUrl });
+  };
+
+  const handleMaterialTitleChange = (val: string) => {
+    setMaterialTitle(val);
+    onChange(student.id, { strengths, improvements, materialTitle: val, materialUrl });
+  };
+
+  const handleMaterialUrlChange = (val: string) => {
+    setMaterialUrl(val);
+    onChange(student.id, { strengths, improvements, materialTitle, materialUrl: val });
+  };
+
+  return (
+    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 dark:border-slate-700 space-y-3 shadow-2xs">
+      <div className="flex items-center space-x-2 border-b border-pink-100 dark:border-slate-700 pb-2">
+        <img
+          src={resolveAvatarUrl(student.avatar)}
+          alt={student.name}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+          }}
+          className="w-8 h-8 rounded-xl object-cover border border-pink-200"
+        />
+        <span className="font-black text-xs text-slate-900 dark:text-white">
+          Học viên: {student.name}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+            🌟 Điểm mạnh riêng hôm nay:
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Ví dụ: Phát âm ending sound rất tốt, tự tin trả lời..."
+            value={strengths}
+            onChange={(e) => handleStrengthsChange(e.target.value)}
+            className="w-full p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs bg-emerald-50/30 dark:bg-slate-900 dark:text-white whitespace-pre-wrap leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold text-rose-800 dark:text-rose-300 mb-1">
+            🎯 Điểm cần cải thiện:
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Ví dụ: Chú ý thì quá khứ đơn khi viết essay..."
+            value={improvements}
+            onChange={(e) => handleImprovementsChange(e.target.value)}
+            className="w-full p-2.5 rounded-xl border border-rose-200 dark:border-rose-800 text-xs bg-rose-50/30 dark:bg-slate-900 dark:text-white whitespace-pre-wrap leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+
+        {/* Link tài liệu riêng */}
+        <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
+          <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
+            <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {student.name}:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
+              value={materialTitle}
+              onChange={(e) => handleMaterialTitleChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 text-xs bg-sky-50/20 dark:bg-slate-900 font-bold text-slate-800 dark:text-white"
+            />
+            <input
+              type="url"
+              placeholder="Link dẫn đến (https://drive.google.com/...)"
+              value={materialUrl}
+              onChange={(e) => handleMaterialUrlChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 text-xs font-mono bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.student.id === nextProps.student.id &&
+    prevProps.initialFeedback === nextProps.initialFeedback
+  );
+});
+
+StudentFeedbackCard.displayName = 'StudentFeedbackCard';
+
+// ----------------------------------------------------------------------
+// MEMOIZED SUBCOMPONENT: ISOLATED HOMEWORK ITEM CARD
+// ----------------------------------------------------------------------
+interface HomeworkItemCardProps {
+  item: HomeworkTaskItem;
+  index: number;
+  canRemove: boolean;
+  onUpdate: (index: number, field: keyof HomeworkTaskItem, value: string) => void;
+  onRemove: (index: number) => void;
+}
+
+const HomeworkItemCard = memo<HomeworkItemCardProps>(({ item, index, canRemove, onUpdate, onRemove }) => {
+  const [title, setTitle] = useState(item.title || '');
+  const [content, setContent] = useState(item.content || '');
+  const [attachmentUrl, setAttachmentUrl] = useState(item.attachmentUrl || '');
+
+  useEffect(() => {
+    setTitle(item.title || '');
+    setContent(item.content || '');
+    setAttachmentUrl(item.attachmentUrl || '');
+  }, [item]);
+
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    onUpdate(index, 'title', val);
+  };
+
+  const handleContentChange = (val: string) => {
+    setContent(val);
+    onUpdate(index, 'content', val);
+  };
+
+  const handleUrlChange = (val: string) => {
+    setAttachmentUrl(val);
+    onUpdate(index, 'attachmentUrl', val);
+  };
+
+  return (
+    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 space-y-2 relative shadow-2xs">
+      <div className="flex items-center justify-between">
+        <span className="font-black text-xs text-amber-900 dark:text-amber-300">
+          Bài tập #{index + 1}
+        </span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition"
+            title="Xóa bài tập này"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      <input
+        type="text"
+        placeholder="Tiêu đề bài tập (Ví dụ: Bài 1: Thu âm Speaking Part 2)"
+        value={title}
+        onChange={(e) => handleTitleChange(e.target.value)}
+        className="w-full p-2.5 rounded-xl border border-amber-200 dark:border-slate-700 text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+        required
+      />
+
+      <textarea
+        rows={3}
+        placeholder="Nội dung/hướng dẫn chi tiết cho bài tập này..."
+        value={content}
+        onChange={(e) => handleContentChange(e.target.value)}
+        className="w-full p-2.5 rounded-xl border border-amber-200 dark:border-slate-700 text-xs font-medium bg-white dark:bg-slate-900 text-slate-900 dark:text-white whitespace-pre-wrap leading-relaxed resize-y"
+      />
+
+      <input
+        type="url"
+        placeholder="Link file đính kèm/đề bài (nếu có: https://...)"
+        value={attachmentUrl}
+        onChange={(e) => handleUrlChange(e.target.value)}
+        className="w-full p-2.5 rounded-xl border border-amber-200 dark:border-slate-700 text-xs font-medium bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+      />
+    </div>
+  );
+});
+
+HomeworkItemCard.displayName = 'HomeworkItemCard';
+
+// ----------------------------------------------------------------------
+// MAIN ADD SESSION MODAL COMPONENT
+// ----------------------------------------------------------------------
 export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   isOpen = true,
   onClose,
@@ -87,48 +296,44 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [attendanceMap, setAttendanceMap] = useState<Record<string, 'present' | 'excused' | 'unexcused' | 'late'>>({});
 
   // Materials List
-  const [materialTitle, setMaterialTitle] = useState<string>('');
-  const [materialUrl, setMaterialUrl] = useState<string>('');
   const [materials, setMaterials] = useState<ResourceLink[]>(editingSession?.sessionMaterials || []);
 
   if (!isOpen) return null;
 
   // Homework Item Handlers
   const handleAddHomeworkItem = () => {
-    setHomeworkItems([
-      ...homeworkItems,
+    setHomeworkItems((prev) => [
+      ...prev,
       {
-        id: `hw_${Date.now()}_${homeworkItems.length + 1}`,
-        title: `Bài ${homeworkItems.length + 1}: `,
+        id: `hw_${Date.now()}_${prev.length + 1}`,
+        title: `Bài ${prev.length + 1}: `,
         content: '',
         attachmentUrl: '',
       },
     ]);
   };
 
-  const handleUpdateHomeworkItem = (index: number, field: keyof HomeworkTaskItem, value: string) => {
+  const handleUpdateHomeworkItem = useCallback((index: number, field: keyof HomeworkTaskItem, value: string) => {
     setHomeworkItems((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [field]: value };
+      }
       return updated;
     });
-  };
+  }, []);
 
-  const handleRemoveHomeworkItem = (index: number) => {
-    if (homeworkItems.length <= 1) return;
+  const handleRemoveHomeworkItem = useCallback((index: number) => {
     setHomeworkItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
   // Student Feedback Handlers
-  const handleUpdateStudentFeedback = (studentId: string, field: keyof StudentFeedback, value: string) => {
+  const handleSingleStudentFeedbackChange = useCallback((studentId: string, updatedFb: StudentFeedback) => {
     setStudentFeedbacks((prev) => ({
       ...prev,
-      [studentId]: {
-        ...(prev[studentId] || {}),
-        [field]: value,
-      },
+      [studentId]: updatedFb,
     }));
-  };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,7 +486,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             )}
           </div>
 
-          {/* OPTIONAL CONTENT SECTIONS (AUTOMATICALLY HIDDEN IF CHARGED ABSENCE SESSION IS CHECKED) */}
+          {/* OPTIONAL CONTENT SECTIONS */}
           {isChargedAbsenceSession ? (
             <div className="p-4 rounded-2xl bg-amber-100/90 dark:bg-slate-800 border border-amber-300 text-amber-950 dark:text-amber-200 text-xs font-bold space-y-1">
               <span>📌 Ca học này đã được đánh dấu là Nghỉ tính phí.</span>
@@ -299,7 +504,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   placeholder="Ví dụ: Unit 2 Speaking Part 2 - Từ vựng chủ đề Travel..."
                   value={lessonContent}
                   onChange={(e) => setLessonContent(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y"
+                  className="w-full p-3 rounded-xl border border-pink-200 bg-white dark:bg-slate-800 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-pink-300"
                   required={!isChargedAbsenceSession}
                 />
               </div>
@@ -359,55 +564,21 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     <button
                       type="button"
                       onClick={handleAddHomeworkItem}
-                      className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center"
+                      className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Bài Tập
                     </button>
                   </div>
 
                   {homeworkItems.map((item, idx) => (
-                    <div key={item.id || idx} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 space-y-2 relative">
-                      <div className="flex items-center justify-between">
-                        <span className="font-black text-xs text-amber-900 dark:text-amber-300">
-                          Bài tập #{idx + 1}
-                        </span>
-                        {homeworkItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveHomeworkItem(idx)}
-                            className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-                            title="Xóa bài tập này"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <input
-                        type="text"
-                        placeholder="Tiêu đề bài tập (Ví dụ: Bài 1: Thu âm Speaking Part 2)"
-                        value={item.title}
-                        onChange={(e) => handleUpdateHomeworkItem(idx, 'title', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-bold"
-                        required
-                      />
-
-                      <textarea
-                        rows={3}
-                        placeholder="Nội dung/hướng dẫn chi tiết cho bài tập này..."
-                        value={item.content || ''}
-                        onChange={(e) => handleUpdateHomeworkItem(idx, 'content', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium whitespace-pre-wrap leading-relaxed resize-y"
-                      />
-
-                      <input
-                        type="url"
-                        placeholder="Link file đính kèm/đề bài (nếu có: https://...)"
-                        value={item.attachmentUrl || ''}
-                        onChange={(e) => handleUpdateHomeworkItem(idx, 'attachmentUrl', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-amber-200 text-xs font-medium"
-                      />
-                    </div>
+                    <HomeworkItemCard
+                      key={item.id || idx}
+                      item={item}
+                      index={idx}
+                      canRemove={homeworkItems.length > 1}
+                      onUpdate={handleUpdateHomeworkItem}
+                      onRemove={handleRemoveHomeworkItem}
+                    />
                   ))}
                 </div>
               )}
@@ -418,71 +589,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   💬 Nhận Xét Riêng Cho Từng Học Viên Trong Lớp ({classStudents.length} em)
                 </h4>
 
-                {classStudents.map((std) => {
-                  const fb = studentFeedbacks[std.id] || {};
-
-                  return (
-                    <div key={std.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-pink-100 space-y-3">
-                      <div className="flex items-center space-x-2 border-b border-pink-100 pb-2">
-                        <img src={std.avatar} alt={std.name} className="w-8 h-8 rounded-xl object-cover" />
-                        <span className="font-black text-xs text-slate-900 dark:text-white">
-                          Học viên: {std.name}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-                            🌟 Điểm mạnh riêng hôm nay:
-                          </label>
-                          <textarea
-                            rows={4}
-                            placeholder="Ví dụ: Phát âm ending sound rất tốt, tự tin trả lời..."
-                            value={fb.strengths || ''}
-                            onChange={(e) => handleUpdateStudentFeedback(std.id, 'strengths', e.target.value)}
-                            className="w-full p-2.5 rounded-xl border border-emerald-200 text-xs bg-emerald-50/30 whitespace-pre-wrap leading-relaxed resize-y"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-rose-800 dark:text-rose-300 mb-1">
-                            🎯 Điểm cần cải thiện:
-                          </label>
-                          <textarea
-                            rows={4}
-                            placeholder="Ví dụ: Chú ý thì quá khứ đơn khi viết essay..."
-                            value={fb.improvements || ''}
-                            onChange={(e) => handleUpdateStudentFeedback(std.id, 'improvements', e.target.value)}
-                            className="w-full p-2.5 rounded-xl border border-rose-200 text-xs bg-rose-50/30 whitespace-pre-wrap leading-relaxed resize-y"
-                          />
-                        </div>
-
-                        {/* Link tài liệu riêng trong buổi học cho học viên này */}
-                        <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
-                          <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
-                            <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {std.name}:
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
-                              value={fb.materialTitle || ''}
-                              onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialTitle', e.target.value)}
-                              className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs bg-sky-50/20 font-bold text-slate-800 dark:text-white"
-                            />
-                            <input
-                              type="url"
-                              placeholder="Link dẫn đến (https://drive.google.com/...)"
-                              value={fb.materialUrl || ''}
-                              onChange={(e) => handleUpdateStudentFeedback(std.id, 'materialUrl', e.target.value)}
-                              className="w-full px-3 py-2 rounded-xl border border-sky-200 text-xs font-mono text-slate-800 dark:text-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {classStudents.map((std) => (
+                  <StudentFeedbackCard
+                    key={std.id}
+                    student={std}
+                    initialFeedback={studentFeedbacks[std.id]}
+                    onChange={handleSingleStudentFeedbackChange}
+                  />
+                ))}
               </div>
             </>
           )}
@@ -490,7 +604,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 text-white font-black text-sm shadow-md hover:shadow-lg transition flex items-center justify-center"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 text-white font-black text-sm shadow-md hover:shadow-lg transition flex items-center justify-center cursor-pointer"
             >
               {editingSession ? <Edit3 className="w-4 h-4 mr-2" /> : <PlusCircle className="w-4 h-4 mr-2" />}
               {editingSession ? `Lưu Thay Đổi Buổi Học #${editingSession.sessionNumber}` : 'Lưu Buổi Học Mới'}

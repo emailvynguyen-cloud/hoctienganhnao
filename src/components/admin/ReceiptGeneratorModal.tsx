@@ -169,6 +169,157 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
     printWindow.document.close();
   };
 
+  // HANDLE DOWNLOAD FULL TUITION RECEIPT SLIP IMAGE (PNG)
+  const handleDownloadFullReceiptImage = async () => {
+    try {
+      const width = 800;
+      const height = 920;
+      const canvas = document.createElement('canvas');
+      canvas.width = width * 2; // 2x Retina
+      canvas.height = height * 2;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) return;
+      ctx.scale(2, 2);
+
+      // Background Card Gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(0.5, '#fdf2f8');
+      bgGrad.addColorStop(1, '#faf5ff');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Outer Border Card
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(20, 20, width - 40, height - 40, 24);
+      ctx.stroke();
+
+      // Header Banner
+      ctx.fillStyle = '#9d174d';
+      ctx.font = '900 24px system-ui, -apple-system, sans-serif';
+      ctx.fillText('🌸 MS. VY ENGLISH CENTER', 45, 65);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '700 13px system-ui, -apple-system, sans-serif';
+      ctx.fillText('PHIẾU THU HỌC PHÍ & CHUYỂN KHOẢN VIETQR', 45, 88);
+
+      // Receipt Code Badge
+      ctx.fillStyle = '#fce7f3';
+      ctx.beginPath();
+      ctx.roundRect(width - 230, 45, 185, 38, 12);
+      ctx.fill();
+
+      ctx.fillStyle = '#be185d';
+      ctx.font = '900 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`#${receiptCode}`, width - 137, 69);
+      ctx.textAlign = 'left';
+
+      // Divider Line
+      ctx.strokeStyle = '#fbcfe8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(45, 110);
+      ctx.lineTo(width - 45, 110);
+      ctx.stroke();
+
+      // Table Details List
+      const rows = [
+        { label: 'Họ và tên học viên:', val: student.name, isBold: true, color: '#be185d' },
+        { label: 'Số điện thoại liên hệ:', val: student.phone || 'Chưa cập nhật', isBold: false, color: '#334155' },
+        { label: 'Lớp học đăng ký:', val: `${targetClass?.className || 'Lớp Ms. Vy English'} (${targetClass?.schedule || ''})`, isBold: true, color: '#0f172a' },
+        { label: 'Kỳ học / Gói học phí:', val: `${tuitionPeriod} (${packageSessions} Buổi)`, isBold: true, color: '#6b21a8' },
+        { label: 'Số tiền học phí:', val: formatVND(packagePrice), isBold: true, color: '#047857' },
+        { label: 'Hạn thanh toán:', val: dueDate, isBold: true, color: '#b45309' },
+        { label: 'Ngân hàng thụ hưởng:', val: `${activeBankId} (${activeAccountNo}) - ${activeAccountName}`, isBold: true, color: '#334155' },
+        { label: 'Cú pháp chuyển khoản:', val: transferInfo, isBold: true, color: '#831843' },
+      ];
+
+      let rowY = 150;
+      rows.forEach((row) => {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '600 14px system-ui, -apple-system, sans-serif';
+        ctx.fillText(row.label, 45, rowY);
+
+        ctx.fillStyle = row.color;
+        ctx.font = row.isBold ? '900 15px system-ui, -apple-system, sans-serif' : '600 14px system-ui, -apple-system, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(row.val, width - 45, rowY);
+        ctx.textAlign = 'left';
+
+        // Row border
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(45, rowY + 12);
+        ctx.lineTo(width - 45, rowY + 12);
+        ctx.stroke();
+
+        rowY += 45;
+      });
+
+      // QR Box Container
+      ctx.fillStyle = '#fff1f2';
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(45, rowY + 10, width - 90, 200, 20);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#831843';
+      ctx.font = '900 15px system-ui, -apple-system, sans-serif';
+      ctx.fillText('📲 MÃ VIETQR CHUYỂN KHOẢN TỰ ĐỘNG', 70, rowY + 45);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = '500 12px system-ui, -apple-system, sans-serif';
+      ctx.fillText('Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...)', 70, rowY + 75);
+      ctx.fillText(`quét mã để thanh toán tự động đúng số tiền ${formatVND(packagePrice)}`, 70, rowY + 95);
+      ctx.fillText(`và nội dung: ${transferInfo}`, 70, rowY + 115);
+
+      // Load & Draw QR Code Image
+      const qrImg = new Image();
+      qrImg.crossOrigin = 'anonymous';
+      qrImg.src = qrUrl;
+
+      await new Promise((resolve) => {
+        qrImg.onload = () => {
+          ctx.drawImage(qrImg, width - 235, rowY + 25, 170, 170);
+          resolve(true);
+        };
+        qrImg.onerror = () => resolve(false);
+      });
+
+      // Footer Signatures
+      const footerY = height - 100;
+      ctx.fillStyle = '#334155';
+      ctx.font = '800 13px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Người Lập Phiếu', 150, footerY);
+      ctx.fillText('Đại Diện Trung Tâm Ms. Vy', width - 150, footerY);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+      ctx.fillText('(Ký & ghi rõ họ tên)', 150, footerY + 20);
+      ctx.fillText('(Ký & ghi rõ họ tên)', width - 150, footerY + 20);
+
+      // Convert to image download link
+      const dataUrl = canvas.toDataURL('image/png', 0.95);
+      const link = document.createElement('a');
+      link.download = `PhieuThuHocPhi_MsVy_${student.name.replace(/\s+/g, '_')}_${receiptCode}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      alert(`Đã xuất và tải Ảnh Phiếu Thu Học Phí cho học viên ${student.name} thành công!`);
+    } catch (e) {
+      console.error('Error downloading full receipt image:', e);
+      alert('Không thể tạo ảnh phiếu thu. Bạn có thể chọn In Phiếu Thu (PDF) thay thế!');
+    }
+  };
+
   // HANDLE DOWNLOAD / SAVE RECEIPT IMAGE (TẢI ẢNH PHIẾU THU KÈM QR)
   const handleSaveReceiptImage = async () => {
     try {
@@ -350,22 +501,31 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
                 setCopiedContent(true);
                 setTimeout(() => setCopiedContent(false), 2000);
               }}
-              className="px-3.5 py-2.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
             >
               {copiedContent ? <Check className="w-4 h-4 mr-1 text-emerald-600" /> : <Copy className="w-4 h-4 mr-1" />}
-              {copiedContent ? 'Đã Copy Tin Nhắn' : '🔗 Copy Tin Nhắn / QR'}
+              {copiedContent ? 'Đã Copy Tin Nhắn' : '🔗 Copy Tin Nhắn'}
             </button>
 
             <button
               onClick={handleSaveReceiptImage}
-              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              title="Tải duy nhất ảnh Mã QR"
             >
-              <Download className="w-4 h-4 mr-1.5" /> 📸 Tải Ảnh QR (PNG)
+              <Download className="w-3.5 h-3.5 mr-1" /> 📸 Tải Ảnh QR
+            </button>
+
+            <button
+              onClick={handleDownloadFullReceiptImage}
+              className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              title="Tải toàn bộ phiếu thu dạng ảnh sắc nét (kèm thông tin học viên, số tiền & QR)"
+            >
+              🖼️ Tải Ảnh Phiếu Thu (PNG)
             </button>
 
             <button
               onClick={handlePrintReceiptPDF}
-              className="px-3.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
             >
               🖨️ In Phiếu Thu (PDF)
             </button>
@@ -374,7 +534,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={handleSavePendingInvoice}
-              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs transition shadow-xs flex items-center justify-center cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs transition shadow-xs flex items-center justify-center cursor-pointer"
               title="Lưu vào danh sách chờ nộp tiền"
             >
               ⏳ Lưu Phiếu Chờ
@@ -382,9 +542,9 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
             <button
               onClick={handleMarkAsPaid}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md flex items-center justify-center cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md flex items-center justify-center cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4 mr-1" /> Tick Đã Thu Ngay (+{packageSessions} Buổi)
+              <ShieldCheck className="w-4 h-4 mr-1" /> Tick Đã Thu (+{packageSessions} Buổi)
             </button>
           </div>
         </div>

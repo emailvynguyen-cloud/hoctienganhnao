@@ -12,11 +12,17 @@ export interface User {
   createdAt: string;
 }
 
+export type ResourceType = 'drive' | 'docs' | 'sheets' | 'pdf' | 'youtube' | 'quizlet' | 'canva' | 'notion' | 'other';
+
 export interface ResourceLink {
   id: string;
   title: string;
   url: string;
   description?: string;
+  type?: ResourceType;
+  icon?: string;
+  isHidden?: boolean;
+  order?: number;
   addedDate?: string;
 }
 
