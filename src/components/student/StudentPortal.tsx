@@ -274,15 +274,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     const totalItems = itemsList.length;
     const sessionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 100;
 
-    // PER-SESSION PASTEL COLOR PALETTE (EACH SESSION GETS A DISTINCT, CONSISTENT PASTEL BG)
+    // PER-SESSION PASTEL COLOR PALETTE (EACH SESSION GETS A DISTINCT, RICHER PASTEL BG)
     const sessionPastelBgPalette = [
-      'bg-rose-50/60 dark:bg-rose-950/20 border-rose-100/80 hover:border-rose-200',
-      'bg-sky-50/60 dark:bg-sky-950/20 border-sky-100/80 hover:border-sky-200',
-      'bg-amber-50/60 dark:bg-amber-950/20 border-amber-100/80 hover:border-amber-200',
-      'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-100/80 hover:border-emerald-200',
-      'bg-indigo-50/60 dark:bg-indigo-950/20 border-indigo-100/80 hover:border-indigo-200',
-      'bg-purple-50/60 dark:bg-purple-950/20 border-purple-100/80 hover:border-purple-200',
-      'bg-teal-50/60 dark:bg-teal-950/20 border-teal-100/80 hover:border-teal-200',
+      'bg-rose-100/85 dark:bg-rose-950/40 border-rose-200/90 hover:border-rose-300 shadow-2xs',
+      'bg-sky-100/85 dark:bg-sky-950/40 border-sky-200/90 hover:border-sky-300 shadow-2xs',
+      'bg-amber-100/85 dark:bg-amber-950/40 border-amber-200/90 hover:border-amber-300 shadow-2xs',
+      'bg-emerald-100/85 dark:bg-emerald-950/40 border-emerald-200/90 hover:border-emerald-300 shadow-2xs',
+      'bg-indigo-100/85 dark:bg-indigo-950/40 border-indigo-200/90 hover:border-indigo-300 shadow-2xs',
+      'bg-purple-100/85 dark:bg-purple-950/40 border-purple-200/90 hover:border-purple-300 shadow-2xs',
+      'bg-teal-100/85 dark:bg-teal-950/40 border-teal-200/90 hover:border-teal-300 shadow-2xs',
     ];
     const cardBgStyle = sessionPastelBgPalette[(session.sessionNumber - 1) % sessionPastelBgPalette.length];
 
@@ -600,8 +600,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
-      {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT */}
-      <div className="bg-gradient-to-r from-rose-50/90 via-sky-50/60 to-amber-50/70 dark:from-slate-900 dark:to-slate-900 border border-rose-100/80 dark:border-slate-800 p-6 sm:p-8 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-2xs">
+      {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT CONTAINER */}
+      <div className="bg-gradient-to-r from-pink-100/95 via-rose-100/90 to-amber-100/95 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border-2 border-rose-200/90 dark:border-slate-700 p-6 sm:p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
         
         {/* Left: Avatar + Details */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 w-full lg:w-auto">
@@ -686,7 +686,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
         <div
           onClick={() => setIsPaymentHistoryOpen(true)}
-          className="app-stat-card text-slate-900 dark:text-white px-7 py-6 rounded-2xl border border-transparent shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:border-slate-200 dark:hover:border-slate-800 transition-all duration-180 group relative"
+          className="bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white px-7 py-6 rounded-2xl border border-rose-200/80 dark:border-slate-700 shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
           title="Bấm vào để xem lịch sử đóng học phí chi tiết"
         >
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
