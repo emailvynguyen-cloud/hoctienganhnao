@@ -157,119 +157,122 @@ body {
   color: #94A3B8;
 }
 
-/* Soft Rich Pastel Theme Classes (Visually distinct, comfortable, professional) */
+/* Muted Rich Modern Color Theme Classes (Saturated, elegant, visually distinct, comfortable on eyes) */
 .pastel-pink-card {
-  background-color: #FFE4EC; /* Richer soft rose pastel */
-  border: 1px solid rgba(244, 63, 94, 0.15);
+  background: linear-gradient(135deg, #FFF1F5 0%, #FFE4E6 100%);
+  border: 1px solid #FECDD3;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-pink-card {
-  background-color: rgba(159, 18, 57, 0.35);
-  border-color: rgba(244, 63, 94, 0.3);
+  background: linear-gradient(135deg, rgba(136, 19, 55, 0.4) 0%, rgba(159, 18, 57, 0.35) 100%);
+  border-color: rgba(225, 29, 72, 0.4);
 }
 
 .pastel-pink-card:hover {
-  border-color: rgba(244, 63, 94, 0.35);
-  box-shadow: 0 8px 24px 0 rgba(244, 63, 94, 0.1);
+  border-color: #FDA4AF;
+  box-shadow: 0 8px 24px 0 rgba(244, 63, 94, 0.12);
   transform: translateY(-2px);
 }
 
 .pastel-blue-card {
-  background-color: #E0F2FE; /* Richer soft sky blue pastel */
-  border: 1px solid rgba(14, 165, 233, 0.15);
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border: 1px solid #BAE6FD;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-blue-card {
-  background-color: rgba(3, 105, 161, 0.35);
-  border-color: rgba(14, 165, 233, 0.3);
+  background: linear-gradient(135deg, rgba(12, 74, 110, 0.4) 0%, rgba(3, 105, 161, 0.35) 100%);
+  border-color: rgba(14, 165, 233, 0.4);
 }
 
 .pastel-blue-card:hover {
-  border-color: rgba(14, 165, 233, 0.35);
-  box-shadow: 0 8px 24px 0 rgba(14, 165, 233, 0.1);
+  border-color: #7DD3FC;
+  box-shadow: 0 8px 24px 0 rgba(14, 165, 233, 0.12);
   transform: translateY(-2px);
 }
 
 .pastel-amber-card {
-  background-color: #FEF3C7; /* Richer soft amber pastel */
-  border: 1px solid rgba(245, 158, 11, 0.15);
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1px solid #FDE68A;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-amber-card {
-  background-color: rgba(180, 83, 9, 0.35);
-  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.4) 0%, rgba(180, 83, 9, 0.35) 100%);
+  border-color: rgba(245, 158, 11, 0.4);
 }
 
 .pastel-amber-card:hover {
-  border-color: rgba(245, 158, 11, 0.35);
-  box-shadow: 0 8px 24px 0 rgba(245, 158, 11, 0.1);
+  border-color: #FCD34D;
+  box-shadow: 0 8px 24px 0 rgba(245, 158, 11, 0.12);
   transform: translateY(-2px);
 }
 
 .pastel-emerald-card {
-  background-color: #D1FAE5; /* Richer soft emerald pastel */
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1px solid #A7F3D0;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-emerald-card {
-  background-color: rgba(4, 120, 87, 0.35);
-  border-color: rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(4, 120, 87, 0.35) 100%);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .pastel-emerald-card:hover {
-  border-color: rgba(16, 185, 129, 0.35);
-  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.1);
+  border-color: #6EE7B7;
+  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.12);
   transform: translateY(-2px);
 }
 
 .pastel-indigo-card {
-  background-color: #E0E7FF; /* Richer soft indigo pastel */
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+  border: 1px solid #C7D2FE;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-indigo-card {
-  background-color: rgba(67, 56, 202, 0.35);
+  background: linear-gradient(135deg, rgba(49, 46, 129, 0.4) 0%, rgba(67, 56, 202, 0.35) 100%);
+  border-color: rgba(99, 102, 241, 0.4);
 }
 
 .pastel-purple-card {
-  background-color: #F3E8FF; /* Richer soft purple pastel */
-  border: 1px solid rgba(168, 85, 247, 0.15);
+  background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+  border: 1px solid #DDD6FE;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-purple-card {
-  background-color: rgba(126, 34, 206, 0.35);
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.4) 0%, rgba(126, 34, 206, 0.35) 100%);
+  border-color: rgba(168, 85, 247, 0.4);
 }
 
 .pastel-teal-card {
-  background-color: #CCFBF1; /* Richer soft teal pastel */
-  border: 1px solid rgba(20, 184, 166, 0.15);
+  background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%);
+  border: 1px solid #99F6E4;
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-teal-card {
-  background-color: rgba(15, 118, 110, 0.35);
+  background: linear-gradient(135deg, rgba(17, 94, 89, 0.4) 0%, rgba(15, 118, 110, 0.35) 100%);
+  border-color: rgba(20, 184, 166, 0.4);
 }
 
-/* AppCard: Seamless & Borderless Floating Card */
+/* AppCard: Premium Muted Floating Card with Distinct Border & Shadow Depth */
 .app-card,
 .saas-card,
 .invisible-card {
   background-color: #FFFFFF;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
   border-radius: 1rem; /* 16px */
   transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -277,14 +280,15 @@ body {
 .dark .app-card,
 .dark .saas-card,
 .dark .invisible-card {
-  background-color: #0F172A;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  background-color: #1E293B;
+  border-color: #334155;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 }
 
 .app-card:hover,
 .saas-card:hover,
 .invisible-card:hover {
-  border-color: rgba(148, 163, 184, 0.25);
+  border-color: #CBD5E1;
   box-shadow: 0 8px 24px 0 rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
 }
@@ -292,33 +296,34 @@ body {
 .dark .app-card:hover,
 .dark .saas-card:hover,
 .dark .invisible-card:hover {
-  border-color: rgba(51, 65, 85, 0.6);
-  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.4);
+  border-color: #475569;
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* AppStatCard: Minimalist KPI Metric Card */
+/* AppStatCard: Minimalist Premium KPI Metric Card */
 .app-stat-card {
   background-color: #FFFFFF;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
   border-radius: 1rem;
   padding: 1.25rem;
   transition: all 180ms ease;
 }
 
 .dark .app-stat-card {
-  background-color: #0F172A;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  background-color: #1E293B;
+  border-color: #334155;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 }
 
 .app-stat-card:hover {
-  border-color: rgba(148, 163, 184, 0.25);
+  border-color: #CBD5E1;
   box-shadow: 0 8px 24px 0 rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
 }
 
 .dark .app-stat-card:hover {
-  border-color: rgba(51, 65, 85, 0.6);
+  border-color: #475569;
 }
 
 /* AppButtons: Standardized 44px Height, 12px Radius, Flat Hover Elevation */
@@ -327,7 +332,7 @@ body {
   padding-left: 1.25rem;
   padding-right: 1.25rem;
   border-radius: 0.75rem;
-  background-color: #F43F5E;
+  background-color: #E11D48;
   color: #FFFFFF;
   font-size: 0.9375rem; /* 15px */
   font-weight: 500;
@@ -340,8 +345,8 @@ body {
 }
 
 .app-button-primary:hover {
-  background-color: #E11D48;
-  box-shadow: 0 4px 14px 0 rgba(244, 63, 94, 0.25);
+  background-color: #BE123C;
+  box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.25);
   transform: translateY(-1px);
 }
 
@@ -351,11 +356,11 @@ body {
   padding-left: 1.25rem;
   padding-right: 1.25rem;
   border-radius: 0.75rem;
-  background-color: rgba(241, 245, 249, 0.8);
-  color: #334155;
+  background-color: #F1F5F9;
+  color: #1E293B;
   font-size: 0.9375rem;
   font-weight: 500;
-  border: 1px solid transparent;
+  border: 1px solid #E2E8F0;
   transition: all 180ms ease;
   cursor: pointer;
   display: inline-flex;
@@ -365,22 +370,23 @@ body {
 
 .dark .app-button-secondary,
 .dark .invisible-btn {
-  background-color: rgba(30, 41, 59, 0.8);
-  color: #F1F5F9;
+  background-color: #1E293B;
+  color: #F8FAFC;
+  border-color: #334155;
 }
 
 .app-button-secondary:hover,
 .invisible-btn:hover {
-  border-color: rgba(148, 163, 184, 0.25);
-  background-color: rgba(226, 232, 240, 0.9);
+  border-color: #CBD5E1;
+  background-color: #E2E8F0;
   box-shadow: 0 4px 14px 0 rgba(15, 23, 42, 0.06);
   transform: translateY(-1px);
 }
 
 .dark .app-button-secondary:hover,
 .dark .invisible-btn:hover {
-  border-color: rgba(51, 65, 85, 0.6);
-  background-color: rgba(51, 65, 85, 0.8);
+  border-color: #475569;
+  background-color: #334155;
 }
 
 /* AppInput: Flat background, no heavy outline, soft focus glow */
@@ -391,8 +397,8 @@ body {
   padding-left: 1rem;
   padding-right: 1rem;
   border-radius: 0.75rem;
-  border: 1px solid transparent;
-  background-color: rgba(241, 245, 249, 0.7);
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
   font-size: 0.9375rem;
   color: #0F172A;
   transition: all 180ms ease;
@@ -400,42 +406,48 @@ body {
 
 .dark .app-input,
 .dark .invisible-input {
-  background-color: rgba(30, 41, 59, 0.7);
+  background-color: #1E293B;
+  border-color: #334155;
   color: #F8FAFC;
 }
 
 .app-input:hover,
 .invisible-input:hover {
-  border-color: rgba(148, 163, 184, 0.3);
+  border-color: #CBD5E1;
 }
 
 .app-input:focus,
 .invisible-input:focus {
   background-color: #FFFFFF;
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
   outline: none;
 }
 
 .dark .app-input:focus,
 .dark .invisible-input:focus {
   background-color: #0F172A;
+  border-color: #60A5FA;
 }
 
-/* AppTable: Modern Invisible Rows */
+/* AppTable: Modern Muted Rows */
 .app-table-row {
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid #F1F5F9;
   transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .app-table-row:hover {
-  background-color: rgba(248, 250, 252, 0.9);
-  border-color: rgba(226, 232, 240, 0.6);
+  background-color: #F8FAFC;
+  border-color: #E2E8F0;
+}
+
+.dark .app-table-row {
+  border-bottom-color: #334155;
 }
 
 .dark .app-table-row:hover {
-  background-color: rgba(30, 41, 59, 0.6);
-  border-color: rgba(51, 65, 85, 0.6);
+  background-color: #1E293B;
+  border-color: #475569;
 }
 
 /* AppBadge: Flat Pill */
