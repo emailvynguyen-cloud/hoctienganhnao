@@ -744,31 +744,31 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
       {/* TAB 5: TEACHER REVENUE / SALARY REPORT */}
       {activeTab === 'revenue' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-6 animate-fadeIn">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs p-6 space-y-6 animate-fadeIn">
           
           {/* Header */}
-          <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-100 via-teal-50 to-sky-100 text-emerald-950 border-2 border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-100 via-teal-50 to-sky-100 dark:from-emerald-950/60 dark:to-slate-800 text-emerald-950 border border-emerald-300 dark:border-slate-700 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-6 h-6 text-emerald-600 animate-pulse" />
-                <h3 className="text-lg font-black text-emerald-950 dark:text-white">
+                <DollarSign className="w-6 h-6 text-emerald-600 animate-pulse shrink-0" />
+                <h3 className="text-xl sm:text-2xl font-bold text-emerald-950 dark:text-white tracking-tight">
                   Bảng Thống Kê Thu Nhập / Lương Giảng Dạy
                 </h3>
               </div>
-              <p className="text-xs text-emerald-900 font-medium">
+              <p className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-300 font-normal leading-relaxed">
                 Thu nhập được tính bằng Bậc lương mỗi buổi học x Số buổi dạy hoàn thành trong tháng
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
               {/* MONTH SELECTOR FOR TEACHER (CURRENT MONTH & PREVIOUS MONTH ONLY) */}
-              <div className="flex items-center space-x-2 bg-white dark:bg-slate-800 p-2 rounded-2xl border border-emerald-300 shadow-2xs">
+              <div className="flex items-center space-x-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-emerald-300 dark:border-slate-700 shadow-2xs">
                 <Calendar className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Kỳ Lương:</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Kỳ Lương:</span>
                 <select
                   value={teacherSelectedMonth}
                   onChange={(e) => setTeacherSelectedMonth(e.target.value)}
-                  className="bg-white dark:bg-slate-900 text-xs font-black text-emerald-950 dark:text-white px-3 py-1 rounded-xl border border-emerald-200 focus:outline-none cursor-pointer"
+                  className="bg-white dark:bg-slate-900 text-xs font-bold text-emerald-950 dark:text-white px-3 py-1 rounded-lg border border-emerald-200 focus:outline-none cursor-pointer"
                 >
                   <option value={monthOptions.currKey}>Tháng Hiện Tại ({monthOptions.currLabel})</option>
                   <option value={monthOptions.prevKey}>Tháng Trước ({monthOptions.prevLabel})</option>
@@ -777,9 +777,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
               <button
                 onClick={() => setIsAllSessionsRevenueModalOpen(true)}
-                className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
+                className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm shadow-2xs transition flex items-center shrink-0 cursor-pointer"
               >
-                <Eye className="w-4 h-4 mr-1.5" /> 🔍 Xem Chi Tiết Các Buổi Đã Tính Lương
+                <Eye className="w-4 h-4 mr-1.5 shrink-0" /> Xem Chi Tiết Các Buổi Đã Tính Lương
               </button>
             </div>
           </div>
@@ -813,38 +813,38 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                 
                 {/* 3 KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-5 rounded-3xl bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-100 text-emerald-950 border-2 border-emerald-300 space-y-1.5 shadow-xs">
-                    <span className="text-[11px] font-black uppercase text-emerald-900">
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-100 text-emerald-950 border border-emerald-300 space-y-1.5 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-900">
                       💰 Lương Dạy (Tháng {teacherSelectedMonth.split('-')[1]})
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-black text-emerald-950 font-mono">
+                    <h4 className="text-2xl sm:text-3xl font-bold text-emerald-950 font-mono tracking-tight">
                       {formatVND(totalSalary)}
                     </h4>
-                    <p className="text-[10px] text-emerald-800 font-semibold">
+                    <p className="text-xs text-emerald-800 font-medium">
                       Tích lũy từ ca dạy trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}
                     </p>
                   </div>
 
-                  <div className="p-5 rounded-3xl bg-gradient-to-r from-sky-100 via-blue-50 to-indigo-100 text-sky-950 border-2 border-sky-300 space-y-1.5 shadow-xs">
-                    <span className="text-[11px] font-extrabold uppercase text-sky-900">
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-sky-100 via-blue-50 to-indigo-100 text-sky-950 border border-sky-300 space-y-1.5 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-sky-900">
                       📚 Buổi Dạy Hoàn Thành
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-black text-sky-950 font-mono">
+                    <h4 className="text-2xl sm:text-3xl font-bold text-sky-950 font-mono tracking-tight">
                       {monthTeacherSessions.length} Buổi
                     </h4>
-                    <p className="text-[10px] text-sky-800 font-semibold">
+                    <p className="text-xs text-sky-800 font-medium">
                       Tính trong kỳ {teacherSelectedMonth.split('-').reverse().join('/')}
                     </p>
                   </div>
 
-                  <div className="p-5 rounded-3xl bg-gradient-to-r from-pink-100 via-rose-50 to-purple-100 text-pink-950 border-2 border-pink-300 space-y-1.5 shadow-xs">
-                    <span className="text-[11px] font-extrabold uppercase text-pink-900">
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-pink-100 via-rose-50 to-purple-100 text-pink-950 border border-pink-300 space-y-1.5 shadow-2xs">
+                    <span className="text-xs font-bold uppercase tracking-wider text-pink-900">
                       🎓 Số Lớp Đang Phụ Trách
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-black text-pink-950 font-mono">
+                    <h4 className="text-2xl sm:text-3xl font-bold text-pink-950 font-mono tracking-tight">
                       {assignedClasses.length} Lớp
                     </h4>
-                    <p className="text-[10px] text-pink-800 font-semibold">
+                    <p className="text-xs text-pink-800 font-medium">
                       Danh sách lớp học được phân công
                     </p>
                   </div>
@@ -852,7 +852,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
                 {/* Detailed Breakdown per Class */}
                 <div className="space-y-3">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                     📋 Bảng Thống Kê Thu Nhập Chi Tiết Theo Từng Lớp Học:
                   </h4>
 
@@ -860,32 +860,32 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                     {classSalaryList.map((item) => (
                       <div
                         key={item.classObj.id}
-                        className="p-5 rounded-3xl border border-pink-200/80 bg-gradient-to-br from-white via-pink-50/40 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 space-y-3 shadow-2xs hover:shadow-md transition"
+                        className="p-5 rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-800 space-y-3 shadow-2xs hover:shadow-md transition"
                       >
-                        <div className="flex items-center justify-between border-b border-pink-100 pb-2">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-400 text-white uppercase">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                          <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-pink-500 text-white uppercase">
                             {item.classObj.code}
                           </span>
-                          <span className="text-xs font-mono font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          <span className="text-xs font-mono font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                             Bậc lương: {formatVND(item.rate)} / buổi
                           </span>
                         </div>
 
                         <div>
-                          <h5 className="font-black text-sm text-slate-900 dark:text-white">
+                          <h5 className="font-bold text-base text-slate-900 dark:text-white">
                             {item.classObj.className}
                           </h5>
                           <p className="text-xs text-slate-500 mt-0.5">Giáo trình: {item.classObj.courseName} • Lịch: {item.classObj.schedule}</p>
                         </div>
 
-                        <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-pink-100 flex items-center justify-between">
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
                           <div>
-                            <span className="text-[11px] text-slate-500 font-bold block">Số buổi đã dạy:</span>
-                            <span className="text-sm font-black text-pink-600 font-mono">{item.sessionCount} Buổi</span>
+                            <span className="text-xs text-slate-500 font-medium block">Số buổi đã dạy:</span>
+                            <span className="text-sm font-bold text-pink-600 font-mono">{item.sessionCount} Buổi</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[11px] text-slate-500 font-bold block">Tổng tiền lớp này:</span>
-                            <span className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                            <span className="text-xs text-slate-500 font-medium block">Tổng tiền lớp này:</span>
+                            <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                               +{formatVND(item.totalSalary)}
                             </span>
                           </div>
@@ -893,9 +893,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
                         <button
                           onClick={() => setSelectedClassIdForRevenueDetails(item.classObj.id)}
-                          className="w-full py-2.5 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition border border-pink-300 flex items-center justify-center cursor-pointer"
+                          className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-medium text-xs transition border border-transparent flex items-center justify-center cursor-pointer shadow-2xs"
                         >
-                          <Eye className="w-3.5 h-3.5 mr-1.5 text-pink-700" /> Bấm Xem Chi Tiết Các Buổi Đã Tính Lương →
+                          <Eye className="w-3.5 h-3.5 mr-1.5 text-slate-500 shrink-0" /> Xem Chi Tiết Các Buổi Đã Tính Lương →
                         </button>
                       </div>
                     ))}

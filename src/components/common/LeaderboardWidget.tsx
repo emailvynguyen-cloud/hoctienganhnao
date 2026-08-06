@@ -134,21 +134,34 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   const content = (
     <div className="space-y-6">
       
-      {/* REDESIGNED CLEAN & ELEGANT HEADER BANNER */}
-      <div className="bg-slate-50/80 dark:bg-slate-800/50 p-6 rounded-2xl border border-transparent space-y-4 shadow-2xs">
+      {/* REDESIGNED LUXURY VINH DANH HEADER BANNER WITH DECORATIVE ACCENTS */}
+      <div className="relative bg-gradient-to-r from-amber-500/20 via-rose-500/15 to-indigo-500/20 dark:from-amber-950/50 dark:via-rose-950/40 dark:to-indigo-950/50 p-6 sm:p-7 rounded-3xl border-2 border-amber-300/70 dark:border-amber-700/60 shadow-lg shadow-amber-500/10 space-y-5 overflow-hidden">
         
+        {/* DECORATIVE LIGHT RAYS & STARS BACKGROUND ACCENTS */}
+        <div className="absolute -top-6 -right-6 text-7xl opacity-20 pointer-events-none select-none">
+          ✨
+        </div>
+        <div className="absolute -bottom-8 -left-8 text-7xl opacity-15 pointer-events-none select-none">
+          🌟
+        </div>
+
         {/* Top Row: Icon, Main Title & Close Button */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold text-xl border border-transparent shrink-0">
-              <Trophy className="w-5.5 h-5.5 text-amber-500" />
+        <div className="flex items-start justify-between gap-4 relative z-10">
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 flex items-center justify-center font-black text-2xl shadow-md border-2 border-yellow-200 shrink-0 transform hover:rotate-6 transition duration-200">
+              🏆
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                BẢNG THÀNH TÍCH VINH DANH
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal">
-                Vinh danh học viên xuất sắc nhất trung tâm MS. VY ENGLISH
+              <div className="flex items-center space-x-2 flex-wrap">
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
+                  BẢNG THÀNH TÍCH VINH DANH
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-400 text-amber-950 border border-yellow-300 shadow-2xs">
+                  🌿 TOP EXCELLENCE 🌿
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium mt-1">
+                Tuyên dương & vinh danh những học viên xuất sắc nhất trung tâm MS. VY ENGLISH
               </p>
             </div>
           </div>
@@ -156,7 +169,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition border border-transparent shrink-0 cursor-pointer"
+              className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white text-slate-500 hover:text-slate-800 dark:hover:text-white transition border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer shadow-2xs"
               title="Đóng bảng vinh danh"
             >
               <X className="w-5 h-5" />
@@ -165,44 +178,44 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         </div>
 
         {/* Bottom Row: Filter Switcher Bar & Total Counter Badge */}
-        <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-4 border-t border-amber-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
           
           <div className="flex items-center space-x-2">
             {/* Filter Toggle Buttons */}
-            <div className="bg-white dark:bg-slate-800 p-1 rounded-xl border border-transparent flex items-center space-x-1 shadow-2xs">
+            <div className="bg-white/90 dark:bg-slate-800 p-1.5 rounded-2xl border border-amber-200/70 dark:border-slate-700 flex items-center space-x-1 shadow-2xs">
               <button
                 onClick={() => setTimeFilter('week')}
-                className={`h-10 px-4 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer ${
+                className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
                   timeFilter === 'week'
-                    ? 'bg-rose-500 text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-rose-500 text-white shadow-md'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                Xếp Hạng Tuần
+                <Trophy className="w-3.5 h-3.5 mr-1.5 text-amber-300" /> Xếp Hạng Tuần
               </button>
               <button
                 onClick={() => setTimeFilter('month')}
-                className={`h-10 px-4 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer ${
+                className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
                   timeFilter === 'month'
-                    ? 'bg-rose-500 text-white shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-rose-500 text-white shadow-md'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                Xếp Hạng Tháng
+                <Crown className="w-3.5 h-3.5 mr-1.5 text-amber-300" /> Xếp Hạng Tháng
               </button>
             </div>
           </div>
 
-          <div className="text-xs sm:text-sm text-slate-500 font-normal hidden md:block">
-            Tiêu chí: Tỷ lệ hoàn thành → Số bài đã làm → Điểm sao chất lượng
+          <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-semibold bg-white/70 dark:bg-slate-800/70 px-3.5 py-2 rounded-xl border border-amber-200/50 dark:border-slate-700/60 shrink-0">
+            📊 Tiêu chí: Tỷ lệ hoàn thành → Số bài đã làm → Điểm sao chất lượng
           </div>
 
         </div>
 
       </div>
 
-      {/* LEADERBOARD LIST - RANKED STUDENTS */}
-      <div className="space-y-3">
+      {/* LEADERBOARD LIST - RANKED STUDENTS WITH TIER BACKGROUNDS */}
+      <div className="space-y-3.5">
         {rankedStudents.map((item, index) => {
           if (!item || !item.student) return null;
           const isTop1 = index === 0;
@@ -210,51 +223,56 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           const isTop3 = index === 2;
           const honorTitle = index < 5 ? titlesList[index] : null;
           const avatarSrc = resolveAvatarUrl(item.student.avatar);
-          // PASTEL BG PER RANK ACCORDING TO SPEC:
-          // Rank 1: Pastel Gold/Amber
-          // Rank 2: Pastel Silver/Slate
-          // Rank 3: Pastel Bronze/Orange
-          // Rank 4: Pastel Soft Sky Blue
-          // Rank 5: Pastel Soft Emerald Green
-          // Rank 6-10: Neutral Soft Slate
-          // Rank 11+: Clean White
-          const rankPastelBgClass =
+          
+          // LUXURY NON-PLAIN-WHITE BACKGROUND PER RANK ACCORDING TO SPEC:
+          // Rank 1: Luxury Gold / Metallic Amber Gradient
+          // Rank 2: Sleek Silver Metallic Gradient
+          // Rank 3: Warm Bronze / Copper Gradient
+          // Rank 4: Deep Sapphire Blue Gradient
+          // Rank 5: Vibrant Emerald Green Gradient
+          // Rank 6-10: Soft Harmonious Slate/Indigo
+          // Rank 11+: Soft Neutral Slate
+          const rankRowStyleClass =
             index === 0
-              ? 'bg-amber-50/90 dark:bg-amber-950/30 border-amber-200/80 hover:border-amber-300'
+              ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 border-2 border-yellow-200 shadow-md shadow-amber-500/30 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-200 font-extrabold'
               : index === 1
-              ? 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200/80 hover:border-slate-300'
+              ? 'bg-gradient-to-r from-slate-200 via-slate-100 to-slate-300 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 text-slate-900 dark:text-white border-2 border-slate-300 dark:border-slate-600 shadow-md shadow-slate-400/20 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-200'
               : index === 2
-              ? 'bg-orange-50/90 dark:bg-orange-950/30 border-orange-200/80 hover:border-orange-300'
+              ? 'bg-gradient-to-r from-amber-100 via-orange-100 to-amber-200 dark:from-amber-950/60 dark:via-orange-950/50 dark:to-amber-900/60 text-amber-950 dark:text-amber-100 border-2 border-amber-300 dark:border-amber-700 shadow-md shadow-orange-500/20 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-200'
               : index === 3
-              ? 'bg-sky-50/90 dark:bg-sky-950/30 border-sky-200/80 hover:border-sky-300'
+              ? 'bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 text-slate-900 dark:text-white border border-sky-300 dark:border-sky-800 shadow-xs transform hover:-translate-y-1 hover:shadow-md transition-all duration-200'
               : index === 4
-              ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200/80 hover:border-emerald-300'
+              ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-900/40 text-slate-900 dark:text-white border border-emerald-300 dark:border-emerald-800 shadow-xs transform hover:-translate-y-1 hover:shadow-md transition-all duration-200'
               : index < 10
-              ? 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/60 hover:border-slate-300'
-              : 'bg-white dark:bg-slate-900 border-transparent hover:border-slate-200 dark:hover:border-slate-800';
+              ? 'bg-slate-100/90 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs hover:-translate-y-0.5 hover:border-slate-300 transition-all duration-200'
+              : 'bg-slate-50/90 dark:bg-slate-850/60 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:-translate-y-0.5 transition-all duration-200';
 
           return (
             <div
               key={item.student.id}
-              className={`p-4 sm:p-5 rounded-2xl border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs ${rankPastelBgClass}`}
+              className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${rankRowStyleClass}`}
             >
               <div className="flex items-center space-x-4">
                 {/* RANK ICON BADGE */}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm shrink-0">
                   {isTop1 ? (
-                    <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold shadow-2xs text-lg">
-                      🥇
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 flex items-center justify-center font-black shadow-md border-2 border-yellow-100 text-xl">
+                      👑
                     </div>
                   ) : isTop2 ? (
-                    <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center font-bold shadow-2xs text-lg">
+                    <div className="w-11 h-11 rounded-2xl bg-slate-300 text-slate-900 flex items-center justify-center font-black shadow-md border border-slate-200 text-xl">
                       🥈
                     </div>
                   ) : isTop3 ? (
-                    <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center font-bold shadow-2xs text-lg">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-300 text-amber-950 flex items-center justify-center font-black shadow-md border border-amber-200 text-xl">
                       🥉
                     </div>
+                  ) : index < 5 ? (
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                      #{index + 1}
+                    </div>
                   ) : (
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center font-medium text-xs">
+                    <div className="w-9 h-9 rounded-lg bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs">
                       #{index + 1}
                     </div>
                   )}
@@ -268,18 +286,18 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
                     }}
-                    className="w-12 h-12 rounded-xl object-cover shadow-2xs"
+                    className="w-12 h-12 rounded-xl object-cover shadow-2xs border border-white/40"
                   />
                 </div>
 
                 {/* STUDENT NAME & HONOR NICKNAME BADGE */}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                    <h4 className="text-base sm:text-lg font-extrabold leading-tight">
                       {item.student.name}
                     </h4>
 
-                    {/* SHOW HONOR TITLE ONLY FOR TOP 5 WITH HIGH-QUALITY TIER BADGE CARD STYLING */}
+                    {/* SHOW HONOR TITLE ONLY FOR TOP 5 WITH TIER BADGE CARD STYLING */}
                     {honorTitle && (
                       <span className={`px-3 py-1 rounded-xl text-xs font-bold shadow-xs border flex items-center shrink-0 ${
                         index === 0
@@ -297,50 +315,50 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     )}
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
+                  <p className="text-xs sm:text-sm opacity-80 font-medium mt-0.5">
                     SĐT: {item.student.phone || 'Chưa cập nhật'}
                   </p>
                 </div>
               </div>
 
               {/* 3 METRIC PILLS: COMPLETION RATE, TOTAL TASKS & QUALITY STARS */}
-              <div className="flex flex-wrap items-center gap-2.5 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0 justify-end shrink-0">
+              <div className="flex flex-wrap items-center gap-2.5 border-t sm:border-t-0 border-black/10 dark:border-white/10 pt-3 sm:pt-0 justify-end shrink-0">
                 
                 {/* METRIC 1: COMPLETION RATE */}
-                <div className="px-3.5 py-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-transparent text-center min-w-[100px]">
-                  <span className="text-xs uppercase font-medium text-emerald-800 dark:text-emerald-400 block">
+                <div className="px-3.5 py-2 rounded-xl bg-emerald-500/20 dark:bg-emerald-950/50 border border-emerald-500/30 text-center min-w-[100px]">
+                  <span className="text-[10px] uppercase font-black opacity-90 block tracking-wider">
                     Hoàn Thành
                   </span>
-                  <span className="text-sm font-semibold text-emerald-950 dark:text-emerald-200 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-600" />
+                  <span className="text-sm font-black flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-600 dark:text-emerald-400" />
                     {item.completionRate}%
                   </span>
                 </div>
 
                 {/* METRIC 2: TOTAL COMPLETED TASKS */}
-                <div className="px-3.5 py-2 rounded-xl bg-slate-50/70 dark:bg-slate-800/80 border border-transparent text-center min-w-[90px]">
-                  <span className="text-xs uppercase font-medium text-slate-500 dark:text-slate-400 block">
+                <div className="px-3.5 py-2 rounded-xl bg-black/10 dark:bg-white/10 border border-black/10 text-center min-w-[90px]">
+                  <span className="text-[10px] uppercase font-black opacity-90 block tracking-wider">
                     Đã Làm
                   </span>
-                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-center">
-                    <BookOpen className="w-4 h-4 mr-1 text-slate-500" />
+                  <span className="text-sm font-black flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 mr-1" />
                     {item.completedCount} Bài
                   </span>
                 </div>
 
                 {/* METRIC 3: FEEDBACK QUALITY STARS */}
-                <div className="px-3.5 py-2 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-transparent text-center min-w-[100px]">
-                  <span className="text-xs uppercase font-medium text-amber-800 dark:text-amber-400 block">
+                <div className="px-3.5 py-2 rounded-xl bg-amber-500/20 dark:bg-amber-950/50 border border-amber-500/30 text-center min-w-[100px]">
+                  <span className="text-[10px] uppercase font-black opacity-90 block tracking-wider">
                     Chất Lượng
                   </span>
-                  <span className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center justify-center">
+                  <span className="text-sm font-black flex items-center justify-center">
                     {item.averageStars !== null ? (
                       <>
                         <Star className="w-4 h-4 mr-1 fill-current text-amber-500" />
                         {item.averageStars} / 5
                       </>
                     ) : (
-                      <span className="text-xs text-slate-400 font-normal italic">
+                      <span className="text-xs opacity-75 font-medium italic">
                         Chưa đánh giá
                       </span>
                     )}
@@ -360,8 +378,8 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
 
   if (onClose) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-        <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 max-h-[90vh] overflow-y-auto relative">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border-2 border-amber-300/80 dark:border-amber-700/80 p-6 sm:p-8 max-h-[92vh] overflow-y-auto relative">
           {content}
         </div>
       </div>
