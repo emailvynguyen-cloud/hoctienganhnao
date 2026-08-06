@@ -151,73 +151,110 @@ body {
   color: #94A3B8;
 }
 
-/* Soft Pastel Cards Theme Classes (Preserves Visual Grouping & Distinguishability) */
+/* Soft Rich Pastel Theme Classes (Visually distinct, comfortable, professional) */
 .pastel-pink-card {
-  background-color: rgba(255, 241, 245, 0.65);
-  border: 1px solid transparent;
+  background-color: #FFE4EC; /* Richer soft rose pastel */
+  border: 1px solid rgba(244, 63, 94, 0.15);
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-pink-card {
-  background-color: rgba(136, 19, 55, 0.2);
+  background-color: rgba(159, 18, 57, 0.35);
+  border-color: rgba(244, 63, 94, 0.3);
 }
 
 .pastel-pink-card:hover {
-  border-color: rgba(244, 63, 94, 0.25);
-  box-shadow: 0 8px 24px 0 rgba(244, 63, 94, 0.06);
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: 0 8px 24px 0 rgba(244, 63, 94, 0.1);
   transform: translateY(-2px);
 }
 
 .pastel-blue-card {
-  background-color: rgba(240, 249, 255, 0.65);
-  border: 1px solid transparent;
+  background-color: #E0F2FE; /* Richer soft sky blue pastel */
+  border: 1px solid rgba(14, 165, 233, 0.15);
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-blue-card {
-  background-color: rgba(12, 74, 110, 0.2);
+  background-color: rgba(3, 105, 161, 0.35);
+  border-color: rgba(14, 165, 233, 0.3);
 }
 
 .pastel-blue-card:hover {
-  border-color: rgba(14, 165, 233, 0.25);
-  box-shadow: 0 8px 24px 0 rgba(14, 165, 233, 0.06);
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 8px 24px 0 rgba(14, 165, 233, 0.1);
   transform: translateY(-2px);
 }
 
 .pastel-amber-card {
-  background-color: rgba(254, 252, 232, 0.65);
-  border: 1px solid transparent;
+  background-color: #FEF3C7; /* Richer soft amber pastel */
+  border: 1px solid rgba(245, 158, 11, 0.15);
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-amber-card {
-  background-color: rgba(120, 53, 15, 0.2);
+  background-color: rgba(180, 83, 9, 0.35);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .pastel-amber-card:hover {
-  border-color: rgba(245, 158, 11, 0.25);
-  box-shadow: 0 8px 24px 0 rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 8px 24px 0 rgba(245, 158, 11, 0.1);
   transform: translateY(-2px);
 }
 
 .pastel-emerald-card {
-  background-color: rgba(240, 253, 244, 0.65);
-  border: 1px solid transparent;
+  background-color: #D1FAE5; /* Richer soft emerald pastel */
+  border: 1px solid rgba(16, 185, 129, 0.15);
   border-radius: 1rem;
   transition: all 180ms ease;
 }
 
 .dark .pastel-emerald-card {
-  background-color: rgba(6, 78, 59, 0.2);
+  background-color: rgba(4, 120, 87, 0.35);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .pastel-emerald-card:hover {
-  border-color: rgba(16, 185, 129, 0.25);
-  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.1);
   transform: translateY(-2px);
+}
+
+.pastel-indigo-card {
+  background-color: #E0E7FF; /* Richer soft indigo pastel */
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-indigo-card {
+  background-color: rgba(67, 56, 202, 0.35);
+}
+
+.pastel-purple-card {
+  background-color: #F3E8FF; /* Richer soft purple pastel */
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-purple-card {
+  background-color: rgba(126, 34, 206, 0.35);
+}
+
+.pastel-teal-card {
+  background-color: #CCFBF1; /* Richer soft teal pastel */
+  border: 1px solid rgba(20, 184, 166, 0.15);
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-teal-card {
+  background-color: rgba(15, 118, 110, 0.35);
 }
 
 /* AppCard: Seamless & Borderless Floating Card */

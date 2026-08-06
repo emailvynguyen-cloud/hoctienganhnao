@@ -600,8 +600,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
-      {/* 1. STUDENT PROFILE HEADER CARD */}
-      <div className="app-card p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT */}
+      <div className="bg-gradient-to-r from-rose-50/90 via-sky-50/60 to-amber-50/70 dark:from-slate-900 dark:to-slate-900 border border-rose-100/80 dark:border-slate-800 p-6 sm:p-8 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-2xs">
         
         {/* Left: Avatar + Details */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 w-full lg:w-auto">
@@ -649,32 +649,32 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </button>
             </div>
 
-            {/* 2x2 Grid Info Box with Clear Typography */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300 font-normal bg-slate-50/80 dark:bg-slate-800/60 p-4 sm:p-5 rounded-xl border border-transparent">
+            {/* 2x2 Grid Info Box with Rich Soft Pastel Highlight Background */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-sm text-slate-900 dark:text-slate-100 font-normal bg-gradient-to-r from-sky-100/90 via-blue-50/80 to-indigo-100/90 dark:from-slate-800 dark:to-slate-800 p-5 sm:p-6 rounded-2xl border border-sky-200/80 dark:border-slate-700 shadow-2xs">
               <div className="flex items-center space-x-2">
-                <span className="text-slate-500 font-medium shrink-0">🎓 Lớp học:</span>
-                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                <span className="text-sky-800 dark:text-sky-300 font-semibold shrink-0">🎓 Lớp học:</span>
+                <span className="font-bold text-slate-900 dark:text-white break-words">
                   {primaryClass?.className || 'Lớp Ms. Vy English'}
                 </span>
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className="text-slate-500 font-medium shrink-0">👩‍🏫 Giáo viên:</span>
-                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                <span className="text-sky-800 dark:text-sky-300 font-semibold shrink-0">👩‍🏫 Giáo viên:</span>
+                <span className="font-bold text-slate-900 dark:text-white break-words">
                   {primaryClass?.teacherName || 'Ms. Vy'}
                 </span>
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className="text-slate-500 font-medium shrink-0">📚 Giáo trình:</span>
-                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                <span className="text-sky-800 dark:text-sky-300 font-semibold shrink-0">📚 Giáo trình:</span>
+                <span className="font-bold text-slate-900 dark:text-white break-words">
                   {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}
                 </span>
               </div>
 
               <div className="flex items-start space-x-2 col-span-1 sm:col-span-2">
-                <span className="text-slate-500 font-medium shrink-0">⏰ Lịch học:</span>
-                <span className="font-semibold text-slate-900 dark:text-white break-words leading-relaxed">
+                <span className="text-sky-800 dark:text-sky-300 font-semibold shrink-0">⏰ Lịch học:</span>
+                <span className="font-bold text-slate-900 dark:text-white break-words leading-relaxed">
                   {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
                 </span>
               </div>

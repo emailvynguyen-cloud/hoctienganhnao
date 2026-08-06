@@ -492,18 +492,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {isSuperAdmin && (
-          <button
-            onClick={() => StorageEngine.downloadDatabaseBackupFile()}
-            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition shadow-2xs flex items-center shrink-0 cursor-pointer border border-transparent"
-            title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
-          >
-            💾 Sao Lưu Dữ Liệu Thực (.json)
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              onClick={onOpenAccountManagement}
+              className="h-10 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm transition shadow-2xs flex items-center shrink-0 cursor-pointer border border-transparent"
+              title="Quản Lý & Cấp Tài Khoản Đăng Nhập Nhân Sự"
+            >
+              <Users className="w-4 h-4 mr-1.5" /> Quản Lý Tài Khoản Đăng Nhập
+            </button>
+
+            <button
+              onClick={() => StorageEngine.downloadDatabaseBackupFile()}
+              className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition shadow-2xs flex items-center shrink-0 cursor-pointer border border-transparent"
+              title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
+            >
+              💾 Sao Lưu Dữ Liệu Thực (.json)
+            </button>
+          </div>
         )}
       </div>
 
       {/* Tabs Navigation Bar */}
       <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
+        {/* ACCOUNT MANAGEMENT TAB - SUPER ADMIN ONLY */}
+        {isSuperAdmin && (
+          <button
+            onClick={onOpenAccountManagement}
+            className="h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 hover:bg-sky-100"
+            title="Quản Lý Cấp Mới & Đổi Mật Khẩu Tài Khoản Nhân Sự"
+          >
+            <Users className="w-4 h-4 mr-1.5 text-sky-600" /> Quản Lý Tài Khoản Đăng Nhập
+          </button>
+        )}
+
         <button
           onClick={() => setActiveTab('timetable')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
