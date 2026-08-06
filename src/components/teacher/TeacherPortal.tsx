@@ -684,6 +684,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* TAB 3: WEEKLY TIMETABLE FOR TEACHER (SCOPED STRICTLY TO TEACHER'S ASSIGNED CLASSES) */}
       {activeTab === 'schedule' && (
         <WeeklyTimetable
+          currentUser={currentUser}
           classes={assignedClasses}
           students={students}
           sessions={sessions}

@@ -335,7 +335,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
   const [activeTeacherId, setActiveTeacherId] = useState<string>('u_super_admin');
 
   const effectiveTeacherTab = isTeacher
-    ? (teacherTabs.find((t) => t.name === currentUser?.displayName || t.id === currentUser?.uid)?.id || 'u_super_admin')
+    ? (teacherTabs.find((t) => (currentUser?.displayName && t.name.toLowerCase() === currentUser.displayName.toLowerCase()) || t.id === currentUser?.uid)?.id || currentUser?.uid || 'u_teacher')
     : activeTeacherId;
 
   const currentTeacherObj = teacherTabs.find((t) => t.id === effectiveTeacherTab) || teacherTabs[0];
@@ -343,13 +343,25 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
   // STRICT TEACHER PRIVACY FILTERING:
   // If user is a Teacher, ONLY show classes assigned to this teacher! (NEVER show Ms. Vy's classes for other teachers)
   const teacherClasses = activeClasses.filter((c) => {
+    if (!c) return false;
+
     if (isTeacher) {
-      return c.teacherId === currentUser?.uid || (c.teacherName && c.teacherName === currentUser?.displayName);
+      const matchId = c.teacherId === currentUser?.uid;
+      const matchName = c.teacherName && currentUser?.displayName && c.teacherName.toLowerCase() === currentUser.displayName.toLowerCase();
+      const isUserMsVy = currentUser?.displayName?.toLowerCase().includes('vy') || currentUser?.uid === 'u_super_admin';
+
+      if (isUserMsVy) {
+        return matchId || matchName || !c.teacherName || c.teacherName.toLowerCase().includes('vy') || c.teacherId === 'u_super_admin';
+      }
+
+      // For other teachers (e.g. Ms. Ngọc): MUST match their teacherId or teacherName ONLY!
+      return matchId || matchName;
     }
-    if (currentTeacherObj.id === 'u_super_admin' || currentTeacherObj.name.toLowerCase().includes('vy')) {
+
+    if (currentTeacherObj && (currentTeacherObj.id === 'u_super_admin' || currentTeacherObj.name.toLowerCase().includes('vy'))) {
       return !c.teacherName || c.teacherName.toLowerCase().includes('vy') || c.teacherId === 'u_super_admin';
     }
-    return c.teacherId === currentTeacherObj.id || c.teacherName === currentTeacherObj.name;
+    return currentTeacherObj && (c.teacherId === currentTeacherObj.id || (c.teacherName && c.teacherName.toLowerCase() === currentTeacherObj.name.toLowerCase()));
   });
 
   // HELPER: Map classes to specific Day & Shift Range (CHRONOLOGICALLY SORTED BY START TIME -> END TIME -> CLASS NAME)
