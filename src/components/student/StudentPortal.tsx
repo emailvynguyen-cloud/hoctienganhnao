@@ -365,32 +365,32 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
 
         {/* Lesson Content */}
-        <div className="space-y-1">
-          <span className="text-xs font-extrabold text-pink-900 dark:text-pink-300 uppercase tracking-wider block">
-            📘 Nội Dung Bài Học:
+        <div className="space-y-1.5">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+            Nội Dung Bài Học:
           </span>
-          <p className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 p-3 rounded-2xl border border-pink-100/80 backdrop-blur-xs whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm font-normal text-slate-800 dark:text-slate-200 bg-slate-50/80 dark:bg-slate-800/80 p-4 rounded-xl border border-transparent whitespace-pre-wrap leading-relaxed">
             {session.lessonContent}
           </p>
         </div>
 
         {/* Teacher Comment for THIS specific student in THIS session */}
         {session.studentFeedbacks?.[currentStudent.id] && (
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-pink-50/90 via-rose-50/60 to-pink-50/90 dark:from-slate-800 dark:to-slate-800 border border-pink-200 dark:border-slate-700 text-xs space-y-4 shadow-2xs backdrop-blur-xs">
+          <div className="p-5 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-transparent text-sm space-y-4 shadow-2xs">
             {/* Standard Card Header inside the card with bottom border separator */}
-            <div className="flex items-center space-x-2 border-b border-pink-200/80 dark:border-slate-700/80 pb-2.5">
-              <span className="w-7 h-7 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 flex items-center justify-center font-black text-sm shrink-0 border border-pink-200/60">
+            <div className="flex items-center space-x-2 border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
+              <span className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-medium text-sm shrink-0">
                 💬
               </span>
-              <h4 className="font-black text-xs text-pink-950 dark:text-pink-200 uppercase tracking-wider">
-                NHẬN XÉT
+              <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                Nhận Xét Của Giáo Viên
               </h4>
             </div>
 
             {/* 2-Column Parallel Grid Layout for Strengths & Improvements */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {session.studentFeedbacks[currentStudent.id]?.strengths ? (
-                <div className="p-4 rounded-2xl bg-white/95 dark:bg-slate-900/80 border border-emerald-200/90 dark:border-emerald-900/60 shadow-2xs">
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-transparent shadow-2xs">
                   {renderExpandableText(
                     `fb_str_${session.id}_${currentStudent.id}`,
                     'Điểm mạnh',
@@ -402,7 +402,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               ) : <div className="hidden md:block"></div>}
 
               {session.studentFeedbacks[currentStudent.id]?.improvements ? (
-                <div className="p-4 rounded-2xl bg-white/95 dark:bg-slate-900/80 border border-amber-200/90 dark:border-amber-900/60 shadow-2xs">
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-transparent shadow-2xs">
                   {renderExpandableText(
                     `fb_imp_${session.id}_${currentStudent.id}`,
                     'Cần cải thiện',

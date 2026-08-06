@@ -141,12 +141,12 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 py-2 sm:py-0 gap-2">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20 gap-3">
           
           {/* Left: Brand Logo & Title */}
-          <div className="flex items-center space-x-3 cursor-pointer group" onClick={onNavigateHome}>
+          <div className="flex items-center space-x-3.5 cursor-pointer group shrink-0" onClick={onNavigateHome}>
             <div className="relative shrink-0">
               <img
                 src={logoImg}
@@ -159,41 +159,41 @@ export const Header: React.FC<HeaderProps> = ({
                     target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23ec4899'/%3E%3Ctext x='50' y='65' font-size='45' font-weight='900' fill='white' text-anchor='middle'%3EVY%3C/text%3E%3C/svg%3E";
                   }
                 }}
-                className="w-10 h-10 rounded-xl object-cover border border-slate-200/80 dark:border-slate-700 shadow-2xs group-hover:scale-102 transition duration-200"
+                className="w-11 h-11 rounded-xl object-cover shadow-2xs group-hover:scale-102 transition duration-200"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full flex items-center justify-center">
                 <span className="w-1 h-1 bg-white rounded-full" />
               </span>
             </div>
 
-            <div>
+            <div className="flex flex-col justify-center">
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white">
+                <span className="font-bold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white">
                   MS. VY ENGLISH
                 </span>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60 uppercase">
+                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 uppercase">
                   ONLINE
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide hidden sm:block">
+              <p className="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 tracking-wide hidden sm:block">
                 Hệ Thống Theo Dõi Học Tập & Quản Lý Lớp Học
               </p>
             </div>
           </div>
 
           {/* Right: Actions, Navigation, Role Switcher & Notifications */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto max-w-full scrollbar-none py-1 shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto max-w-full scrollbar-none py-1 shrink-0">
 
             {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}
             {!activePublicHash && (
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-2">
                 {/* HOME BUTTON */}
                 <button
                   onClick={onNavigateHome}
-                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200 font-medium text-xs transition border border-slate-200 dark:border-slate-700 flex items-center shadow-2xs"
+                  className="h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-sm transition border border-transparent flex items-center shadow-2xs cursor-pointer"
                   title="Về Trang Chủ Quản Lý"
                 >
-                  <Home className="w-3.5 h-3.5 sm:mr-1 text-slate-500" />
+                  <Home className="w-4 h-4 sm:mr-1.5 text-slate-500" />
                   <span className="hidden sm:inline">Trang Chủ</span>
                 </button>
 
@@ -201,10 +201,10 @@ export const Header: React.FC<HeaderProps> = ({
                 {activePublicHash && onExitPublicView && (
                   <button
                     onClick={onExitPublicView}
-                    className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-xs transition flex items-center border border-amber-200"
+                    className="h-10 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-sm transition flex items-center border border-transparent cursor-pointer"
                     title="Thoát chế độ xem học viên bí mật"
                   >
-                    <Lock className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                    <Lock className="w-4 h-4 mr-1.5 text-amber-600" />
                     Thoát Link Secret
                   </button>
                 )}
@@ -213,10 +213,10 @@ export const Header: React.FC<HeaderProps> = ({
                 {canNavigateBack && onNavigateBack && (
                   <button
                     onClick={onNavigateBack}
-                    className="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-900 font-medium text-xs transition flex items-center border border-sky-200"
+                    className="h-10 px-3.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 font-medium text-sm transition flex items-center border border-transparent cursor-pointer"
                     title="Quay lại trang trước"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1 text-sky-600" />
+                    <ArrowLeft className="w-4 h-4 mr-1.5 text-sky-600" />
                     <span className="hidden sm:inline">Quay Lại</span>
                   </button>
                 )}
@@ -227,10 +227,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* PWA INSTALL / ADD TO HOME SCREEN BUTTON */}
             <button
               onClick={() => setIsPwaModalOpen(true)}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium text-[11px] sm:text-xs transition flex items-center shrink-0 whitespace-nowrap"
+              className="h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm transition flex items-center shrink-0 border border-transparent cursor-pointer"
               title="Hướng dẫn Thêm App ra Màn Hình Chính Điện Thoại"
             >
-              <Smartphone className="w-3.5 h-3.5 mr-1 text-emerald-600 shrink-0" />
+              <Smartphone className="w-4 h-4 mr-1.5 text-emerald-600 shrink-0" />
               <span className="hidden md:inline">Thêm Vào </span>
               <span className="hidden sm:inline">Màn Hình </span>Chính
             </button>
@@ -238,11 +238,11 @@ export const Header: React.FC<HeaderProps> = ({
             {/* LEADERBOARD BUTTON */}
             <button
               onClick={onOpenLeaderboard}
-              className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/80 dark:border-rose-900/60 font-semibold text-[11px] sm:text-xs transition flex items-center space-x-1.5 shrink-0 whitespace-nowrap shadow-2xs"
+              className="h-10 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium text-xs sm:text-sm transition flex items-center space-x-1.5 shrink-0 whitespace-nowrap border border-transparent cursor-pointer"
               title="Xem Bảng Thành Tích Thi Đua Vinh Danh"
             >
-              <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="tracking-tight text-xs font-semibold">
+              <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="tracking-tight text-sm font-medium">
                 <span className="hidden sm:inline">THI ĐUA TOP</span>
                 <span className="sm:hidden">TOP</span>
               </span>
@@ -253,12 +253,12 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative">
                 <button
                   onClick={handleToggleNotifDropdown}
-                  className="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition shadow-2xs relative flex items-center justify-center cursor-pointer"
+                  className="w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition relative flex items-center justify-center cursor-pointer border border-transparent"
                   title="Thông báo bài tập cần feedback"
                 >
                   <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-bold text-xs w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
                       {unreadCount}
                     </span>
                   )}
@@ -266,46 +266,46 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {/* Notifications Dropdown (Floating Fixed Popup On Top Of Viewport) */}
                 {isNotifDropdownOpen && (
-                  <div className="fixed top-16 right-3 sm:right-6 w-[calc(100vw-1.5rem)] sm:w-[400px] max-w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 z-[9999] animate-fadeIn text-xs max-h-[calc(100vh-5rem)] flex flex-col">
-                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 shrink-0">
-                      <span className="font-semibold text-slate-900 dark:text-white flex items-center text-sm">
-                        <Bell className="w-4 h-4 mr-2 text-rose-500" /> Thông Báo Bài Tập ({notifications.length})
+                  <div className="fixed top-20 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-[420px] max-w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-5 space-y-3.5 z-[9999] animate-fadeIn text-sm max-h-[calc(100vh-6rem)] flex flex-col">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+                      <span className="font-semibold text-slate-900 dark:text-white flex items-center text-base">
+                        <Bell className="w-4.5 h-4.5 mr-2 text-rose-500" /> Thông Báo Bài Tập ({notifications.length})
                       </span>
-                      <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 shrink-0">
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-transparent shrink-0">
                         ✓ Đã tự động đọc tất cả
                       </span>
                     </div>
 
-                    <div className="space-y-2 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1 flex-1">
+                    <div className="space-y-2.5 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1 flex-1">
                       {notifications.length > 0 ? (
                         notifications.map((n) => (
                           <div
                             key={n.id}
                             onClick={() => handleNotificationClick(n)}
-                            className={`p-3 rounded-xl border transition cursor-pointer space-y-1 relative group ${
+                            className={`p-3.5 rounded-xl border transition cursor-pointer space-y-1.5 relative group ${
                               n.isRead
-                                ? 'bg-slate-50/60 dark:bg-slate-800/60 border-slate-200/60 opacity-80'
-                                : 'bg-rose-50/40 dark:bg-slate-800 border-rose-200/80 shadow-2xs hover:bg-rose-50/80'
+                                ? 'bg-slate-50/60 dark:bg-slate-800/60 border-transparent opacity-80'
+                                : 'bg-rose-50/40 dark:bg-slate-800 border-transparent shadow-2xs hover:bg-rose-50/80'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2 font-semibold text-slate-900 dark:text-white">
-                              <span className="leading-snug break-words flex-1">{n.title}</span>
-                              <span className="text-[10px] text-slate-500 font-mono shrink-0 bg-white dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200">{n.completionTime}</span>
+                              <span className="leading-snug break-words flex-1 text-sm">{n.title}</span>
+                              <span className="text-xs text-slate-500 font-mono shrink-0 bg-white dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200">{n.completionTime}</span>
                             </div>
 
-                            <p className="text-[11px] text-slate-600 dark:text-slate-300 font-normal leading-relaxed break-words">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 font-normal leading-relaxed break-words">
                               {n.message}
                             </p>
 
                             <div className="pt-1 flex items-center justify-end">
-                              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center">
+                              <span className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline flex items-center">
                                 Xem Bài / Chấm Bài →
                               </span>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-slate-400 italic text-center py-6">Chưa có thông báo bài tập mới.</p>
+                        <p className="text-sm text-slate-400 italic text-center py-6">Chưa có thông báo bài tập mới.</p>
                       )}
                     </div>
                   </div>
@@ -318,8 +318,8 @@ export const Header: React.FC<HeaderProps> = ({
               <>
                 {/* Logged in User Profile Info */}
                 {currentUser ? (
-                  <div className="flex items-center space-x-2 bg-slate-100/80 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                    <div className="flex items-center space-x-2 px-2">
+                  <div className="flex items-center space-x-2 bg-slate-100/80 dark:bg-slate-800 p-1.5 rounded-xl border border-transparent shadow-2xs">
+                    <div className="flex items-center space-x-2 px-2.5">
                       {currentUser.role === 'super_admin' ? (
                         <Crown className="w-4 h-4 text-amber-500 shrink-0" />
                       ) : currentUser.role === 'admin' ? (
@@ -328,10 +328,10 @@ export const Header: React.FC<HeaderProps> = ({
                         <UserCheck className="w-4 h-4 text-sky-500 shrink-0" />
                       )}
                       <div className="text-left hidden lg:block">
-                        <span className="text-xs font-semibold block text-slate-900 dark:text-slate-100 leading-tight">
+                        <span className="text-sm font-semibold block text-slate-900 dark:text-slate-100 leading-tight">
                           {currentUser.displayName}
                         </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">
                           {currentUser.role === 'super_admin'
                             ? 'Người Điều Hành'
                             : currentUser.role === 'admin'
@@ -344,7 +344,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {/* Switch Account / Login Modal Opener Button */}
                     <button
                       onClick={onOpenLogin}
-                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs hover:bg-slate-50 transition shadow-2xs border border-slate-200 dark:border-slate-600 flex items-center"
+                      className="h-9 px-3 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs hover:bg-slate-50 transition shadow-2xs border border-transparent flex items-center cursor-pointer"
                       title="Đổi Tài Khoản / Đăng Nhập"
                     >
                       <LogIn className="w-3.5 h-3.5 mr-1 text-slate-500" />
@@ -355,7 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {currentUser.role === 'super_admin' && (
                       <button
                         onClick={onOpenAccountManagement}
-                        className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 font-medium text-xs hover:bg-sky-100 transition shadow-2xs border border-sky-200 dark:border-sky-800 flex items-center"
+                        className="h-9 px-3 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 font-medium text-xs hover:bg-sky-100 transition shadow-2xs border border-transparent flex items-center cursor-pointer"
                         title="Quản Lý Cấp Tài Khoản Nhân Sự"
                       >
                         <Users className="w-3.5 h-3.5 mr-1" />
@@ -367,18 +367,18 @@ export const Header: React.FC<HeaderProps> = ({
                     {currentUser.role === 'super_admin' && (
                       <button
                         onClick={onOpenGeminiSettings}
-                        className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium text-xs transition border border-rose-200 dark:border-rose-900 flex items-center shrink-0 cursor-pointer shadow-2xs"
+                        className="h-9 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium text-xs transition border border-transparent flex items-center shrink-0 cursor-pointer shadow-2xs"
                         title="Cấu hình Gemini API Key cho hệ thống"
                       >
                         <Key className="w-3.5 h-3.5 mr-1 text-rose-500 shrink-0" />
-                        <span className="font-semibold">Cấu Hình API Key</span>
+                        <span className="font-medium">Cấu Hình API Key</span>
                       </button>
                     )}
 
                     {/* Logout Button */}
                     <button
                       onClick={onLogout}
-                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition cursor-pointer"
                       title="Đăng Xuất"
                     >
                       <LogOut className="w-4 h-4" />
@@ -388,7 +388,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={onOpenLogin}
-                      className="px-3.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition shadow-2xs flex items-center"
+                      className="h-10 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-sm transition shadow-2xs flex items-center cursor-pointer"
                     >
                       <LogIn className="w-4 h-4 mr-1.5" /> Đăng Nhập Hệ Thống
                     </button>
