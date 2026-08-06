@@ -34,12 +34,14 @@ import {
 interface HeaderProps {
   currentUser: User | null;
   currentRole: UserRole;
-  onSwitchRole: (role: UserRole) => void;
+  onOpenLogin: () => void;
+  onLogout: () => void;
+  onOpenAccountManagement: () => void;
   onOpenLeaderboard: () => void;
-  darkMode: boolean;
-  onToggleDarkMode: () => void;
-  onLoginClick: () => void;
-  onLogoutClick: () => void;
+  onOpenGeminiSettings: () => void;
+  isDarkMode: boolean;
+  setIsDarkMode: (dark: boolean) => void;
+  onResetData?: () => void;
   activePublicHash?: string | null;
   onExitPublicView?: () => void;
   onNavigateHome?: () => void;
@@ -52,12 +54,14 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   currentRole,
-  onSwitchRole,
+  onOpenLogin,
+  onLogout,
+  onOpenAccountManagement,
   onOpenLeaderboard,
-  darkMode,
-  onToggleDarkMode,
-  onLoginClick,
-  onLogoutClick,
+  onOpenGeminiSettings,
+  isDarkMode,
+  setIsDarkMode,
+  onResetData,
   activePublicHash,
   onExitPublicView,
   onNavigateHome,
