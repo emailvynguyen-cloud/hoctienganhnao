@@ -591,114 +591,111 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
-      {/* 1. STUDENT HEADER HERO CARD WITH SOFT PINK GRADIENT & FULL DETAILS */}
-      <div className="bg-gradient-to-r from-pink-100/90 via-rose-50 to-pink-100/90 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 rounded-3xl border-2 border-pink-200/90 dark:border-slate-800 p-6 sm:p-7 shadow-xs relative space-y-6">
+      {/* 1. STUDENT PROFILE HEADER CARD */}
+      <div className="app-card p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
         
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+        {/* Left: Avatar + Details */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 w-full lg:w-auto">
           
-          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 flex-1 w-full text-center sm:text-left">
-            
-            {/* Avatar with Camera Overlay */}
-            <div className="relative group shrink-0">
-              <img
-                src={studentAvatarSrc}
-                alt={currentStudent.name}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                }}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-4 border-white shadow-md transition group-hover:scale-105"
-              />
+          {/* Avatar with Camera Overlay */}
+          <div className="relative group shrink-0">
+            <img
+              src={studentAvatarSrc}
+              alt={currentStudent.name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+              }}
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-2xs transition group-hover:scale-102"
+            />
+            <button
+              onClick={() => setIsAvatarModalOpen(true)}
+              className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md hover:bg-rose-500 dark:hover:bg-rose-500 dark:hover:text-white transition flex items-center justify-center cursor-pointer border border-transparent"
+              title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Student Details */}
+          <div className="space-y-3 flex-1 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <h2 className="app-page-title text-2xl sm:text-3xl">
+                {currentStudent.name}
+              </h2>
+              {currentHonorBadge ? (
+                <span className={`px-3 py-1 rounded-lg text-xs font-medium inline-block ${currentHonorBadge.badgeColor}`}>
+                  {currentHonorBadge.title}
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-lg text-xs font-normal bg-slate-100 dark:bg-slate-800 text-slate-500 inline-block">
+                  Chưa có danh hiệu Top
+                </span>
+              )}
               <button
-                onClick={() => setIsAvatarModalOpen(true)}
-                className="absolute -bottom-1 -right-1 p-2 rounded-2xl bg-pink-500 text-white shadow-md hover:bg-pink-600 transition flex items-center justify-center border-2 border-white cursor-pointer"
-                title="Đổi ảnh đại diện / Chọn avatar KakaoTalk Friends"
+                onClick={() => setIsClassRulesOpen(true)}
+                className="px-3.5 py-1 rounded-lg text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 transition flex items-center cursor-pointer border border-transparent"
+                title="Bấm để xem Nội quy lớp học đầy đủ"
               >
-                <Camera className="w-4 h-4" />
+                📋 Nội quy lớp học
               </button>
             </div>
 
-            {/* Student Details */}
-            <div className="space-y-2.5 flex-1 w-full">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-2 flex-wrap">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                  {currentStudent.name}
-                </h2>
-                {currentHonorBadge ? (
-                  <span className={`px-3.5 py-1 rounded-full text-xs font-black shadow-xs inline-block ${currentHonorBadge.badgeColor}`}>
-                    {currentHonorBadge.title}
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 inline-block">
-                    Chưa có danh hiệu Top
-                  </span>
-                )}
-                <button
-                  onClick={() => setIsClassRulesOpen(true)}
-                  className="px-3.5 py-1 rounded-full text-xs font-black bg-pink-500 hover:bg-pink-600 text-white transition shadow-xs flex items-center cursor-pointer border border-pink-400"
-                  title="Bấm để xem Nội quy lớp học đầy đủ"
-                >
-                  📋 Nội quy lớp học
-                </button>
+            {/* 2x2 Grid Info Box with Clear Typography */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300 font-normal bg-slate-50/80 dark:bg-slate-800/60 p-4 sm:p-5 rounded-xl border border-transparent">
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500 font-medium shrink-0">🎓 Lớp học:</span>
+                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                  {primaryClass?.className || 'Lớp Ms. Vy English'}
+                </span>
               </div>
 
-              {/* 2x2 Grid Info Box with Clear Typography */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold bg-white/80 dark:bg-slate-800/80 p-4 rounded-2xl border border-pink-200/80 shadow-2xs">
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-pink-600 font-black shrink-0">🎓 Lớp học:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
-                    {primaryClass?.className || 'Lớp Ms. Vy English'}
-                  </span>
-                </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500 font-medium shrink-0">👩‍🏫 Giáo viên:</span>
+                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                  {primaryClass?.teacherName || 'Ms. Vy'}
+                </span>
+              </div>
 
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-pink-600 font-black shrink-0">👩‍🏫 Giáo viên:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
-                    {primaryClass?.teacherName || 'Ms. Vy'}
-                  </span>
-                </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500 font-medium shrink-0">📚 Giáo trình:</span>
+                <span className="font-semibold text-slate-900 dark:text-white break-words">
+                  {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}
+                </span>
+              </div>
 
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-pink-600 font-black shrink-0">📚 Giáo trình:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white break-words">
-                    {primaryClass?.courseName || 'Tiếng Anh Giao Tiếp'}
-                  </span>
-                </div>
-
-                <div className="flex items-start space-x-1.5 col-span-1 sm:col-span-2">
-                  <span className="text-pink-600 font-black shrink-0">⏰ Lịch học:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white break-words leading-relaxed">
-                    {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
-                  </span>
-                </div>
+              <div className="flex items-start space-x-2 col-span-1 sm:col-span-2">
+                <span className="text-slate-500 font-medium shrink-0">⏰ Lịch học:</span>
+                <span className="font-semibold text-slate-900 dark:text-white break-words leading-relaxed">
+                  {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
+                </span>
               </div>
             </div>
-
           </div>
 
-          {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
-          <div
-            onClick={() => setIsPaymentHistoryOpen(true)}
-            className="bg-gradient-to-tr from-pink-200 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800 text-pink-950 dark:text-white px-7 py-6 rounded-3xl shadow-sm border-2 border-pink-300 dark:border-slate-700 min-w-[200px] sm:min-w-[220px] shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:scale-102 hover:shadow-md transition-all duration-200 group relative"
-            title="Bấm vào để xem lịch sử đóng học phí chi tiết"
-          >
-            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-900 dark:text-pink-300 flex items-center justify-center gap-1">
-              SỐ BUỔI CÒN LẠI <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100 transition" />
+        </div>
+
+        {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
+        <div
+          onClick={() => setIsPaymentHistoryOpen(true)}
+          className="app-stat-card text-slate-900 dark:text-white px-7 py-6 rounded-2xl border border-transparent shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:border-slate-200 dark:hover:border-slate-800 transition-all duration-180 group relative"
+          title="Bấm vào để xem lịch sử đóng học phí chi tiết"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
+            SỐ BUỔI CÒN LẠI <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition" />
+          </span>
+
+          <div className="flex items-baseline justify-center gap-1.5 py-1">
+            <span className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
+              {currentStudent.remainingSessions}
             </span>
-
-            <div className="flex items-baseline justify-center gap-1.5">
-              <span className="text-4xl sm:text-5xl font-black text-pink-950 dark:text-white font-mono leading-none tracking-tight">
-                {currentStudent.remainingSessions}
-              </span>
-              <span className="text-base sm:text-lg font-extrabold text-pink-900 dark:text-pink-200 leading-none">
-                Buổi
-              </span>
-            </div>
-
-            <span className="text-[10px] font-black text-pink-700 dark:text-pink-300 underline group-hover:text-pink-900 transition mt-1">
-              🔍 Bấm xem chi tiết đóng học phí →
+            <span className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400 leading-none">
+              Buổi
             </span>
           </div>
 
+          <span className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline transition">
+            🔍 Bấm xem chi tiết đóng học phí →
+          </span>
         </div>
       </div>
 
@@ -723,35 +720,35 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           reason: abs.reason || 'Nghỉ có phép / Bảo lưu',
           isMakeupCompleted: abs.isMakeupCompleted,
           badgeColor: abs.isMakeupCompleted
-            ? 'bg-emerald-100 text-emerald-950 border-emerald-300'
-            : 'bg-sky-100 text-sky-950 border-sky-300',
+            ? 'bg-emerald-50 text-emerald-700 border-transparent'
+            : 'bg-sky-50 text-sky-700 border-transparent',
           type: abs.isMakeupCompleted ? 'Đã học bù' : 'Nghỉ có phép',
         }));
 
         const monthExcusedAbsences = excusedAbsences.filter((a) => a.date && a.date.startsWith(currentMonthStr));
 
         return (
-          <div className="bg-gradient-to-r from-amber-50/80 via-orange-50/60 to-amber-50/80 dark:from-slate-900 dark:to-slate-900 rounded-3xl border-2 border-amber-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/80 dark:border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-10 h-10 rounded-2xl bg-amber-200 dark:bg-amber-950 text-amber-950 dark:text-amber-200 flex items-center justify-center font-black text-lg border border-amber-300">
+          <div className="app-card p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold text-lg border border-transparent shrink-0">
                   📊
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">
+                  <h3 className="app-card-title text-base sm:text-lg uppercase tracking-wider">
                     Thống Kê Buổi Nghỉ Học Có Phép Tháng {currentMonthLabel}
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-normal">
                     Chỉ thống kê các buổi nghỉ có phép (bảo lưu/học bù). Các buổi nghỉ tính phí không nằm trong thống kê này.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2 shrink-0">
-                <span className="px-4 py-2 rounded-2xl bg-amber-200 text-amber-950 font-black text-xs border border-amber-300 shadow-2xs">
+                <span className="px-3.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 font-semibold text-xs border border-transparent">
                   Số buổi nghỉ tháng {currentMonthLabel}: <strong>{monthExcusedAbsences.length} buổi</strong>
                 </span>
-                <span className="px-3 py-2 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-xs border border-amber-200 shadow-2xs">
+                <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-xs border border-transparent">
                   Tổng số buổi nghỉ có phép: {excusedAbsences.length} buổi
                 </span>
               </div>

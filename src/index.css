@@ -66,27 +66,253 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Modern SaaS Card Utilities: Seamless & Borderless by default, soft border on hover */
-.saas-card {
-  background-color: #FFFFFF;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
-  border-radius: 0.75rem; /* 12px */
-  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+/* ============================================================
+   GLOBAL SAAS DESIGN SYSTEM COMPONENTS (INVISIBLE UI SYSTEM)
+   ============================================================ */
+
+/* Typography Scale */
+.app-page-title {
+  font-size: 2.25rem; /* ~36-38px */
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #0F172A;
 }
 
-.dark .saas-card {
+.dark .app-page-title {
+  color: #F8FAFC;
+}
+
+.app-section-title {
+  font-size: 1.75rem; /* ~28px */
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0F172A;
+}
+
+.dark .app-section-title {
+  color: #F8FAFC;
+}
+
+.app-card-title {
+  font-size: 1.375rem; /* ~22px */
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #0F172A;
+}
+
+.dark .app-card-title {
+  color: #F8FAFC;
+}
+
+.app-body {
+  font-size: 1rem; /* 16px */
+  line-height: 1.625;
+  font-weight: 400;
+  color: #334155;
+}
+
+.dark .app-body {
+  color: #CBD5E1;
+}
+
+.app-secondary {
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.5;
+  font-weight: 400;
+  color: #64748B;
+}
+
+.dark .app-secondary {
+  color: #94A3B8;
+}
+
+/* AppCard: Seamless & Borderless Floating Card */
+.app-card,
+.saas-card,
+.invisible-card {
+  background-color: #FFFFFF;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  border-radius: 1rem; /* 16px */
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .app-card,
+.dark .saas-card,
+.dark .invisible-card {
   background-color: #0F172A;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
 }
 
-.saas-card:hover {
-  border-color: rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+.app-card:hover,
+.saas-card:hover,
+.invisible-card:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
 }
 
-.dark .saas-card:hover {
-  border-color: rgba(51, 65, 85, 0.9);
+.dark .app-card:hover,
+.dark .saas-card:hover,
+.dark .invisible-card:hover {
+  border-color: rgba(51, 65, 85, 0.6);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* AppStatCard: Minimalist KPI Metric Card */
+.app-stat-card {
+  background-color: #FFFFFF;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: all 180ms ease;
+}
+
+.dark .app-stat-card {
+  background-color: #0F172A;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.app-stat-card:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .app-stat-card:hover {
+  border-color: rgba(51, 65, 85, 0.6);
+}
+
+/* AppButtons: Standardized 44px Height, 12px Radius, Flat Hover Elevation */
+.app-button-primary {
+  height: 2.75rem; /* 44px */
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  border-radius: 0.75rem;
+  background-color: #F43F5E;
+  color: #FFFFFF;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: all 180ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-button-primary:hover {
+  background-color: #E11D48;
+  box-shadow: 0 4px 14px 0 rgba(244, 63, 94, 0.25);
+  transform: translateY(-1px);
+}
+
+.app-button-secondary,
+.invisible-btn {
+  height: 2.75rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  border-radius: 0.75rem;
+  background-color: rgba(241, 245, 249, 0.8);
+  color: #334155;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: all 180ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .app-button-secondary,
+.dark .invisible-btn {
+  background-color: rgba(30, 41, 59, 0.8);
+  color: #F1F5F9;
+}
+
+.app-button-secondary:hover,
+.invisible-btn:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  background-color: rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 14px 0 rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.dark .app-button-secondary:hover,
+.dark .invisible-btn:hover {
+  border-color: rgba(51, 65, 85, 0.6);
+  background-color: rgba(51, 65, 85, 0.8);
+}
+
+/* AppInput: Flat background, no heavy outline, soft focus glow */
+.app-input,
+.invisible-input {
+  height: 2.75rem;
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background-color: rgba(241, 245, 249, 0.7);
+  font-size: 0.9375rem;
+  color: #0F172A;
+  transition: all 180ms ease;
+}
+
+.dark .app-input,
+.dark .invisible-input {
+  background-color: rgba(30, 41, 59, 0.7);
+  color: #F8FAFC;
+}
+
+.app-input:hover,
+.invisible-input:hover {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.app-input:focus,
+.invisible-input:focus {
+  background-color: #FFFFFF;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+  outline: none;
+}
+
+.dark .app-input:focus,
+.dark .invisible-input:focus {
+  background-color: #0F172A;
+}
+
+/* AppTable: Modern Invisible Rows */
+.app-table-row {
+  border-bottom: 1px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.app-table-row:hover {
+  background-color: rgba(248, 250, 252, 0.9);
+  border-color: rgba(226, 232, 240, 0.6);
+}
+
+.dark .app-table-row:hover {
+  background-color: rgba(30, 41, 59, 0.6);
+  border-color: rgba(51, 65, 85, 0.6);
+}
+
+/* AppBadge: Flat Pill */
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  border: 1px solid transparent;
 }
 
 /* Subtle Micro Interactions */
