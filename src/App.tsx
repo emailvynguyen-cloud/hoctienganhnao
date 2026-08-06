@@ -332,7 +332,6 @@ export default function App() {
   };
 
   return (
-  return (
     <div className="min-h-screen bg-[#FAFAFB] dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-150">
       
       {/* HEADER BAR */}
