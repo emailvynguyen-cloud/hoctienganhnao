@@ -7,7 +7,7 @@ import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { ClassRulesModal } from '../common/ClassRulesModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
-import { getStudentHonorBadge } from '../../lib/rankingUtils';
+import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST } from '../../lib/rankingUtils';
 import {
   Calendar,
   CheckCircle2,
@@ -69,6 +69,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isOlderSessionsOpen, setIsOlderSessionsOpen] = useState(false);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isClassRulesOpen, setIsClassRulesOpen] = useState(false);
+  const [isHonorBadgesModalOpen, setIsHonorBadgesModalOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [copiedResId, setCopiedResId] = useState<string | null>(null);
@@ -215,16 +216,61 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   const studentAvatarSrc = resolveAvatarUrl(currentStudent.avatar);
 
+  const [toastNotification, setToastNotification] = useState<{ text: string; icon: string; type: 'task' | 'session' } | null>(null);
+
+  React.useEffect(() => {
+    if (toastNotification) {
+      const timer = setTimeout(() => {
+        setToastNotification(null);
+      }, 3200);
+      return () => clearTimeout(timer);
+    }
+  }, [toastNotification]);
+
   // HANDLER: STUDENT TICKS/UNTICKS HOMEWORK COMPLETION
   const handleToggleTaskCheck = (session: Session, hwItemId: string, hwTitle: string) => {
     const isNowChecked = StorageEngine.toggleHomeworkTaskItemCheck(currentStudent.id, session.id, hwItemId, hwTitle);
     console.log("UPDATE SUCCESS", { studentId: currentStudent.id, hwItemId, isNowChecked });
+    
     if (isNowChecked) {
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.7 },
-      });
+      // Check if ALL homework items in this session are now completed
+      const sessionItems = session.homeworkItems || [];
+      const currentCompletedIds = currentStudent.completedHomeworkTaskIds || [];
+      const updatedCompletedIds = [...currentCompletedIds, hwItemId];
+      const isSessionAllDone = sessionItems.length > 0 && sessionItems.every((item) => updatedCompletedIds.includes(item.id));
+
+      if (isSessionAllDone) {
+        // BIGGER CELEBRATION CONFETTI FOR ALL SESSION ITEMS COMPLETED (2-3 seconds)
+        const count = 160;
+        const defaults = {
+          origin: { y: 0.65 },
+          colors: ['#f472b6', '#38bdf8', '#fbbf24', '#34d399', '#a78bfa', '#ec4899', '#818cf8'],
+        };
+        confetti({ ...defaults, particleCount: Math.floor(count * 0.35), spread: 45, startVelocity: 50 });
+        confetti({ ...defaults, particleCount: Math.floor(count * 0.4), spread: 85 });
+        confetti({ ...defaults, particleCount: Math.floor(count * 0.25), spread: 120, scalar: 1.2 });
+
+        setToastNotification({
+          type: 'session',
+          icon: '🏆',
+          text: '🏆 Bạn đã hoàn thành toàn bộ bài tập của buổi học này!'
+        });
+      } else {
+        // GENTLE SINGLE TASK CONFETTI (1-2 seconds)
+        confetti({
+          particleCount: 45,
+          spread: 65,
+          origin: { y: 0.75 },
+          colors: ['#f472b6', '#38bdf8', '#fbbf24', '#34d399', '#a78bfa'],
+          disableForReducedMotion: true,
+        });
+
+        setToastNotification({
+          type: 'task',
+          icon: '🎉',
+          text: '🎉 Tuyệt vời! Bạn đã hoàn thành bài tập.'
+        });
+      }
     }
     onRefreshData();
   };
@@ -598,8 +644,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const currentHonorBadge = currentStudent ? getStudentHonorBadge(currentStudent.id, freshStudents, sessions, homeworkSubmissions) : null;
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-6 animate-fadeIn pb-12 relative">
       
+      {/* CELEBRATION TOAST NOTIFICATION BANNER */}
+      {toastNotification && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-bounce text-sm sm:text-base font-bold px-6 py-3.5 rounded-2xl bg-slate-900/95 text-white dark:bg-white dark:text-slate-900 shadow-2xl border-2 border-pink-400 flex items-center space-x-3 transition-all duration-300">
+          <span className="text-2xl">{toastNotification.icon}</span>
+          <span className="tracking-wide">{toastNotification.text}</span>
+        </div>
+      )}
+
       {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT CONTAINER */}
       <div className="bg-gradient-to-r from-pink-100/95 via-rose-100/90 to-amber-100/95 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border-2 border-rose-200/90 dark:border-slate-700 p-6 sm:p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
         
@@ -632,13 +686,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {currentStudent.name}
               </h2>
               {currentHonorBadge ? (
-                <span className={`px-3 py-1 rounded-lg text-xs font-medium inline-block ${currentHonorBadge.badgeColor}`}>
-                  {currentHonorBadge.title}
-                </span>
+                <button
+                  onClick={() => setIsHonorBadgesModalOpen(true)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs inline-flex items-center space-x-1.5 cursor-pointer transition-all duration-200 hover:scale-105 ${currentHonorBadge.badgeColor}`}
+                  title="Bấm để xem Bảng bộ sưu tập Danh hiệu Thành tựu đầy đủ"
+                >
+                  <span>{currentHonorBadge.title}</span>
+                  <Trophy className="w-3.5 h-3.5 ml-1 opacity-90" />
+                </button>
               ) : (
-                <span className="px-3 py-1 rounded-lg text-xs font-normal bg-slate-100 dark:bg-slate-800 text-slate-500 inline-block">
-                  Chưa có danh hiệu Top
-                </span>
+                <button
+                  onClick={() => setIsHonorBadgesModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-slate-100 transition inline-flex items-center space-x-1.5 cursor-pointer shadow-2xs border border-slate-500"
+                  title="Bấm để xem Bộ sưu tập Bảng Danh hiệu Thành tựu"
+                >
+                  <Trophy className="w-3.5 h-3.5 mr-1 text-slate-300" />
+                  <span>Bộ Bảng Danh Hiệu Thành Tựu →</span>
+                </button>
               )}
               <button
                 onClick={() => setIsClassRulesOpen(true)}
@@ -1395,6 +1459,93 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         onClose={() => setIsClassRulesOpen(false)}
         onRefreshData={onRefreshData}
       />
+
+      {/* SYSTEM HONOR BADGES SHOWCASE MODAL */}
+      {isHonorBadgesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-amber-300/80 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 flex items-center justify-center font-black text-2xl shadow-md border-2 border-yellow-200 shrink-0">
+                  🏆
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">
+                    BỘ BẢNG DANH HIỆU THÀNH TỰU (HONOR BADGES)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal">
+                    Hệ thống cấp bậc thành tựu: Legendary (Vàng Ánh Kim), Epic (Tím), Rare (Xanh Dương), Uncommon (Xanh Lá), Common (Xám)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsHonorBadgesModalOpen(false)}
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* BADGES GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {SYSTEM_HONOR_BADGES_LIST.map((badgeDef) => {
+                const isUnlocked = currentHonorBadge && currentHonorBadge.title.includes(badgeDef.title.replace(/[🥇🥈🥉🏅🌟👑⭐💪🚀✨]/g, '').trim());
+
+                return (
+                  <div
+                    key={badgeDef.id}
+                    className={`p-5 rounded-2xl border flex flex-col justify-between gap-3 transition-all duration-200 ${
+                      isUnlocked
+                        ? `${badgeDef.badgeStyle} transform hover:-translate-y-1`
+                        : 'bg-slate-100 dark:bg-slate-800/60 border-slate-300 dark:border-slate-700 text-slate-400 opacity-50 grayscale hover:opacity-75'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-3xl shrink-0">{badgeDef.icon}</span>
+                        <div>
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                            isUnlocked ? 'bg-black/20 text-white' : 'bg-slate-300 text-slate-700'
+                          }`}>
+                            {badgeDef.tierLabel}
+                          </span>
+                          <h4 className="text-base font-bold mt-1">
+                            {badgeDef.title}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <span className="text-lg shrink-0">
+                        {isUnlocked ? '✅' : '🔒'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs opacity-90 font-medium">
+                      {badgeDef.description}
+                    </p>
+
+                    <div className="pt-2 border-t border-white/20 flex items-center justify-between text-xs font-semibold">
+                      <span>{isUnlocked ? '🎉 Đã sở hữu!' : '🔒 Chưa mở khóa'}</span>
+                      <span>{isUnlocked ? 'Đã đạt Hạng' : 'Hạng Top 1 - 5'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span>💡 Mẹo: Tích cực hoàn thành bài tập về nhà mỗi ngày để nâng hạng và mở khóa danh hiệu Legendary!</span>
+              <button
+                onClick={() => setIsHonorBadgesModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shrink-0 shadow-2xs cursor-pointer"
+              >
+                Hiểu Rồi!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

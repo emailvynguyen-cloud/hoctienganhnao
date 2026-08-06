@@ -90,14 +90,72 @@ export function getStudentHonorBadge(
     return b.averageStars - a.averageStars;
   });
 
+export interface SystemHonorBadgeDef {
+  id: string;
+  title: string;
+  tier: 'Legendary' | 'Epic' | 'Rare' | 'Uncommon' | 'Common';
+  tierLabel: string;
+  icon: string;
+  description: string;
+  badgeStyle: string;
+}
+
+export const SYSTEM_HONOR_BADGES_LIST: SystemHonorBadgeDef[] = [
+  {
+    id: 'legendary_star',
+    title: '🥇 Ngôi Sao Chăm Chỉ 👑',
+    tier: 'Legendary',
+    tierLabel: 'Legendary (Huyền Thoại)',
+    icon: '👑',
+    description: 'Đạt Hạng 1 tuần toàn trung tâm MS. VY ENGLISH',
+    badgeStyle: 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 font-black border-2 border-yellow-200 shadow-md shadow-amber-500/30',
+  },
+  {
+    id: 'epic_star',
+    title: '🥈 Ngôi Sao Nỗ Lực ⭐',
+    tier: 'Epic',
+    tierLabel: 'Epic (Anh Hùng)',
+    icon: '🔮',
+    description: 'Đạt Hạng 2 tuần toàn trung tâm',
+    badgeStyle: 'bg-purple-600 text-white font-bold border border-purple-400 shadow-md shadow-purple-500/30',
+  },
+  {
+    id: 'rare_warrior',
+    title: '🥉 Chiến Binh Kiên Trì 💪',
+    tier: 'Rare',
+    tierLabel: 'Rare (Hiếm)',
+    icon: '💎',
+    description: 'Đạt Hạng 3 tuần toàn trung tâm',
+    badgeStyle: 'bg-blue-600 text-white font-bold border border-blue-400 shadow-md shadow-blue-500/30',
+  },
+  {
+    id: 'uncommon_conqueror',
+    title: '🏅 Nhà Chinh Phục 🚀',
+    tier: 'Uncommon',
+    tierLabel: 'Uncommon (Khá)',
+    icon: '🌿',
+    description: 'Đạt Hạng 4 tuần toàn trung tâm',
+    badgeStyle: 'bg-emerald-600 text-white font-bold border border-emerald-400 shadow-md shadow-emerald-500/30',
+  },
+  {
+    id: 'common_progress',
+    title: '🌟 Ngôi Sao Tiến Bộ ✨',
+    tier: 'Common',
+    tierLabel: 'Common (Thường)',
+    icon: '🛡️',
+    description: 'Đạt Hạng 5 tuần toàn trung tâm',
+    badgeStyle: 'bg-slate-700 text-slate-100 font-bold border border-slate-500 shadow-md shadow-slate-900/30',
+  },
+];
+
   const index = rankedStudents.findIndex((r) => r.studentId === studentId);
   if (index >= 0 && index < 5) {
     const badgeColors = [
-      'bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 border-amber-300',
-      'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-900 border-slate-300',
-      'bg-gradient-to-r from-orange-200 to-amber-300 text-amber-950 border-amber-300',
-      'bg-sky-100 text-sky-950 border-sky-200',
-      'bg-pink-100 text-pink-950 border-pink-200',
+      'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 font-black border-2 border-yellow-200 shadow-md shadow-amber-500/30 animate-pulse-subtle', // Legendary (Vàng Ánh Kim)
+      'bg-purple-600 text-white font-bold border border-purple-400 shadow-md shadow-purple-500/30', // Epic (Tím)
+      'bg-blue-600 text-white font-bold border border-blue-400 shadow-md shadow-blue-500/30', // Rare (Xanh Dương)
+      'bg-emerald-600 text-white font-bold border border-emerald-400 shadow-md shadow-emerald-500/30', // Uncommon (Xanh Lá)
+      'bg-slate-700 text-slate-100 font-bold border border-slate-500 shadow-md shadow-slate-900/30', // Common (Xám)
     ];
     return {
       title: WEEKLY_TITLES[index],

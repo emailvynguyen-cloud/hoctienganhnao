@@ -207,6 +207,9 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           if (!item || !item.student) return null;
           const isTop1 = index === 0;
           const isTop2 = index === 1;
+          const isTop3 = index === 2;
+          const honorTitle = index < 5 ? titlesList[index] : null;
+          const avatarSrc = resolveAvatarUrl(item.student.avatar);
           // PASTEL BG PER RANK ACCORDING TO SPEC:
           // Rank 1: Pastel Gold/Amber
           // Rank 2: Pastel Silver/Slate
@@ -276,9 +279,19 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                       {item.student.name}
                     </h4>
 
-                    {/* SHOW HONOR TITLE ONLY FOR TOP 5 */}
+                    {/* SHOW HONOR TITLE ONLY FOR TOP 5 WITH HIGH-QUALITY TIER BADGE CARD STYLING */}
                     {honorTitle && (
-                      <span className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-transparent">
+                      <span className={`px-3 py-1 rounded-xl text-xs font-bold shadow-xs border flex items-center shrink-0 ${
+                        index === 0
+                          ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 border-yellow-200 shadow-amber-500/30 font-black'
+                          : index === 1
+                          ? 'bg-purple-600 text-white border-purple-400 shadow-purple-500/30 font-bold'
+                          : index === 2
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-blue-500/30 font-bold'
+                          : index === 3
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-emerald-500/30 font-bold'
+                          : 'bg-slate-700 text-slate-100 border-slate-500 shadow-slate-900/30 font-bold'
+                      }`}>
                         {honorTitle}
                       </span>
                     )}
