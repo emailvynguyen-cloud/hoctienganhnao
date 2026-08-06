@@ -207,16 +207,33 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           if (!item || !item.student) return null;
           const isTop1 = index === 0;
           const isTop2 = index === 1;
-          const isTop3 = index === 2;
-          
-          // TOP 5 HONOR TITLES
-          const honorTitle = index < 5 ? titlesList[index] : null;
-          const avatarSrc = resolveAvatarUrl(item.student.avatar);
+          // PASTEL BG PER RANK ACCORDING TO SPEC:
+          // Rank 1: Pastel Gold/Amber
+          // Rank 2: Pastel Silver/Slate
+          // Rank 3: Pastel Bronze/Orange
+          // Rank 4: Pastel Soft Sky Blue
+          // Rank 5: Pastel Soft Emerald Green
+          // Rank 6-10: Neutral Soft Slate
+          // Rank 11+: Clean White
+          const rankPastelBgClass =
+            index === 0
+              ? 'bg-amber-50/90 dark:bg-amber-950/30 border-amber-200/80 hover:border-amber-300'
+              : index === 1
+              ? 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200/80 hover:border-slate-300'
+              : index === 2
+              ? 'bg-orange-50/90 dark:bg-orange-950/30 border-orange-200/80 hover:border-orange-300'
+              : index === 3
+              ? 'bg-sky-50/90 dark:bg-sky-950/30 border-sky-200/80 hover:border-sky-300'
+              : index === 4
+              ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200/80 hover:border-emerald-300'
+              : index < 10
+              ? 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/60 hover:border-slate-300'
+              : 'bg-white dark:bg-slate-900 border-transparent hover:border-slate-200 dark:hover:border-slate-800';
 
           return (
             <div
               key={item.student.id}
-              className="p-4 sm:p-5 rounded-2xl border border-transparent bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:border-slate-800 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
+              className={`p-4 sm:p-5 rounded-2xl border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs ${rankPastelBgClass}`}
             >
               <div className="flex items-center space-x-4">
                 {/* RANK ICON BADGE */}
