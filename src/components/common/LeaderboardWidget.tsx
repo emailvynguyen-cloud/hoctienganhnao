@@ -168,6 +168,19 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       <div className="relative bg-gradient-to-r from-amber-500/20 via-rose-500/15 to-indigo-500/20 dark:from-amber-950/50 dark:via-rose-950/40 dark:to-indigo-950/50 p-6 sm:p-7 rounded-3xl border-2 border-amber-300/70 dark:border-amber-700/60 shadow-lg shadow-amber-500/10 space-y-5 overflow-hidden">
         
         {/* DECORATIVE LIGHT RAYS & STARS BACKGROUND ACCENTS */}
+        <div className="absolute -top-6 -right-6 text-7xl opacity-20 pointer-events-none select-none">
+          ✨
+        </div>
+        <div className="absolute -bottom-8 -left-8 text-7xl opacity-15 pointer-events-none select-none">
+          🌟
+        </div>
+
+        {/* Top Row: Icon, Main Title & Close Button */}
+        <div className="flex items-start justify-between gap-4 relative z-10">
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 flex items-center justify-center font-black text-2xl shadow-md border-2 border-yellow-200 shrink-0 transform hover:rotate-6 transition duration-200">
+              🏆
+            </div>
             <div>
               <div className="flex items-center space-x-2 flex-wrap">
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
