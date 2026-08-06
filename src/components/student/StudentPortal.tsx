@@ -274,39 +274,35 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     const totalItems = itemsList.length;
     const sessionPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 100;
 
-    // ALTERNATING SOFT PASTEL STYLES
-    const mod = Math.abs(session.sessionNumber) % 4;
-    let cardBgStyle = 'bg-gradient-to-r from-pink-50/90 via-rose-50/70 to-pink-50/90 border-pink-200';
-    if (mod === 2) cardBgStyle = 'bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-emerald-50/90 border-emerald-200';
-    if (mod === 3) cardBgStyle = 'bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90 border-amber-200';
-    if (mod === 0) cardBgStyle = 'bg-gradient-to-r from-sky-50/90 via-blue-50/70 to-sky-50/90 border-sky-200';
+    // ALTERNATING CLEAN STYLES
+    let cardBgStyle = 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800';
 
     if (session.isChargedAbsenceSession) {
       return (
         <div
           key={session.id}
-          className="rounded-3xl border-2 border-amber-300 bg-amber-50/90 dark:bg-slate-800 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm font-semibold text-amber-950 dark:text-amber-300"
+          className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm font-medium text-amber-950 dark:text-amber-300"
         >
           <div className="flex items-center space-x-3">
-            <span className="w-10 h-10 rounded-2xl bg-amber-400 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+            <span className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-200 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200/60">
               #{session.sessionNumber}
             </span>
             <div>
               <div className="flex items-center space-x-2 flex-wrap gap-1">
-                <span className="font-black text-slate-900 dark:text-white">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   Buổi Học #{session.sessionNumber} • Ngày {formatSessionDate(session.date)}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white uppercase shadow-2xs">
-                  ⚠️ Nghỉ tính phí
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200/60 uppercase">
+                  Nghỉ tính phí
                 </span>
               </div>
-              <p className="text-xs text-amber-800 dark:text-amber-400 font-medium mt-0.5">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-normal mt-0.5">
                 Ghi chú: Buổi nghỉ tính phí (nghỉ quá số lần quy định hoặc không tham gia ca học).
               </p>
             </div>
           </div>
 
-          <span className="text-[11px] font-black bg-amber-200 text-amber-950 dark:bg-amber-950 dark:text-amber-200 px-3 py-1.5 rounded-xl border border-amber-300 shrink-0 text-center">
+          <span className="text-[11px] font-medium bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 px-2.5 py-1 rounded-lg border border-amber-200/60 shrink-0 text-center">
             -1 Buổi trong gói học
           </span>
         </div>
@@ -318,12 +314,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     return (
       <div
         key={session.id}
-        className={`rounded-3xl border p-6 shadow-xs space-y-4 hover:shadow-md transition duration-200 dark:bg-slate-900 ${cardBgStyle}`}
+        className={`rounded-2xl border p-5 shadow-2xs space-y-4 hover:shadow-xs transition duration-150 dark:bg-slate-900 ${cardBgStyle}`}
       >
         {/* Session Header: Number, Date, Record Video */}
-        <div className="flex items-center justify-between border-b border-pink-200/60 pb-3">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center space-x-3">
-            <span className="w-10 h-10 rounded-2xl bg-pink-400 text-white font-black text-sm flex items-center justify-center shadow-xs">
+            <span className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center border border-slate-200/60 dark:border-slate-700">
               #{session.sessionNumber}
             </span>
             <div>

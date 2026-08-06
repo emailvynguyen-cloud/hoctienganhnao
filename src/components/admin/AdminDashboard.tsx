@@ -477,24 +477,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-6">
       
       {/* Role Notice Banner */}
-      <div className={`p-4 rounded-3xl border flex items-center justify-between text-xs font-bold shadow-xs ${
+      <div className={`p-4 rounded-2xl border flex items-center justify-between text-xs font-medium shadow-2xs ${
         isSuperAdmin
-          ? 'bg-gradient-to-r from-pink-200 via-amber-100 to-sky-100 text-pink-950 border-pink-300'
-          : 'bg-gradient-to-r from-pink-100 via-rose-50 to-sky-100 text-pink-950 border-pink-200'
+          ? 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
+          : 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
       }`}>
         <div className="flex items-center space-x-2">
-          {isSuperAdmin ? <Crown className="w-5 h-5 text-amber-600 shrink-0" /> : <ShieldAlert className="w-5 h-5 text-pink-600 shrink-0" />}
+          {isSuperAdmin ? <Crown className="w-4 h-4 text-amber-500 shrink-0" /> : <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />}
           <span>
             {isSuperAdmin
-              ? 'Bạn đang ở phân hệ SUPER ADMIN (Điều Hành Cao Nhất): Quản lý thời khóa biểu Ms. Vy, theo dõi đội ngũ giáo viên, học viên, học phí & doanh thu.'
-              : 'Bạn đang ở phân hệ QUẢN TRỊ VIÊN (Admin): Theo dõi lịch học, danh sách lớp học, học viên & Chấm bài tập về nhà.'}
+              ? 'Phân hệ SUPER ADMIN: Quản lý thời khóa biểu Ms. Vy, theo dõi đội ngũ giáo viên, học viên, học phí & doanh thu.'
+              : 'Phân hệ QUẢN TRỊ VIÊN: Theo dõi lịch học, danh sách lớp học, học viên & chấm bài tập về nhà.'}
           </span>
         </div>
 
         {isSuperAdmin && (
           <button
             onClick={() => StorageEngine.downloadDatabaseBackupFile()}
-            className="px-3.5 py-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-md flex items-center shrink-0 border border-emerald-500 cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition shadow-2xs flex items-center shrink-0 cursor-pointer"
             title="Tải về file sao lưu toàn bộ dữ liệu thực (.json) lưu trữ an toàn trên máy tính"
           >
             💾 Sao Lưu Dữ Liệu Thực (.json)
@@ -503,13 +503,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
+      <div className="flex items-center space-x-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
         <button
           onClick={() => setActiveTab('timetable')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'timetable'
-              ? 'bg-pink-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Thời Khóa Biểu Tuần {isSuperAdmin ? '(Ms. Vy)' : ''}
@@ -517,10 +517,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('grading')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'grading'
-              ? 'bg-rose-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5 mr-1" /> Chấm Bài Tập Về Nhà
@@ -528,23 +528,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('ai_studio')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'ai_studio'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> 🤖 AI Studio Dạy Học
+          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> AI Studio Dạy Học
         </button>
 
         {/* TEACHERS MANAGEMENT TAB - SUPER ADMIN ONLY */}
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('teachers')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
               activeTab === 'teachers'
-                ? 'bg-sky-400 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
+                ? 'bg-rose-500 text-white shadow-2xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
             <UserCheck className="w-3.5 h-3.5 mr-1" /> Quản Lý Giáo Viên ({otherTeachersList.length})
@@ -555,10 +555,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('revenue')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
               activeTab === 'revenue'
-                ? 'bg-emerald-400 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-50'
+                ? 'bg-rose-500 text-white shadow-2xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           >
             Doanh Thu Tháng
@@ -567,10 +567,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('classes')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'classes'
-              ? 'bg-pink-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Tất Cả Lớp Học ({safeClasses.length})
@@ -578,10 +578,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('students')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'students'
-              ? 'bg-pink-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Danh Sách Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length})
@@ -591,10 +591,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab('invoices')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
               activeTab === 'invoices'
-                ? 'bg-sky-400 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
+                ? 'bg-rose-500 text-white shadow-2xs'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           >
             Quản Lý Học Phí & VietQR
@@ -603,24 +603,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('audit_logs')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'audit_logs'
-              ? 'bg-amber-500 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-amber-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          📜 Nhật Ký Thao Tác (Audit Log)
+          Nhật Ký Thao Tác (Audit Log)
         </button>
 
         <button
           onClick={() => setActiveTab('class_rules')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'class_rules'
-              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <BookOpen className="w-3.5 h-3.5 mr-1" /> 📋 Quản Lý Nội Quy Lớp Học
+          <BookOpen className="w-3.5 h-3.5 mr-1" /> Quản Lý Nội Quy Lớp Học
         </button>
       </div>
 

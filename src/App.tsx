@@ -332,7 +332,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-pink-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+  return (
+    <div className="min-h-screen bg-[#FAFAFB] dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-150">
       
       {/* HEADER BAR */}
       <Header
@@ -362,19 +363,19 @@ export default function App() {
 
       {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}
       {currentUser && currentUser.role === 'super_admin' && !activePublicHash && (
-        <div className="bg-gradient-to-r from-pink-200 via-rose-100 to-sky-100 dark:from-slate-900 dark:to-slate-900 border-b border-pink-300 dark:border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between text-xs font-black gap-2 shadow-xs">
-          <div className="flex items-center space-x-2 text-pink-950 dark:text-pink-300">
-            <Crown className="w-4 h-4 text-amber-500 animate-bounce" />
-            <span>👑 SUPER ADMIN ROLE SWITCHER (Chuyển Nhanh Giao Diện):</span>
+        <div className="bg-slate-100/90 dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between text-xs font-medium gap-2 shadow-2xs">
+          <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-300">
+            <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="font-semibold text-slate-800 dark:text-slate-200">Chuyển Giao Diện Xem (Super Admin Role Switcher):</span>
           </div>
 
           <div className="flex items-center space-x-1.5 overflow-x-auto py-0.5">
             <button
               onClick={() => setActiveRoleView('super_admin')}
-              className={`px-3 py-1 rounded-full transition flex items-center shrink-0 ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 flex items-center shrink-0 ${
                 activeRoleView === 'super_admin'
-                  ? 'bg-pink-400 text-white shadow-xs'
-                  : 'bg-white/70 dark:bg-slate-800 text-pink-950 hover:bg-pink-300'
+                  ? 'bg-rose-500 text-white shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
               }`}
             >
               <Crown className="w-3.5 h-3.5 mr-1" /> Super Admin
@@ -382,10 +383,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveRoleView('admin')}
-              className={`px-3 py-1 rounded-full transition flex items-center shrink-0 ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 flex items-center shrink-0 ${
                 activeRoleView === 'admin'
-                  ? 'bg-rose-400 text-white shadow-xs'
-                  : 'bg-white/70 dark:bg-slate-800 text-pink-950 hover:bg-pink-300'
+                  ? 'bg-rose-500 text-white shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
               }`}
             >
               <Shield className="w-3.5 h-3.5 mr-1" /> Admin
@@ -393,10 +394,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveRoleView('teacher')}
-              className={`px-3 py-1 rounded-full transition flex items-center shrink-0 ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 flex items-center shrink-0 ${
                 activeRoleView === 'teacher'
-                  ? 'bg-sky-400 text-white shadow-xs'
-                  : 'bg-white/70 dark:bg-slate-800 text-pink-950 hover:bg-sky-300'
+                  ? 'bg-sky-500 text-white shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
               }`}
             >
               <UserCheck className="w-3.5 h-3.5 mr-1" /> Giáo Viên
@@ -404,10 +405,10 @@ export default function App() {
 
             <button
               onClick={() => setActiveRoleView('student')}
-              className={`px-3 py-1 rounded-full transition flex items-center shrink-0 ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 flex items-center shrink-0 ${
                 activeRoleView === 'student'
-                  ? 'bg-emerald-400 text-white shadow-xs'
-                  : 'bg-white/70 dark:bg-slate-800 text-pink-950 hover:bg-emerald-300'
+                  ? 'bg-emerald-500 text-white shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
               }`}
             >
               <GraduationCap className="w-3.5 h-3.5 mr-1" /> Học Viên

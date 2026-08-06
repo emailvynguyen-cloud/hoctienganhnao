@@ -401,33 +401,33 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       
       {/* Super Admin Teacher Preview Switcher */}
       {isSuperAdmin && (
-        <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-100 via-pink-100 to-sky-100 dark:from-slate-800 dark:to-slate-800/90 border-2 border-pink-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs text-pink-950 dark:text-white">
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs text-slate-800 dark:text-white">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-pink-400 text-white font-black shrink-0 shadow-xs">
+            <div className="p-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold shrink-0">
               <Eye className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-black text-sm block">
-                👀 Chế Độ Xem Giao Diện Giáo Viên (Super Admin Preview Mode)
+              <span className="font-semibold text-sm block">
+                Chế Độ Xem Giao Diện Giáo Viên (Super Admin Preview)
               </span>
-              <p className="text-[11px] text-pink-900 dark:text-pink-300 font-medium">
-                Bạn đang trải nghiệm giao diện Teacher Portal với tư cách Super Admin. Có thể chuyển đổi giáo viên bên cạnh để kiểm tra chi tiết.
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                Bạn đang trải nghiệm giao diện Teacher Portal với tư cách Super Admin.
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2 shrink-0">
-            <label className="font-extrabold text-xs text-slate-700 dark:text-slate-200">Chọn xem giáo viên:</label>
+            <label className="font-medium text-xs text-slate-600 dark:text-slate-300">Giáo viên:</label>
             <select
               value={selectedTeacherPreviewId}
               onChange={(e) => setSelectedTeacherPreviewId(e.target.value)}
-              className="px-3.5 py-2 rounded-xl border-2 border-pink-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-extrabold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer shadow-2xs"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer shadow-2xs"
             >
-              <option value="u_super_admin">👑 Ms. Vy (Lớp Cá Nhân Ms. Vy)</option>
-              <option value="all">🌐 Tất Cả Các Lớp Trong Trung Tâm</option>
+              <option value="u_super_admin">Ms. Vy (Lớp Cá Nhân Ms. Vy)</option>
+              <option value="all">Tất Cả Các Lớp Trong Trung Tâm</option>
               {otherTeachersList.map((t) => (
                 <option key={t.uid} value={t.uid}>
-                  👩‍🏫 {t.displayName} ({t.email || 'Giáo viên'})
+                  {t.displayName} ({t.email || 'Giáo viên'})
                 </option>
               ))}
             </select>
@@ -436,13 +436,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       )}
 
       {/* Teacher Portal Navigation Tabs */}
-      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-pink-100 dark:border-slate-800 shadow-xs overflow-x-auto">
+      <div className="flex items-center space-x-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
         <button
           onClick={() => setActiveTab('today')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'today'
-              ? 'bg-pink-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Lịch Dạy Hôm Nay
@@ -450,10 +450,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('grading')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'grading'
-              ? 'bg-rose-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <Bell className="w-3.5 h-3.5 mr-1" /> Bài Tập Cần Feedback
@@ -461,10 +461,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('schedule')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'schedule'
-              ? 'bg-sky-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Thời Khóa Biểu Tuần
@@ -472,10 +472,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('all_classes')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 ${
             activeTab === 'all_classes'
-              ? 'bg-pink-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           Lớp Phụ Trách ({assignedClasses.length})
@@ -483,10 +483,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('revenue')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'revenue'
-              ? 'bg-emerald-400 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <DollarSign className="w-3.5 h-3.5 mr-1" /> Doanh Thu Lương Dạy
@@ -494,13 +494,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
         <button
           onClick={() => setActiveTab('ai_studio')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition shrink-0 flex items-center ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 flex items-center ${
             activeTab === 'ai_studio'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-purple-50'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> 🤖 AI Studio Dạy Học
+          <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" /> AI Studio Dạy Học
         </button>
       </div>
 
