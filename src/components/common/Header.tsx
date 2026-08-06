@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Load Notifications and auto-refresh periodically
+  // Load Notifications and auto-refresh periodically with strict role scoping
   const refreshNotifs = () => {
     const allNotifs = StorageEngine.getNotifications() || [];
     if (!currentUser) {
@@ -112,11 +112,23 @@ export const Header: React.FC<HeaderProps> = ({
       setNotifications(allNotifs);
     } else if (currentUser.role === 'teacher') {
       const classes = StorageEngine.getClasses() || [];
-      const teacherClassIds = classes
-        .filter((c) => c.teacherId === currentUser.uid || c.teacherName === currentUser.displayName)
-        .map((c) => c.id);
+      const scopedClasses = StorageEngine.getScopedClasses(currentUser, classes);
+      const teacherClassIds = new Set([
+        ...scopedClasses.map((c) => c.id),
+        ...classes
+          .filter((c) => c && (c.teacherId === currentUser.uid || (c.teacherName && c.teacherName.toLowerCase() === (currentUser.displayName || '').toLowerCase())))
+          .map((c) => c.id),
+      ]);
 
-      const scopedNotifs = allNotifs.filter((n) => teacherClassIds.includes(n.classId));
+      const scopedNotifs = allNotifs.filter(
+        (n) => n && (teacherClassIds.has(n.classId) || n.teacherId === currentUser.uid)
+      );
+      setNotifications(scopedNotifs);
+    } else if (currentUser.role === 'student') {
+      const studentId = currentUser.studentId || currentUser.uid;
+      const scopedNotifs = allNotifs.filter(
+        (n) => n && (n.studentId === studentId || n.recipientId === studentId)
+      );
       setNotifications(scopedNotifs);
     } else {
       setNotifications([]);
