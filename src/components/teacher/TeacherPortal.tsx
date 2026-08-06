@@ -679,6 +679,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           onRefreshData={onRefreshData}
           targetSubmissionId={targetSubmissionId}
         />
+      )}
+
       {/* TAB 3: WEEKLY TIMETABLE FOR TEACHER (SCOPED STRICTLY TO TEACHER'S ASSIGNED CLASSES) */}
       {activeTab === 'schedule' && (
         <WeeklyTimetable
