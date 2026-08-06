@@ -458,8 +458,16 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         >
           <Bell className="w-4 h-4 mr-1.5" /> Bài Tập Cần Feedback
         </button>
-
-
+        <button
+          onClick={() => setActiveTab('schedule')}
+          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
+            activeTab === 'schedule'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          Thời Khóa Biểu Tuần
+        </button>
 
         <button
           onClick={() => setActiveTab('all_classes')}
@@ -671,11 +679,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           onRefreshData={onRefreshData}
           targetSubmissionId={targetSubmissionId}
         />
+      {/* TAB 3: WEEKLY TIMETABLE FOR TEACHER (SCOPED STRICTLY TO TEACHER'S ASSIGNED CLASSES) */}
+      {activeTab === 'schedule' && (
+        <WeeklyTimetable
+          classes={assignedClasses}
+          students={students}
+          sessions={sessions}
+          onOpenAddSession={onOpenAddSession}
+          onSelectClass={(cls) => setInspectedClassId(cls.id)}
+          onSelectStudent={(std) => setInspectedStudentId(std.id)}
+        />
       )}
-
-
-
-      {/* TAB 4: ALL ASSIGNED CLASSES LIST */}
       {activeTab === 'all_classes' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center">
