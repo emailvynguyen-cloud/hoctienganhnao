@@ -70,7 +70,7 @@ body {
    GLOBAL SAAS DESIGN SYSTEM COMPONENTS (INVISIBLE UI SYSTEM)
    ============================================================ */
 
-/* Typography Scale */
+/* Typography Scale & Hierarchy System */
 .app-page-title {
   font-size: 2.25rem; /* ~36-38px */
   line-height: 2.5rem;
@@ -86,7 +86,7 @@ body {
 .app-section-title {
   font-size: 1.75rem; /* ~28px */
   line-height: 2.25rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: #0F172A;
 }
@@ -105,6 +105,28 @@ body {
 
 .dark .app-card-title {
   color: #F8FAFC;
+}
+
+.app-heading {
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.5rem;
+  font-weight: 500;
+  color: #1E293B;
+}
+
+.dark .app-heading {
+  color: #F1F5F9;
+}
+
+.app-label {
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.375rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.dark .app-label {
+  color: #94A3B8;
 }
 
 .app-body {
@@ -127,6 +149,75 @@ body {
 
 .dark .app-secondary {
   color: #94A3B8;
+}
+
+/* Soft Pastel Cards Theme Classes (Preserves Visual Grouping & Distinguishability) */
+.pastel-pink-card {
+  background-color: rgba(255, 241, 245, 0.65);
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-pink-card {
+  background-color: rgba(136, 19, 55, 0.2);
+}
+
+.pastel-pink-card:hover {
+  border-color: rgba(244, 63, 94, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(244, 63, 94, 0.06);
+  transform: translateY(-2px);
+}
+
+.pastel-blue-card {
+  background-color: rgba(240, 249, 255, 0.65);
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-blue-card {
+  background-color: rgba(12, 74, 110, 0.2);
+}
+
+.pastel-blue-card:hover {
+  border-color: rgba(14, 165, 233, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(14, 165, 233, 0.06);
+  transform: translateY(-2px);
+}
+
+.pastel-amber-card {
+  background-color: rgba(254, 252, 232, 0.65);
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-amber-card {
+  background-color: rgba(120, 53, 15, 0.2);
+}
+
+.pastel-amber-card:hover {
+  border-color: rgba(245, 158, 11, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(245, 158, 11, 0.06);
+  transform: translateY(-2px);
+}
+
+.pastel-emerald-card {
+  background-color: rgba(240, 253, 244, 0.65);
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  transition: all 180ms ease;
+}
+
+.dark .pastel-emerald-card {
+  background-color: rgba(6, 78, 59, 0.2);
+}
+
+.pastel-emerald-card:hover {
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.06);
+  transform: translateY(-2px);
 }
 
 /* AppCard: Seamless & Borderless Floating Card */

@@ -438,30 +438,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
                   // SOFT PASTEL ZEBRA STRIPING STYLING FOR EASY READING
                   const zebraBgClass = isChecked
-                    ? 'bg-emerald-50/80 dark:bg-slate-800/90 border-emerald-300'
+                    ? 'pastel-emerald-card text-emerald-950 dark:text-emerald-200'
                     : hwIdx % 2 === 0
-                    ? 'bg-pink-50/90 dark:bg-slate-800/80 border-pink-200/90 hover:border-pink-300'
-                    : 'bg-sky-50/90 dark:bg-slate-800/80 border-sky-200/90 hover:border-sky-300';
+                    ? 'pastel-pink-card text-rose-950 dark:text-rose-200'
+                    : 'pastel-blue-card text-sky-950 dark:text-sky-200';
 
                   return (
                     <div
                       key={hwItem.id}
-                      className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs ${zebraBgClass}`}
+                      className={`p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm ${zebraBgClass}`}
                     >
                       {/* Left: Homework details */}
                       <div className="flex items-start space-x-3">
-                        <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center font-black shrink-0 mt-0.5">
+                        <div className="w-9 h-9 rounded-lg bg-white/80 dark:bg-slate-800/80 text-rose-600 dark:text-rose-400 flex items-center justify-center font-semibold shrink-0 mt-0.5 shadow-2xs">
                           📚
                         </div>
                         <div className="space-y-0.5">
-                          <h5 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          <h5 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
                             {hwItem.title}
                           </h5>
                           {hwItem.content && (
-                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{hwItem.content}</p>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal">{hwItem.content}</p>
                           )}
                           {hwItem.deadline && (
-                            <span className="text-[10px] text-amber-700 font-bold block">
+                            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium block">
                               ⏰ Hạn nộp: {hwItem.deadline}
                             </span>
                           )}
@@ -471,7 +471,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                                 href={hwItem.attachmentUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-2.5 py-1 rounded-lg bg-pink-100 text-pink-900 text-[11px] font-bold hover:bg-pink-200 transition inline-flex items-center"
+                                className="px-3 py-1 rounded-lg bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 text-xs font-medium hover:underline transition inline-flex items-center shadow-2xs"
                               >
                                 🔗 Xem Link Bài Tập Đính Kèm
                               </a>
@@ -486,16 +486,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         {/* STATE 1: COMPLETION STATUS BUTTON */}
                         <button
                           onClick={() => handleToggleTaskCheck(session, hwItem.id, hwItem.title)}
-                          className={`px-3.5 py-1.5 rounded-2xl font-black text-xs transition shadow-2xs flex items-center space-x-1 ${
+                          className={`h-9 px-3.5 rounded-xl font-medium text-xs sm:text-sm transition-all duration-150 flex items-center space-x-1 cursor-pointer border border-transparent ${
                             isChecked
-                              ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200'
+                              ? 'bg-emerald-100/90 text-emerald-900 hover:bg-emerald-200'
+                              : 'bg-rose-100/90 text-rose-900 hover:bg-rose-200'
                           }`}
                         >
                           {isChecked ? (
                             <>
                               <span>🟢 ĐÃ HOÀN THÀNH</span>
-                              <CheckCircle2 className="w-3.5 h-3.5 ml-1 text-emerald-700" />
+                              <CheckCircle2 className="w-4 h-4 ml-1 text-emerald-700" />
                             </>
                           ) : (
                             <>
@@ -507,11 +507,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         {/* STATE 2: FEEDBACK STATUS BADGE */}
                         {isChecked && (
                           isFeedbackDone ? (
-                            <span className="px-3 py-1 rounded-2xl text-xs font-black bg-sky-100 text-sky-950 border border-sky-300 flex items-center">
+                            <span className="h-9 px-3.5 rounded-xl text-xs sm:text-sm font-medium bg-sky-100/90 text-sky-900 flex items-center border border-transparent">
                               🔵 ĐÃ FEEDBACK ✓
                             </span>
                           ) : (
-                            <span className="px-3 py-1 rounded-2xl text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 flex items-center animate-pulse">
+                            <span className="h-9 px-3.5 rounded-xl text-xs sm:text-sm font-medium bg-amber-100/90 text-amber-900 flex items-center border border-transparent">
                               🟡 CHỜ FEEDBACK
                             </span>
                           )
@@ -521,9 +521,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         {isFeedbackDone && subObj && (
                           <button
                             onClick={() => setViewingFeedbackSub(subObj)}
-                            className="px-3 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
+                            className="h-9 px-3.5 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-900 font-medium text-xs sm:text-sm transition-all duration-150 border border-transparent shadow-2xs flex items-center cursor-pointer"
                           >
-                            <MessageSquare className="w-3.5 h-3.5 mr-1 text-sky-700" />
+                            <MessageSquare className="w-4 h-4 mr-1.5 text-sky-700" />
                             XEM FEEDBACK →
                           </button>
                         )}
