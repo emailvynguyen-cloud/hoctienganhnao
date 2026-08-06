@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserRole, User, AppNotification } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import logoImg from '../../assets/logo.jpg';
@@ -34,14 +34,12 @@ import {
 interface HeaderProps {
   currentUser: User | null;
   currentRole: UserRole;
-  onOpenLogin: () => void;
-  onLogout: () => void;
-  onOpenAccountManagement: () => void;
+  onSwitchRole: (role: UserRole) => void;
   onOpenLeaderboard: () => void;
-  onOpenGeminiSettings: () => void;
-  isDarkMode: boolean;
-  setIsDarkMode: (dark: boolean) => void;
-  onResetData: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
+  onLoginClick: () => void;
+  onLogoutClick: () => void;
   activePublicHash?: string | null;
   onExitPublicView?: () => void;
   onNavigateHome?: () => void;
@@ -54,14 +52,12 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   currentRole,
-  onOpenLogin,
-  onLogout,
-  onOpenAccountManagement,
+  onSwitchRole,
   onOpenLeaderboard,
-  onOpenGeminiSettings,
-  isDarkMode,
-  setIsDarkMode,
-  onResetData,
+  darkMode,
+  onToggleDarkMode,
+  onLoginClick,
+  onLogoutClick,
   activePublicHash,
   onExitPublicView,
   onNavigateHome,
@@ -71,6 +67,30 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectNotificationSubmission,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+  const [isPwaPermanentlyHidden, setIsPwaPermanentlyHidden] = useState(() => {
+    try {
+      return localStorage.getItem('msvy_hide_pwa_prompt') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const isStandalone = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
+  }, []);
+
+  const handleNeverShowPwaAgain = () => {
+    try {
+      localStorage.setItem('msvy_hide_pwa_prompt', 'true');
+    } catch (e) {}
+    setIsPwaPermanentlyHidden(true);
+    setIsPwaModalOpen(false);
+  };
+
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -223,16 +243,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* PWA INSTALL / ADD TO HOME SCREEN BUTTON */}
-          <button
-            onClick={() => setIsPwaModalOpen(true)}
-            className="h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center shrink-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:-translate-y-0.5 cursor-pointer"
-            title="Hướng dẫn Thêm App ra Màn Hình Chính Điện Thoại"
-          >
-            <Smartphone className="w-4 h-4 mr-1.5 text-emerald-600 shrink-0" />
-            <span className="hidden md:inline">Thêm Vào </span>
-            <span className="hidden sm:inline">Màn Hình </span>Chính
-          </button>
+
 
           {/* LEADERBOARD BUTTON */}
           <button
@@ -403,50 +414,89 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* PWA MODAL INSTRUCTION */}
+      {/* PWA FLOATING ACTION BUTTON (FAB) AT BOTTOM-RIGHT */}
+      {!isPwaPermanentlyHidden && !isStandalone && (
+        <div className="fixed bottom-6 right-6 z-40 animate-scaleIn">
+          <button
+            onClick={() => setIsPwaModalOpen(true)}
+            className="w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer border border-rose-500/50"
+            title="Thêm Veronica English vào màn hình chính"
+            aria-label="Thêm vào màn hình chính"
+          >
+            <Smartphone className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      )}
+
+      {/* PWA BOTTOM SHEET / MODAL INSTRUCTION */}
       {isPwaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-pink-200 p-6 space-y-5 relative text-slate-800 dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border-t-2 sm:border-2 border-rose-200 dark:border-slate-700 p-6 space-y-5 relative text-slate-800 dark:text-white max-h-[90vh] overflow-y-auto">
             
             <button
               onClick={() => setIsPwaModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
+            {/* Illustrative Icon & Header */}
             <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center mx-auto shadow-xs border border-pink-200">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-2xs border border-rose-200 dark:border-rose-900 shrink-0">
                 <Smartphone className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Thêm Ứng Dụng Ra Màn Hình Chính
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                Thêm Veronica English vào màn hình chính
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Sử dụng Ms. Vy English tiện lợi như một App di động nguyên bản trên điện thoại iOS & Android!
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
+                Cài đặt website như một ứng dụng để truy cập nhanh hơn và có trải nghiệm tốt hơn.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-pink-50/50 dark:bg-slate-800 p-4 rounded-2xl border border-pink-100">
-              <div className="space-y-1">
-                <span className="font-extrabold text-pink-900 dark:text-pink-300 block">📱 Cho iPhone (Safari):</span>
-                <p>1. Bấm vào biểu tượng <strong>Chia sẻ (Share) <Share className="w-3.5 h-3.5 inline text-sky-600" /></strong> bên dưới trình duyệt.</p>
-                <p>2. Chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen) <PlusSquare className="w-3.5 h-3.5 inline text-pink-600" /></strong>.</p>
+            {/* Step by Step Platform Guidance */}
+            <div className="space-y-3.5 text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+              
+              {/* Android Chrome */}
+              <div className="space-y-1.5">
+                <span className="font-bold text-slate-900 dark:text-white block flex items-center">
+                  📱 Android (Chrome)
+                </span>
+                <p className="text-slate-600 dark:text-slate-400 font-normal leading-normal">
+                  1. Nhấn biểu tượng <strong>ba chấm (⋮)</strong> ở góc trên bên phải Chrome.
+                </p>
+                <p className="text-slate-600 dark:text-slate-400 font-normal leading-normal">
+                  2. Chọn <strong>"Thêm vào màn hình chính"</strong> (Add to Home Screen) hoặc <strong>"Cài đặt ứng dụng"</strong>.
+                </p>
               </div>
 
-              <div className="space-y-1 pt-2 border-t border-pink-200/60">
-                <span className="font-extrabold text-pink-900 dark:text-pink-300 block">🤖 Cho Android (Chrome):</span>
-                <p>1. Bấm vào biểu tượng <strong>3 Dấu Chấm (⋮)</strong> ở góc phải trình duyệt.</p>
-                <p>2. Chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.</p>
+              {/* iPhone Safari */}
+              <div className="space-y-1.5 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-900 dark:text-white block flex items-center">
+                  🍎 iPhone / iPad (Safari)
+                </span>
+                <p className="text-slate-600 dark:text-slate-400 font-normal leading-normal">
+                  1. Nhấn nút <strong>Chia sẻ (Share) <Share className="w-3.5 h-3.5 inline text-sky-600" /></strong> ở thanh công cụ dưới Safari.
+                </p>
+                <p className="text-slate-600 dark:text-slate-400 font-normal leading-normal">
+                  2. Cuộn xuống và chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen) <PlusSquare className="w-3.5 h-3.5 inline text-rose-600" /></strong>.
+                </p>
               </div>
+
             </div>
 
-            <div className="text-center">
+            {/* Action Buttons: "Đã hiểu" & "Không hiển thị lại" */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                onClick={handleNeverShowPwaAgain}
+                className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs transition cursor-pointer border border-transparent"
+              >
+                Không hiển thị lại
+              </button>
               <button
                 onClick={() => setIsPwaModalOpen(false)}
-                className="w-full py-3 rounded-2xl bg-pink-200 text-pink-950 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs border border-pink-300"
+                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs transition shadow-2xs cursor-pointer border border-rose-500/50"
               >
-                Đã Hiểu, Cảm Ơn!
+                Đã hiểu
               </button>
             </div>
 
