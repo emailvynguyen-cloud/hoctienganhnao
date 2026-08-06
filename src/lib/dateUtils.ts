@@ -58,3 +58,41 @@ export const getCurrentMonthString = () => {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   return `${yyyy}-${mm}`;
 };
+
+/**
+ * Returns previous week (Monday to Sunday) date strings in YYYY-MM-DD format
+ */
+export const getPreviousWeekRange = () => {
+  const d = new Date();
+  const day = d.getDay(); // 0 is Sunday, 1 is Monday
+  const diffToMonday = d.getDate() - day + (day === 0 ? -6 : 1);
+  
+  const monday = new Date(d);
+  monday.setDate(diffToMonday - 7);
+  
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const formatYMD = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  return {
+    prevMondayStr: formatYMD(monday),
+    prevSundayStr: formatYMD(sunday),
+  };
+};
+
+/**
+ * Returns previous month string in YYYY-MM format based on real time
+ */
+export const getPreviousMonthString = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${yyyy}-${mm}`;
+};

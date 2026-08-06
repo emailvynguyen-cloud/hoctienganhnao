@@ -3,7 +3,7 @@ import { Student, Session, HomeworkSubmission } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen, Award } from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
-import { getCurrentWeekRange, getCurrentMonthString } from '../../lib/dateUtils';
+import { getCurrentWeekRange, getCurrentMonthString, getPreviousWeekRange, getPreviousMonthString } from '../../lib/dateUtils';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -46,9 +46,51 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   const { mondayStr, sundayStr } = getCurrentWeekRange();
   const currentMonthStr = getCurrentMonthString();
 
+  // PREVIOUS PERIOD CHAMPION COMPUTATION (RANK 1 OF LAST WEEK / LAST MONTH)
+  const { prevMondayStr, prevSundayStr } = getPreviousWeekRange();
+  const prevWeekRanked = activeStudents.map((student) => {
+    const targetSessions = allSessions.filter((s) => s && s.date && student.classIds?.includes(s.classId) && s.date >= prevMondayStr && s.date <= prevSundayStr);
+    const targetSessionIds = new Set(targetSessions.map((s) => s.id));
+    const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
+    const feedbackedSubmissions = allSubmissions.filter((sub) => sub && sub.studentId === student.id && sub.sessionId && targetSessionIds.has(sub.sessionId) && (sub.isTeacherFeedbackChecked || sub.feedbackStatus === 'COMPLETED' || (typeof sub.ratingStars === 'number' && sub.ratingStars > 0) || (sub.feedbackText && sub.feedbackText.trim() !== '')));
+    const feedbackedHwItems = targetHwItems.filter((hw) => feedbackedSubmissions.some((sub) => sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title));
+    const totalCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.length : feedbackedSubmissions.length;
+    const completedHomeworkIds = student.completedHomeworkTaskIds || [];
+    const completedCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.filter((hw) => completedHomeworkIds.includes(hw.id) || feedbackedSubmissions.some((sub) => (sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title) && (sub.isStudentChecked || sub.completionStatus === 'COMPLETED'))).length : feedbackedSubmissions.filter((sub) => sub.isStudentChecked || sub.completionStatus === 'COMPLETED').length;
+    const completionRate = totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0;
+    const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
+    const averageStars = ratedSubs.length > 0 ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1)) : null;
+    return { studentId: student.id, completionRate, completedCount, averageStars };
+  }).sort((a, b) => {
+    if (b.completionRate !== a.completionRate) return b.completionRate - a.completionRate;
+    if (b.completedCount !== a.completedCount) return b.completedCount - a.completedCount;
+    return (b.averageStars || 0) - (a.averageStars || 0);
+  });
+  const prevWeekChampionId = (prevWeekRanked.length > 0 && prevWeekRanked[0].completionRate > 0) ? prevWeekRanked[0].studentId : null;
+
+  const prevMonthStr = getPreviousMonthString();
+  const prevMonthRanked = activeStudents.map((student) => {
+    const targetSessions = allSessions.filter((s) => s && s.date && student.classIds?.includes(s.classId) && s.date.startsWith(prevMonthStr));
+    const targetSessionIds = new Set(targetSessions.map((s) => s.id));
+    const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
+    const feedbackedSubmissions = allSubmissions.filter((sub) => sub && sub.studentId === student.id && sub.sessionId && targetSessionIds.has(sub.sessionId) && (sub.isTeacherFeedbackChecked || sub.feedbackStatus === 'COMPLETED' || (typeof sub.ratingStars === 'number' && sub.ratingStars > 0) || (sub.feedbackText && sub.feedbackText.trim() !== '')));
+    const feedbackedHwItems = targetHwItems.filter((hw) => feedbackedSubmissions.some((sub) => sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title));
+    const totalCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.length : feedbackedSubmissions.length;
+    const completedHomeworkIds = student.completedHomeworkTaskIds || [];
+    const completedCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.filter((hw) => completedHomeworkIds.includes(hw.id) || feedbackedSubmissions.some((sub) => (sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title) && (sub.isStudentChecked || sub.completionStatus === 'COMPLETED'))).length : feedbackedSubmissions.filter((sub) => sub.isStudentChecked || sub.completionStatus === 'COMPLETED').length;
+    const completionRate = totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0;
+    const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
+    const averageStars = ratedSubs.length > 0 ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1)) : null;
+    return { studentId: student.id, completionRate, completedCount, averageStars };
+  }).sort((a, b) => {
+    if (b.completionRate !== a.completionRate) return b.completionRate - a.completionRate;
+    if (b.completedCount !== a.completedCount) return b.completedCount - a.completedCount;
+    return (b.averageStars || 0) - (a.averageStars || 0);
+  });
+  const prevMonthChampionId = (prevMonthRanked.length > 0 && prevMonthRanked[0].completionRate > 0) ? prevMonthRanked[0].studentId : null;
+
   // RANKING COMPUTATION WITH STRICT REAL-TIME TIME RANGE & FEEDBACKED HOMEWORK ONLY
   const rankedStudents = activeStudents.map((student) => {
-    // 1. Get student's sessions strictly occurring in the current week or current month (real time)
     const targetSessions = allSessions.filter((s) => {
       if (!s || !s.date || !student.classIds || !student.classIds.includes(s.classId)) {
         return false;
@@ -56,15 +98,11 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       if (timeFilter === 'month') {
         return s.date.startsWith(currentMonthStr);
       } else {
-        // week filter: strictly within current week (Monday to Sunday)
         return s.date >= mondayStr && s.date <= sundayStr;
       }
     });
 
-    // 2. Homework items in target sessions
     const targetHwItems = targetSessions.flatMap((s) => s.homeworkItems || []);
-
-    // 3. Submissions for this student in target sessions THAT HAVE BEEN FEEDBACK-ED BY TEACHER/ADMIN
     const targetSessionIds = new Set(targetSessions.map((s) => s.id));
     const feedbackedSubmissions = allSubmissions.filter((sub) =>
       sub &&
@@ -79,15 +117,12 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       )
     );
 
-    // Filter target hw items that have teacher feedback
     const feedbackedHwItems = targetHwItems.filter((hw) =>
       feedbackedSubmissions.some((sub) => sub.homeworkTaskId === hw.id || sub.homeworkTitle === hw.title)
     );
 
-    // Total feedbacked homework count (or total feedbacked submissions)
     const totalFeedbackedCount = feedbackedHwItems.length > 0 ? feedbackedHwItems.length : feedbackedSubmissions.length;
 
-    // Completed & feedbacked count
     const completedHomeworkIds = student.completedHomeworkTaskIds || [];
     const completedCount = feedbackedHwItems.length > 0
       ? feedbackedHwItems.filter((hw) =>
@@ -96,12 +131,10 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         ).length
       : feedbackedSubmissions.filter((sub) => sub.isStudentChecked || sub.completionStatus === 'COMPLETED').length;
 
-    // Completion rate % based strictly on feedbacked homework in the period
     const completionRate = totalFeedbackedCount > 0
       ? Math.min(100, Math.round((completedCount / totalFeedbackedCount) * 100))
       : 0;
 
-    // Average feedback stars from feedbacked submissions in this period (null if no data yet)
     const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
     const averageStars = ratedSubs.length > 0
       ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1))
@@ -115,15 +148,12 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       averageStars,
     };
   }).sort((a, b) => {
-    // TIE-BREAKER 1: Completion Rate % (Higher first)
     if (b.completionRate !== a.completionRate) {
       return b.completionRate - a.completionRate;
     }
-    // TIE-BREAKER 2: Total Completed Homework Count (Higher first)
     if (b.completedCount !== a.completedCount) {
       return b.completedCount - a.completedCount;
     }
-    // TIE-BREAKER 3: Quality of Homework (Average Feedback Stars) (Higher first)
     const starsA = a.averageStars || 0;
     const starsB = b.averageStars || 0;
     return starsB - starsA;
@@ -138,19 +168,6 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
       <div className="relative bg-gradient-to-r from-amber-500/20 via-rose-500/15 to-indigo-500/20 dark:from-amber-950/50 dark:via-rose-950/40 dark:to-indigo-950/50 p-6 sm:p-7 rounded-3xl border-2 border-amber-300/70 dark:border-amber-700/60 shadow-lg shadow-amber-500/10 space-y-5 overflow-hidden">
         
         {/* DECORATIVE LIGHT RAYS & STARS BACKGROUND ACCENTS */}
-        <div className="absolute -top-6 -right-6 text-7xl opacity-20 pointer-events-none select-none">
-          ✨
-        </div>
-        <div className="absolute -bottom-8 -left-8 text-7xl opacity-15 pointer-events-none select-none">
-          🌟
-        </div>
-
-        {/* Top Row: Icon, Main Title & Close Button */}
-        <div className="flex items-start justify-between gap-4 relative z-10">
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 flex items-center justify-center font-black text-2xl shadow-md border-2 border-yellow-200 shrink-0 transform hover:rotate-6 transition duration-200">
-              🏆
-            </div>
             <div>
               <div className="flex items-center space-x-2 flex-wrap">
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
@@ -224,6 +241,16 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           const honorTitle = index < 5 ? titlesList[index] : null;
           const avatarSrc = resolveAvatarUrl(item.student.avatar);
           
+          // Calculate Previous Period Champion Caption
+          let championCaption = null;
+          if (item.student.id === prevWeekChampionId && item.student.id === prevMonthChampionId) {
+            championCaption = '🏆 Quán quân tuần trước • 👑 Quán quân tháng trước';
+          } else if (item.student.id === prevWeekChampionId) {
+            championCaption = '🏆 Quán quân tuần trước';
+          } else if (item.student.id === prevMonthChampionId) {
+            championCaption = '👑 Quán quân tháng trước';
+          }
+
           // LUXURY NON-PLAIN-WHITE BACKGROUND PER RANK ACCORDING TO SPEC:
           // Rank 1: Luxury Gold / Metallic Amber Gradient
           // Rank 2: Sleek Silver Metallic Gradient
@@ -315,9 +342,14 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                     )}
                   </div>
 
-                  <p className="text-xs sm:text-sm opacity-80 font-medium mt-0.5">
-                    SĐT: {item.student.phone || 'Chưa cập nhật'}
-                  </p>
+                  {/* PREVIOUS PERIOD CHAMPION CAPTION (IF APPLICABLE) */}
+                  {championCaption && (
+                    <div className="flex items-center space-x-1.5 mt-1.5">
+                      <span className="text-[10px] font-bold text-amber-950 dark:text-amber-100 bg-amber-200/80 dark:bg-amber-900/80 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700">
+                        {championCaption}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
