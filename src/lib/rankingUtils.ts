@@ -131,9 +131,11 @@ export function getStudentHonorBadge(
       ? Math.min(100, Math.round((completedCount / totalFeedbackedCount) * 100))
       : 0;
 
-    const ratedSubs = feedbackedSubmissions.filter((sub) => typeof sub.ratingStars === 'number' && sub.ratingStars > 0);
-    const averageStars = ratedSubs.length > 0
-      ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 5), 0) / ratedSubs.length).toFixed(1))
+    const ratedSubs = completedCount > 0
+      ? feedbackedSubmissions.filter((sub) => (sub.isStudentChecked || sub.completionStatus === 'COMPLETED') && typeof sub.ratingStars === 'number' && sub.ratingStars > 0)
+      : [];
+    const averageStars = (completedCount > 0 && ratedSubs.length > 0)
+      ? parseFloat((ratedSubs.reduce((sum, s) => sum + (s.ratingStars || 0), 0) / ratedSubs.length).toFixed(1))
       : 0;
 
     return {
