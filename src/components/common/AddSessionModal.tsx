@@ -84,19 +84,26 @@ interface StudentFeedbackCardProps {
 const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFeedback, onChange }) => {
   const [strengths, setStrengths] = useState(initialFeedback?.strengths || '');
   const [improvements, setImprovements] = useState(initialFeedback?.improvements || '');
-  const [materialTitle, setMaterialTitle] = useState(initialFeedback?.materialTitle || '');
-  const [materialUrl, setMaterialUrl] = useState(initialFeedback?.materialUrl || '');
+
+  const getInitialMaterials = (fb?: StudentFeedback): ResourceLink[] => {
+    if (fb?.materials && fb.materials.length > 0) return fb.materials;
+    if (fb?.materialTitle || fb?.materialUrl) {
+      return [{ id: `mat_${Date.now()}_legacy`, title: fb.materialTitle || '', url: fb.materialUrl || '' }];
+    }
+    return [];
+  };
+
+  const [studentMaterials, setStudentMaterials] = useState<ResourceLink[]>(() => getInitialMaterials(initialFeedback));
 
   useEffect(() => {
     setStrengths(initialFeedback?.strengths || '');
     setImprovements(initialFeedback?.improvements || '');
-    setMaterialTitle(initialFeedback?.materialTitle || '');
-    setMaterialUrl(initialFeedback?.materialUrl || '');
+    setStudentMaterials(getInitialMaterials(initialFeedback));
   }, [initialFeedback]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const feedbackRef = useRef({ strengths, improvements, materialTitle, materialUrl });
-  feedbackRef.current = { strengths, improvements, materialTitle, materialUrl };
+  const feedbackRef = useRef({ strengths, improvements, studentMaterials });
+  feedbackRef.current = { strengths, improvements, studentMaterials };
 
   const triggerDebouncedSync = useCallback((updated: StudentFeedback) => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -107,22 +114,36 @@ const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFe
 
   const handleStrengthsChange = (val: string) => {
     setStrengths(val);
-    triggerDebouncedSync({ ...feedbackRef.current, strengths: val });
+    triggerDebouncedSync({ ...feedbackRef.current, strengths: val, materials: studentMaterials });
   };
 
   const handleImprovementsChange = (val: string) => {
     setImprovements(val);
-    triggerDebouncedSync({ ...feedbackRef.current, improvements: val });
+    triggerDebouncedSync({ ...feedbackRef.current, improvements: val, materials: studentMaterials });
   };
 
-  const handleMaterialTitleChange = (val: string) => {
-    setMaterialTitle(val);
-    triggerDebouncedSync({ ...feedbackRef.current, materialTitle: val });
+  const handleAddStudentMaterial = () => {
+    const updated = [
+      ...studentMaterials,
+      { id: `mat_${Date.now()}_${studentMaterials.length + 1}`, title: '', url: '' },
+    ];
+    setStudentMaterials(updated);
+    triggerDebouncedSync({ ...feedbackRef.current, materials: updated });
   };
 
-  const handleMaterialUrlChange = (val: string) => {
-    setMaterialUrl(val);
-    triggerDebouncedSync({ ...feedbackRef.current, materialUrl: val });
+  const handleUpdateStudentMaterial = (index: number, field: keyof ResourceLink, val: string) => {
+    const updated = [...studentMaterials];
+    if (updated[index]) {
+      updated[index] = { ...updated[index], [field]: val };
+      setStudentMaterials(updated);
+      triggerDebouncedSync({ ...feedbackRef.current, materials: updated });
+    }
+  };
+
+  const handleRemoveStudentMaterial = (index: number) => {
+    const updated = studentMaterials.filter((_, i) => i !== index);
+    setStudentMaterials(updated);
+    triggerDebouncedSync({ ...feedbackRef.current, materials: updated });
   };
 
   return (
@@ -168,26 +189,64 @@ const StudentFeedbackCard = memo<StudentFeedbackCardProps>(({ student, initialFe
           />
         </div>
 
-        <div className="sm:col-span-2 pt-2 border-t border-dashed border-pink-100 dark:border-slate-700/60 space-y-1">
-          <label className="block text-[11px] font-bold text-sky-800 dark:text-sky-300 flex items-center">
-            <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {student.name}:
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-              type="text"
-              placeholder="Tên tài liệu (Ví dụ: Phiếu bài tập Reading nâng cao)"
-              value={materialTitle}
-              onChange={(e) => handleMaterialTitleChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 text-xs bg-sky-50/20 dark:bg-slate-900 font-bold text-slate-800 dark:text-white"
-            />
-            <input
-              type="url"
-              placeholder="Link dẫn đến (https://drive.google.com/...)"
-              value={materialUrl}
-              onChange={(e) => handleMaterialUrlChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 text-xs font-mono bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
-            />
+        {/* PER-STUDENT EXTRA MATERIALS SECTION WITH + THÊM TÀI LIỆU BUTTON */}
+        <div className="sm:col-span-2 pt-3 border-t border-dashed border-sky-200 dark:border-slate-700 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-[11px] font-black text-sky-900 dark:text-sky-300 flex items-center">
+              <Link2 className="w-3.5 h-3.5 mr-1 text-sky-600 shrink-0" /> 📎 Tài liệu / Phiếu bài tập riêng cho em {student.name} ({studentMaterials.length})
+            </label>
+            <button
+              type="button"
+              onClick={handleAddStudentMaterial}
+              className="px-2.5 py-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] transition flex items-center cursor-pointer shadow-2xs"
+            >
+              <Plus className="w-3 h-3 mr-1" /> + Thêm Tài Liệu
+            </button>
           </div>
+
+          {studentMaterials.length === 0 ? (
+            <div className="p-2.5 rounded-xl bg-sky-50/40 dark:bg-slate-900 border border-dashed border-sky-200 dark:border-slate-700 text-center">
+              <button
+                type="button"
+                onClick={handleAddStudentMaterial}
+                className="text-[11px] font-bold text-sky-700 dark:text-sky-400 hover:underline inline-flex items-center cursor-pointer"
+              >
+                <Plus className="w-3 h-3 mr-1" /> + Bấm để thêm tài liệu riêng (file bài tập, slide, link Drive...) cho em {student.name}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {studentMaterials.map((mat, idx) => (
+                <div
+                  key={mat.id || idx}
+                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-sky-50/30 dark:bg-slate-900 border border-sky-100 dark:border-slate-700"
+                >
+                  <input
+                    type="text"
+                    placeholder={`Tên tài liệu #${idx + 1} (VD: Phiếu Reading nâng cao)`}
+                    value={mat.title || ''}
+                    onChange={(e) => handleUpdateStudentMaterial(idx, 'title', e.target.value)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-sky-200 dark:border-sky-800 text-xs bg-white dark:bg-slate-800 font-bold text-slate-800 dark:text-white"
+                  />
+                  <input
+                    type="url"
+                    placeholder="Link URL (https://drive.google.com/...)"
+                    value={mat.url || ''}
+                    onChange={(e) => handleUpdateStudentMaterial(idx, 'url', e.target.value)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-sky-200 dark:border-sky-800 text-xs font-mono bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStudentMaterial(idx)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition shrink-0 cursor-pointer self-end sm:self-center"
+                    title="Xóa tài liệu này"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -633,72 +692,6 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
                   />
                 </div>
-              </div>
-
-              {/* EXTRA MATERIALS ARISING IN SESSION SECTION WITH "+ THÊM TÀI LIỆU" BUTTON */}
-              <div className="p-4 rounded-3xl bg-emerald-50/60 dark:bg-slate-800/60 border border-emerald-200/80 dark:border-slate-700 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-emerald-950 dark:text-emerald-300 uppercase tracking-wider flex items-center">
-                    <FolderOpen className="w-4 h-4 mr-1.5 text-emerald-600" /> Tài Liệu Phát Sinh Trong Buổi Học ({materials.length})
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleAddMaterial}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center cursor-pointer shadow-2xs"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Tài Liệu
-                  </button>
-                </div>
-
-                {materials.length === 0 ? (
-                  <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-dashed border-emerald-300 dark:border-slate-700 text-center">
-                    <button
-                      type="button"
-                      onClick={handleAddMaterial}
-                      className="text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" /> + Bấm để thêm tài liệu học tập, Slide, Drive, PDF phát sinh khi cần
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {materials.map((mat, idx) => (
-                      <div
-                        key={mat.id || idx}
-                        className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-2xs"
-                      >
-                        <div className="flex-1">
-                          <DebouncedInput
-                            type="text"
-                            placeholder={`Tên tài liệu #${idx + 1} (VD: Slide Unit 5, File bài tập...)`}
-                            value={mat.title || ''}
-                            onDebouncedChange={(val) => handleUpdateMaterial(idx, 'title', val)}
-                            className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
-                          />
-                        </div>
-
-                        <div className="flex-1">
-                          <DebouncedInput
-                            type="url"
-                            placeholder="Link URL tài liệu (https://drive.google.com/...)"
-                            value={mat.url || ''}
-                            onDebouncedChange={(val) => handleUpdateMaterial(idx, 'url', val)}
-                            className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMaterial(idx)}
-                          className="p-2.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer self-end sm:self-center"
-                          title="Xóa tài liệu này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* NO HOMEWORK CHECKBOX */}

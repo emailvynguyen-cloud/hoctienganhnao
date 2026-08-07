@@ -486,6 +486,39 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               ) : null}
             </div>
+
+            {/* INDIVIDUAL EXTRA MATERIALS FOR THIS STUDENT */}
+            {(() => {
+              const fb = session.studentFeedbacks[currentStudent.id];
+              const studentMats = fb?.materials && fb.materials.length > 0
+                ? fb.materials
+                : (fb?.materialTitle || fb?.materialUrl ? [{ id: 'legacy', title: fb.materialTitle || '', url: fb.materialUrl || '' }] : []);
+
+              if (studentMats.length === 0) return null;
+
+              return (
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                  <span className="text-xs font-bold text-sky-800 dark:text-sky-300 flex items-center">
+                    📎 Tài liệu / Phiếu bài tập riêng cho bạn:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {studentMats.map((mat, mIdx) => (
+                      mat.url ? (
+                        <a
+                          key={mat.id || mIdx}
+                          href={mat.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3.5 py-1.5 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-200 border border-sky-300 dark:border-sky-800 text-xs font-bold hover:bg-sky-200 transition flex items-center shadow-2xs"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5 mr-1 text-sky-600" /> 📎 {mat.title || 'Tài liệu riêng'} ↗
+                        </a>
+                      ) : null
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

@@ -37,8 +37,9 @@ export interface HomeworkTaskItem {
 export interface StudentFeedback {
   strengths?: string; // Điểm mạnh riêng của học viên này
   improvements?: string; // Điểm cần cải thiện riêng của học viên này
-  materialTitle?: string; // Tên tài liệu riêng cho học viên này
-  materialUrl?: string; // Link dẫn đến tài liệu riêng cho học viên này
+  materialTitle?: string; // Tên tài liệu riêng cho học viên này (legacy)
+  materialUrl?: string; // Link dẫn đến tài liệu riêng cho học viên này (legacy)
+  materials?: ResourceLink[]; // Danh sách nhiều tài liệu riêng cho học viên này
 }
 
 export interface InternalNoteEntry {
