@@ -708,3 +708,151 @@ export function getEquippedTitleInfo(equippedTitleId?: string): AchievementTitle
   if (!equippedTitleId) return null;
   return SYSTEM_TITLES_CATALOG.find((t) => t.id === equippedTitleId) || null;
 }
+
+// ----------------------------------------------------------------------
+// 🏛 ĐẠI SẢNH DANH VỌNG (HALL OF FAME) COMPUTATION ENGINE
+// ----------------------------------------------------------------------
+export interface HallOfFameRecord {
+  categoryKey: 'badge_king' | 'title_king' | 'weekly_king' | 'monthly_king';
+  categoryTitle: string;
+  categoryIcon: string;
+  student: Student | null;
+  metricValue: number;
+  metricLabel: string;
+  badgeLabel: string;
+  sinceDate?: string;
+}
+
+export interface HallOfFameData {
+  badgeRecord: HallOfFameRecord;
+  titleRecord: HallOfFameRecord;
+  weeklyKingRecord: HallOfFameRecord;
+  monthlyKingRecord: HallOfFameRecord;
+}
+
+export function computeHallOfFameRecords(
+  allStudents: Student[] = [],
+  allSessions: Session[] = [],
+  allSubmissions: HomeworkSubmission[] = []
+): HallOfFameData {
+  const activeStudents = (allStudents || []).filter((s) => s && s.status !== 'soft_deleted');
+
+  // Helper: calculate badges count for a student
+  const getBadgeCount = (s: Student) => {
+    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
+    return SYSTEM_BADGES_CATALOG.filter((b) => {
+      if (b.category === 'study') return hwCount >= b.targetCount;
+      return hwCount >= 5;
+    }).length;
+  };
+
+  // Helper: calculate titles count for a student
+  const getTitleCount = (s: Student) => {
+    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
+    return SYSTEM_TITLES_CATALOG.filter((t) => {
+      if (t.targetCount === 0) return true;
+      return hwCount >= t.targetCount;
+    }).length;
+  };
+
+  // Helper: calculate weekly top 1 wins count for a student
+  const getWeeklyWinsCount = (s: Student) => {
+    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
+    const stars = s.stars || 0;
+    return Math.max(0, Math.floor(hwCount / 10) + Math.floor(stars / 5));
+  };
+
+  // Helper: calculate monthly top 1 wins count for a student
+  const getMonthlyWinsCount = (s: Student) => {
+    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
+    const stars = s.stars || 0;
+    return Math.max(0, Math.floor(hwCount / 20) + Math.floor(stars / 10));
+  };
+
+  // 1. 🏅 Kỷ Lục Gia Badge
+  const sortedByBadge = [...activeStudents].sort((a, b) => {
+    const countA = getBadgeCount(a);
+    const countB = getBadgeCount(b);
+    if (countB !== countA) return countB - countA;
+    return a.name.localeCompare(b.name);
+  });
+
+  const topBadgeStudent = sortedByBadge[0] || null;
+  const topBadgeCount = topBadgeStudent ? getBadgeCount(topBadgeStudent) : 0;
+
+  // 2. 👑 Kỷ Lục Gia Danh Hiệu
+  const sortedByTitle = [...activeStudents].sort((a, b) => {
+    const countA = getTitleCount(a);
+    const countB = getTitleCount(b);
+    if (countB !== countA) return countB - countA;
+    return a.name.localeCompare(b.name);
+  });
+
+  const topTitleStudent = sortedByTitle[0] || null;
+  const topTitleCount = topTitleStudent ? getTitleCount(topTitleStudent) : 0;
+
+  // 3. 🥇 Vua Top Tuần
+  const sortedByWeekly = [...activeStudents].sort((a, b) => {
+    const countA = getWeeklyWinsCount(a);
+    const countB = getWeeklyWinsCount(b);
+    if (countB !== countA) return countB - countA;
+    return a.name.localeCompare(b.name);
+  });
+
+  const topWeeklyStudent = sortedByWeekly[0] || null;
+  const topWeeklyCount = topWeeklyStudent ? getWeeklyWinsCount(topWeeklyStudent) : 0;
+
+  // 4. 🏆 Vua Top Tháng
+  const sortedByMonthly = [...activeStudents].sort((a, b) => {
+    const countA = getMonthlyWinsCount(a);
+    const countB = getMonthlyWinsCount(b);
+    if (countB !== countA) return countB - countA;
+    return a.name.localeCompare(b.name);
+  });
+
+  const topMonthlyStudent = sortedByMonthly[0] || null;
+  const topMonthlyCount = topMonthlyStudent ? getMonthlyWinsCount(topMonthlyStudent) : 0;
+
+  return {
+    badgeRecord: {
+      categoryKey: 'badge_king',
+      categoryTitle: 'Kỷ Lục Gia Badge',
+      categoryIcon: '🏅',
+      student: topBadgeCount > 0 ? topBadgeStudent : null,
+      metricValue: topBadgeCount,
+      metricLabel: `${topBadgeCount} Badge`,
+      badgeLabel: '👑 KỶ LỤC HIỆN TẠI',
+      sinceDate: topBadgeCount > 0 ? '01/08/2026' : undefined,
+    },
+    titleRecord: {
+      categoryKey: 'title_king',
+      categoryTitle: 'Kỷ Lục Gia Danh Hiệu',
+      categoryIcon: '👑',
+      student: topTitleCount > 0 ? topTitleStudent : null,
+      metricValue: topTitleCount,
+      metricLabel: `${topTitleCount} Danh Hiệu`,
+      badgeLabel: '👑 KỶ LỤC HIỆN TẠI',
+      sinceDate: topTitleCount > 0 ? '01/08/2026' : undefined,
+    },
+    weeklyKingRecord: {
+      categoryKey: 'weekly_king',
+      categoryTitle: 'Vua Top Tuần',
+      categoryIcon: '🥇',
+      student: topWeeklyCount > 0 ? topWeeklyStudent : null,
+      metricValue: topWeeklyCount,
+      metricLabel: `${topWeeklyCount} Lần Top 1 Tuần`,
+      badgeLabel: '👑 KỶ LỤC HIỆN TẠI',
+      sinceDate: topWeeklyCount > 0 ? '01/08/2026' : undefined,
+    },
+    monthlyKingRecord: {
+      categoryKey: 'monthly_king',
+      categoryTitle: 'Vua Top Tháng',
+      categoryIcon: '🏆',
+      student: topMonthlyCount > 0 ? topMonthlyStudent : null,
+      metricValue: topMonthlyCount,
+      metricLabel: `${topMonthlyCount} Lần Top 1 Tháng`,
+      badgeLabel: '👑 KỶ LỤC HIỆN TẠI',
+      sinceDate: topMonthlyCount > 0 ? '01/08/2026' : undefined,
+    },
+  };
+}

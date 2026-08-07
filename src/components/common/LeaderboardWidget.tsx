@@ -5,7 +5,7 @@ import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { getCurrentWeekRange, getCurrentMonthString, getPreviousWeekRange, getPreviousMonthString } from '../../lib/dateUtils';
 import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
-import { getEquippedTitleInfo } from '../../lib/rankingUtils';
+import { getEquippedTitleInfo, computeHallOfFameRecords } from '../../lib/rankingUtils';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -37,13 +37,16 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   students,
   sessions = [],
 }) => {
-  const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
+  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'hall_of_fame'>('week');
 
   // FETCH FRESH DATA FROM STORAGEENGINE
   const freshStudentsList = StorageEngine.getStudents() || students || [];
   const activeStudents = freshStudentsList.filter((s) => s && s.status !== 'soft_deleted');
   const allSessions = StorageEngine.getSessions() || sessions || [];
   const allSubmissions: HomeworkSubmission[] = StorageEngine.getHomeworkSubmissions() || [];
+
+  // COMPUTE HALL OF FAME RECORDS
+  const hallOfFameData = computeHallOfFameRecords(activeStudents, allSessions, allSubmissions);
 
   const { mondayStr, sundayStr } = getCurrentWeekRange();
   const currentMonthStr = getCurrentMonthString();
@@ -212,12 +215,12 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         {/* Bottom Row: Filter Switcher Bar & Total Counter Badge */}
         <div className="pt-4 border-t border-amber-200/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-2">
             {/* Filter Toggle Buttons */}
-            <div className="bg-white/90 dark:bg-slate-800 p-1.5 rounded-2xl border border-amber-200/70 dark:border-slate-700 flex items-center space-x-1 shadow-2xs">
+            <div className="bg-white/90 dark:bg-slate-800 p-1.5 rounded-2xl border border-amber-200/70 dark:border-slate-700 flex items-center space-x-1 shadow-2xs flex-wrap">
               <button
                 onClick={() => setTimeFilter('week')}
-                className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
+                className={`h-10 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
                   timeFilter === 'week'
                     ? 'bg-rose-500 text-white shadow-md'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -227,7 +230,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               </button>
               <button
                 onClick={() => setTimeFilter('month')}
-                className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
+                className={`h-10 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-150 cursor-pointer flex items-center ${
                   timeFilter === 'month'
                     ? 'bg-rose-500 text-white shadow-md'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -235,20 +238,132 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               >
                 <Crown className="w-3.5 h-3.5 mr-1.5 text-amber-300" /> Xếp Hạng Tháng
               </button>
+              <button
+                onClick={() => setTimeFilter('hall_of_fame')}
+                className={`h-10 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition-all duration-150 cursor-pointer flex items-center ${
+                  timeFilter === 'hall_of_fame'
+                    ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 shadow-md border border-yellow-200'
+                    : 'text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/60'
+                }`}
+              >
+                🏛️ Đại Sảnh Danh Vọng
+              </button>
             </div>
           </div>
 
           <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-semibold bg-white/70 dark:bg-slate-800/70 px-3.5 py-2 rounded-xl border border-amber-200/50 dark:border-slate-700/60 shrink-0">
-            📊 Tiêu chí: Tỷ lệ hoàn thành → Số bài đã làm → Điểm sao chất lượng
+            {timeFilter === 'hall_of_fame'
+              ? '🏛️ Vinh danh Kỷ Lục Gia Lịch Sử Toàn Trung Tâm (Không Reset)'
+              : '📊 Tiêu chí: Tỷ lệ hoàn thành → Số bài đã làm → Điểm sao chất lượng'}
           </div>
 
         </div>
 
       </div>
 
-      {/* LEADERBOARD LIST - RANKED STUDENTS WITH TIER BACKGROUNDS */}
-      <div className="space-y-3.5">
-        {rankedStudents.map((item, index) => {
+      {/* 🏛 ĐẠI SẢNH DANH VỌNG (HALL OF FAME) OR REGULAR LEADERBOARD LIST */}
+      {timeFilter === 'hall_of_fame' ? (
+        <div className="space-y-6 animate-fadeIn">
+          {/* GRAND HEADER EMBLEM */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-950 via-amber-950/80 to-slate-950 border-2 border-amber-300/80 shadow-2xl text-center space-y-2 relative overflow-hidden text-amber-100">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 text-slate-950 flex items-center justify-center text-3xl font-black shadow-lg shadow-amber-500/40 border-2 border-yellow-100 animate-bounce-subtle">
+              🏛️
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400">
+              🏛 ĐẠI SẢNH DANH VỌNG (HALL OF FAME)
+            </h3>
+            <p className="text-xs sm:text-sm font-medium text-amber-200/90 max-w-xl mx-auto">
+              Khu vực vinh danh vĩnh viễn dành riêng cho những học viên giữ Kỷ Lục Lịch Sử Xuất Sắc Nhất Toàn Trung Tâm MS. VY ENGLISH. Thành tích được lưu truyền lâu dài và không reset theo thời gian.
+            </p>
+          </div>
+
+          {/* 4 RECORD CATEGORY CARDS GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[hallOfFameData.badgeRecord, hallOfFameData.titleRecord, hallOfFameData.weeklyKingRecord, hallOfFameData.monthlyKingRecord].map((record) => {
+              const std = record.student;
+              const equippedTitle = std ? getEquippedTitleInfo(std.equippedTitleId) : null;
+
+              return (
+                <div
+                  key={record.categoryKey}
+                  className={`p-5 sm:p-6 rounded-3xl border-2 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden shadow-lg space-y-4 ${
+                    std
+                      ? 'bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border-amber-300/80 shadow-amber-500/20'
+                      : 'bg-slate-900/60 border-slate-800/80 opacity-75'
+                  }`}
+                >
+                  {/* TOP HEADER OF CARD */}
+                  <div className="flex items-center justify-between border-b border-amber-300/20 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">{record.categoryIcon}</span>
+                      <h4 className="font-black text-sm text-amber-300 uppercase tracking-wide">
+                        {record.categoryTitle}
+                      </h4>
+                    </div>
+                    {std && (
+                      <span className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-[10px] uppercase shadow-2xs border border-yellow-200 flex items-center">
+                        👑 Kỷ Lục Hiện Tại
+                      </span>
+                    )}
+                  </div>
+
+                  {std ? (
+                    <div className="flex items-center space-x-4">
+                      {/* AVATAR WITH CURRENT RANK FRAME */}
+                      <StudentAvatarWithFrame
+                        student={std}
+                        allStudents={activeStudents}
+                        allSessions={allSessions}
+                        allSubmissions={allSubmissions}
+                        sizeClassName="w-16 h-16"
+                      />
+
+                      {/* DETAILS */}
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <h5 className="font-extrabold text-base sm:text-lg text-white truncate">
+                          {std.name}
+                        </h5>
+
+                        {equippedTitle ? (
+                          <div className="pt-0.5">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-black ${equippedTitle.badgeStyle}`}>
+                              {equippedTitle.title}
+                            </span>
+                          </div>
+                        ) : null}
+
+                        <div className="pt-1 flex items-center justify-between text-xs">
+                          <span className="font-black text-amber-400 text-sm">
+                            {record.metricLabel}
+                          </span>
+                        </div>
+
+                        {record.sinceDate && (
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            🗓 Giữ kỷ lục từ: {record.sinceDate}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center space-y-1">
+                      <p className="font-bold text-sm text-slate-400">
+                        🏛 Chưa có người giữ kỷ lục
+                      </p>
+                      <p className="text-xs text-slate-500 font-normal">
+                        Đang chờ học viên đầu tiên xuất sắc chinh phục mốc kỷ lục này!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* LEADERBOARD LIST - RANKED STUDENTS WITH TIER BACKGROUNDS */
+        <div className="space-y-3.5">
+          {rankedStudents.map((item, index) => {
           if (!item || !item.student) return null;
           const isTop1 = index === 0;
           const isTop2 = index === 1;
