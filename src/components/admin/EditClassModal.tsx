@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Class } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { DraftStorage } from '../../lib/draftStorage';
-import { DraftPromptBanner } from '../common/DraftPromptBanner';
+import { DraftPromptBanner } from '../common/AddSessionModal';
 import { Edit3, X, Clock, Plus, Trash2 } from 'lucide-react';
 
 interface EditClassModalProps {
