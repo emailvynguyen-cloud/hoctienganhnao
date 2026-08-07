@@ -7,10 +7,9 @@ import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { ClassRulesModal } from '../common/ClassRulesModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
-import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST } from '../../lib/rankingUtils';
+import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST, getEquippedTitleInfo } from '../../lib/rankingUtils';
 import { AchievementCenterModal } from '../common/AchievementCenterModal';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
-import { getEquippedTitleInfo } from '../../lib/achievementCenterUtils';
 import {
   Calendar,
   CheckCircle2,
