@@ -280,25 +280,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleMenuItemClick(item)}
                     title={isCollapsed && !isMobileOpen ? item.title : undefined}
                     className={`
-                      w-full h-11 px-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-150
-                      flex items-center group relative cursor-pointer
+                      w-full h-11 px-3 rounded-xl text-xs sm:text-sm transition-all duration-150
+                      flex items-center group relative cursor-pointer border-l-3
                       ${
                         active
-                          ? 'bg-rose-600 dark:bg-rose-700 text-white shadow-xs font-bold'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-rose-700 dark:hover:text-rose-300 font-medium'
+                          ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 font-bold'
+                          : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white font-medium'
                       }
                       ${isCollapsed && !isMobileOpen ? 'justify-center' : 'justify-start space-x-3'}
                     `}
                   >
-                    {/* LEFT ACTIVE ACCENT INDICATOR */}
-                    {active && (!isCollapsed || isMobileOpen) && (
-                      <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-white shadow-xs" />
-                    )}
-
                     <IconComponent
                       className={`
                         w-5 h-5 shrink-0 transition-transform duration-150 group-hover:scale-110
-                        ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-500'}
+                        ${active ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'}
                       `}
                     />
 
