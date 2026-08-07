@@ -11,6 +11,14 @@ import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST, getEquippedTitleInfo } 
 import { AchievementCenterModal } from '../common/AchievementCenterModal';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
 import {
+  notifySessionUpdated,
+  notifyQuizletAdded,
+  notifyBadgeUnlocked,
+  notifyTitleUnlocked,
+  requestWebPushPermission,
+  getWebPushPermissionState,
+} from '../../lib/webPush';
+import {
   Calendar,
   CheckCircle2,
   BookOpen,
@@ -55,6 +63,62 @@ interface StudentPortalProps {
   onRefreshData: () => void;
 }
 
+// ----------------------------------------------------------------------
+// HELPER: CHECK IF CLASS IS IMMINENT (30 MINS BEFORE START) OR ONGOING TODAY
+// ----------------------------------------------------------------------
+function checkIsClassImminentOrOngoing(scheduleStr: string = '') {
+  const now = new Date();
+  const todayDayIdx = now.getDay();
+
+  const dayPatterns: { idx: number; pattern: RegExp }[] = [
+    { idx: 1, pattern: /T2|THỨ 2|THỨ HAI/i },
+    { idx: 2, pattern: /T3|THỨ 3|THỨ BA/i },
+    { idx: 3, pattern: /T4|THỨ 4|THỨ TƯ/i },
+    { idx: 4, pattern: /T5|THỨ 5|THỨ NĂM/i },
+    { idx: 5, pattern: /T6|THỨ 6|THỨ SÁU/i },
+    { idx: 6, pattern: /T7|THỨ 7|THỨ BẢY/i },
+    { idx: 0, pattern: /CN|CHỦ NHẬT/i },
+  ];
+
+  const todayMatch = dayPatterns.find((p) => p.idx === todayDayIdx);
+  const isScheduledToday = todayMatch ? todayMatch.pattern.test(scheduleStr) : false;
+
+  if (!isScheduledToday) {
+    return { isImminentOrOngoing: false, timeText: '' };
+  }
+
+  const rangeMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  if (!rangeMatch) {
+    return { isImminentOrOngoing: false, timeText: '' };
+  }
+
+  const startTimeStr = rangeMatch[1].padStart(5, '0');
+  const endTimeStr = rangeMatch[2].padStart(5, '0');
+
+  const [startH, startM] = startTimeStr.split(':').map(Number);
+  const [endH, endM] = endTimeStr.split(':').map(Number);
+
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const isImminentOrOngoing = currentMinutes >= startMinutes - 30 && currentMinutes <= endMinutes;
+
+  let timeText = '';
+  if (currentMinutes < startMinutes && currentMinutes >= startMinutes - 30) {
+    timeText = `Lớp học sẽ bắt đầu lúc ${startTimeStr} (Còn ${startMinutes - currentMinutes} phút nữa)`;
+  } else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+    timeText = `Lớp học đang diễn ra (${startTimeStr} - ${endTimeStr})`;
+  } else {
+    timeText = `Lịch học: ${startTimeStr} - ${endTimeStr}`;
+  }
+
+  return {
+    isImminentOrOngoing,
+    timeText,
+  };
+}
+
 export const StudentPortal: React.FC<StudentPortalProps> = ({
   currentStudent,
   classes,
@@ -72,10 +136,32 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isClassRulesOpen, setIsClassRulesOpen] = useState(false);
   const [isHonorBadgesModalOpen, setIsHonorBadgesModalOpen] = useState(false);
+  const [achievementModalTab, setAchievementModalTab] = useState<'all' | 'badge' | 'title' | 'frame'>('all');
   const [isAbsenceDetailsModalOpen, setIsAbsenceDetailsModalOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [copiedResId, setCopiedResId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handlePushClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      if (!detail) return;
+
+      if (detail.type === 'badge_unlocked') {
+        setAchievementModalTab('badge');
+        setIsHonorBadgesModalOpen(true);
+      } else if (detail.type === 'title_unlocked') {
+        setAchievementModalTab('title');
+        setIsHonorBadgesModalOpen(true);
+      } else if (detail.type === 'quizlet_added' && detail.targetData?.quizletUrl) {
+        window.open(detail.targetData.quizletUrl, '_blank');
+      }
+    };
+
+    window.addEventListener('msvy_push_click', handlePushClick);
+    return () => window.removeEventListener('msvy_push_click', handlePushClick);
+  }, []);
 
   const toggleExpandComment = (key: string) => {
     setExpandedComments((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -739,6 +825,51 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
       )}
 
+      {/* 🔴 STICKY PINNED LIVE CLASS BANNER FOR IMMINENT / ONGOING CLASS (WITHIN 30 MINS OR DURING CLASS) */}
+      {(() => {
+        const activeClass = studentClasses.find((cls) => {
+          const check = checkIsClassImminentOrOngoing(cls.schedule);
+          return check.isImminentOrOngoing;
+        }) || primaryClass;
+
+        const checkResult = checkIsClassImminentOrOngoing(activeClass?.schedule);
+        if (!checkResult.isImminentOrOngoing || !activeClass) return null;
+
+        const classZoomLink = activeClass.zoomLink || '';
+
+        return (
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xl border-2 border-emerald-300 flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse sticky top-3 z-40">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl animate-bounce">🎥</span>
+              <div>
+                <h3 className="font-black text-base sm:text-lg flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-ping inline-block"></span>
+                  <span>LỚP HỌC SẮP DIỄN RA / ĐANG DIỄN RA: {activeClass.className}</span>
+                </h3>
+                <p className="text-xs text-emerald-100 font-extrabold mt-0.5">
+                  {checkResult.timeText} • Phòng: {activeClass.room || 'Online Zoom'}
+                </p>
+              </div>
+            </div>
+
+            {classZoomLink ? (
+              <a
+                href={classZoomLink}
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-3 rounded-2xl bg-white text-emerald-950 hover:bg-emerald-50 font-black text-sm shadow-md transition transform hover:scale-105 shrink-0 flex items-center border border-emerald-200 cursor-pointer"
+              >
+                🎥 Vào Lớp Ngay ↗
+              </a>
+            ) : (
+              <span className="text-xs font-bold bg-white/20 text-white px-4 py-2 rounded-2xl shrink-0 text-center border border-white/20">
+                Giáo viên sẽ cập nhật link lớp trước giờ học.
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
       {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT CONTAINER */}
       <div className="bg-gradient-to-r from-pink-100/95 via-rose-100/90 to-amber-100/95 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border-2 border-rose-200/90 dark:border-slate-700 p-6 sm:p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
         
@@ -828,6 +959,49 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <span className="font-bold text-slate-900 dark:text-white break-words leading-relaxed">
                   {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
                 </span>
+              </div>
+
+              {/* 🎥 LINK LỚP HỌC (ZOOM/MEET) ROW WITH HIGHLIGHT */}
+              <div className="flex flex-wrap items-center justify-between gap-2 col-span-1 sm:col-span-2 pt-2.5 border-t border-sky-200/80 dark:border-slate-700">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sky-900 dark:text-sky-300 font-black shrink-0">🎥 Link Lớp Học:</span>
+                  {primaryClass?.zoomLink ? (
+                    <a
+                      href={primaryClass.zoomLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center shadow-md cursor-pointer ${
+                        checkIsClassImminentOrOngoing(primaryClass.schedule).isImminentOrOngoing
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400 animate-pulse'
+                          : 'bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white border border-sky-400'
+                      }`}
+                    >
+                      🎥 Vào Lớp Ngay ↗
+                    </a>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 italic">
+                      Giáo viên sẽ cập nhật link lớp trước giờ học.
+                    </span>
+                  )}
+                </div>
+
+                {/* WEB PUSH TOGGLE BUTTON */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const granted = await requestWebPushPermission();
+                    if (granted) {
+                      notifySessionUpdated('Hệ thống');
+                      alert('Đã bật Thông Báo Web Push (PWA) thành công!');
+                    } else {
+                      alert('Quyền thông báo chưa được cấp trong trình duyệt của bạn.');
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-100/80 hover:bg-indigo-200 text-indigo-950 dark:bg-indigo-950/60 dark:text-indigo-200 transition flex items-center shrink-0 border border-indigo-300 cursor-pointer"
+                  title="Cài đặt thông báo Web Push PWA"
+                >
+                  🔔 Web Push (PWA)
+                </button>
               </div>
             </div>
           </div>
@@ -1710,6 +1884,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         allStudents={freshStudents}
         allSessions={sessions}
         allSubmissions={homeworkSubmissions}
+        initialTab={achievementModalTab}
         onRefreshData={onRefreshData}
       />
 

@@ -20,6 +20,7 @@ interface AchievementCenterModalProps {
   allStudents?: Student[];
   allSessions?: Session[];
   allSubmissions?: HomeworkSubmission[];
+  initialTab?: 'all' | 'badge' | 'title' | 'frame';
   onRefreshData?: () => void;
 }
 
@@ -30,9 +31,16 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
   allStudents = [],
   allSessions = [],
   allSubmissions = [],
+  initialTab = 'all',
   onRefreshData,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'badge' | 'title' | 'frame'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'badge' | 'title' | 'frame'>(initialTab);
+  
+  React.useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'owned' | 'unowned' | 'near'>('all');
   const [claimModalData, setClaimModalData] = useState<{
     isOpen: boolean;

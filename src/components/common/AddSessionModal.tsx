@@ -4,6 +4,7 @@ import { StorageEngine } from '../../lib/storage';
 import { DraftStorage, FormDraft } from '../../lib/draftStorage';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3, FolderOpen } from 'lucide-react';
+import { notifySessionUpdated, notifyQuizletAdded } from '../../lib/webPush';
 
 interface DraftPromptBannerProps {
   draftKey: string;
@@ -680,6 +681,15 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         hasNoHomework,
       });
       alert(isExcusedAbsenceSession ? 'Đã lưu ghi nhận buổi Nghỉ có phép thành công!' : 'Đã tạo buổi học mới thành công!');
+    }
+
+    // Trigger Web Push Notifications for Students
+    if (!isExcusedAbsenceSession) {
+      if (quizletUrl && quizletUrl.trim()) {
+        notifyQuizletAdded(date, quizletUrl);
+      } else {
+        notifySessionUpdated(date);
+      }
     }
 
       onSessionAdded();
