@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
-import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3 } from 'lucide-react';
+import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3, FolderOpen } from 'lucide-react';
 
 interface AddSessionModalProps {
   isOpen?: boolean;
