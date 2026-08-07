@@ -183,8 +183,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors duration-200 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-[80px] flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors duration-200 shadow-2xs max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-[80px] flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap min-w-0 max-w-full">
         
         {/* Left: Hamburger & Brand Logo */}
         <div className="flex items-center space-x-3 shrink-0">
@@ -231,14 +231,11 @@ export const Header: React.FC<HeaderProps> = ({
                 ONLINE
               </span>
             </div>
-            <p className="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 tracking-wide hidden md:block mt-0.5">
-              Hệ Thống Theo Dõi Học Tập & Quản Lý Lớp Học
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Right: Actions, Navigation, Role Switcher & Notifications */}
+        {/* Right: Actions, Navigation, Role Switcher & Notifications */}
         <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:gap-3 py-0.5 max-w-full overflow-x-auto scrollbar-none shrink-0">
 
           {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}

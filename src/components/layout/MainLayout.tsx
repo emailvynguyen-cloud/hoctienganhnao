@@ -59,7 +59,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans w-full max-w-full overflow-x-hidden">
       {/* 1. LEFT NAVIGATION SIDEBAR */}
       {!activePublicHash && (
         <Sidebar
@@ -156,7 +156,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         )}
 
         {/* DYNAMIC ROUTE CONTENT OUTLET */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-y-auto">
+        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-y-auto min-w-0 max-w-full">
           <Outlet />
         </main>
       </div>
