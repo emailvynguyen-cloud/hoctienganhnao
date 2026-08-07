@@ -8,7 +8,7 @@ import {
   getEquippedTitleInfo,
   AchievementBadge,
   AchievementTitle,
-} from '../../lib/achievementCenterUtils';
+} from '../../lib/rankingUtils';
 import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
 import { AchievementClaimModal } from './AchievementClaimModal';
 import { Award, Trophy, Crown, Sparkles, CheckCircle2, Lock, Filter, Star, X, Check } from 'lucide-react';

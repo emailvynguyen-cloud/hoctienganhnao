@@ -1,7 +1,7 @@
 import React from 'react';
 import { Student, Session, HomeworkSubmission } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
-import { getStudentAvatarFrameInfo } from '../../lib/achievementCenterUtils';
+import { getStudentAvatarFrameInfo } from '../../lib/rankingUtils';
 
 interface StudentAvatarWithFrameProps {
   student?: Student | null;

@@ -5,7 +5,7 @@ import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { getCurrentWeekRange, getCurrentMonthString, getPreviousWeekRange, getPreviousMonthString } from '../../lib/dateUtils';
 import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
-import { getEquippedTitleInfo } from '../../lib/achievementCenterUtils';
+import { getEquippedTitleInfo } from '../../lib/rankingUtils';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
