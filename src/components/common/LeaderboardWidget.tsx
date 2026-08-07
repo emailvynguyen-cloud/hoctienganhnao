@@ -273,7 +273,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
               🏛 ĐẠI SẢNH DANH VỌNG (HALL OF FAME)
             </h3>
             <p className="text-xs sm:text-sm font-medium text-amber-200/90 max-w-xl mx-auto">
-              Khu vực vinh danh vĩnh viễn dành riêng cho những học viên giữ Kỷ Lục Lịch Sử Xuất Sắc Nhất Toàn Trung Tâm MS. VY ENGLISH. Thành tích được lưu truyền lâu dài và không reset theo thời gian.
+              Khu vực vinh danh vĩnh viễn dành riêng cho những học viên giữ Kỷ Lục Lịch Sử Xuất Sắc Nhất Toàn Trung Tâm MS. VY ENGLISH
             </p>
           </div>
 

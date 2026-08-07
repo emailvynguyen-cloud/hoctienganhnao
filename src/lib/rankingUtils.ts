@@ -737,81 +737,111 @@ export function computeHallOfFameRecords(
 ): HallOfFameData {
   const activeStudents = (allStudents || []).filter((s) => s && s.status !== 'soft_deleted');
 
-  // Helper: calculate badges count for a student
-  const getBadgeCount = (s: Student) => {
+  // Compute real-time weekly rank Top 1 student
+  const studentScores = activeStudents.map((std) => {
+    const stdSessions = (allSessions || []).filter((s) => s && std.classIds && std.classIds.includes(s.classId));
+    const targetSessionIds = new Set(stdSessions.map((s) => s.id));
+    const stdSubs = (allSubmissions || []).filter((sub) => sub && sub.studentId === std.id && targetSessionIds.has(sub.sessionId));
+    const completedHwCount = std.completedHomeworkTaskIds ? std.completedHomeworkTaskIds.length : stdSubs.length;
+    const totalStars = std.stars || 0;
+
+    return {
+      student: std,
+      completedHwCount,
+      totalStars,
+      score: completedHwCount * 10 + totalStars * 5,
+    };
+  }).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.student.name.localeCompare(b.student.name);
+  });
+
+  const weeklyTop1StudentId = studentScores.length > 0 && studentScores[0].score > 0 ? studentScores[0].student.id : null;
+  const monthlyTop1StudentId = studentScores.length > 0 && studentScores[0].score > 0 ? studentScores[0].student.id : null;
+
+  // 1. Calculate REAL UNLOCKED BADGES count for a student
+  const getRealBadgeCount = (s: Student) => {
     const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
+    const isTop1 = s.id === weeklyTop1StudentId;
+    const isTop10 = studentScores.findIndex((item) => item.student.id === s.id) <= 9;
+    const isTop5 = studentScores.findIndex((item) => item.student.id === s.id) <= 4;
+    const isTop3 = studentScores.findIndex((item) => item.student.id === s.id) <= 2;
+
     return SYSTEM_BADGES_CATALOG.filter((b) => {
       if (b.category === 'study') return hwCount >= b.targetCount;
-      return hwCount >= 5;
+      if (b.id.includes('top10_week')) return isTop10;
+      if (b.id.includes('top5_week')) return isTop5;
+      if (b.id.includes('top3_week')) return isTop3;
+      if (b.id.includes('top1_week')) return isTop1;
+      if (b.id.includes('top1_month')) return s.id === monthlyTop1StudentId;
+      return false;
     }).length;
   };
 
-  // Helper: calculate titles count for a student
-  const getTitleCount = (s: Student) => {
+  // 2. Calculate REAL UNLOCKED TITLES count for a student
+  const getRealTitleCount = (s: Student) => {
     const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
     return SYSTEM_TITLES_CATALOG.filter((t) => {
       if (t.targetCount === 0) return true;
+      if (t.id.includes('weekly_champion')) return s.id === weeklyTop1StudentId;
+      if (t.id.includes('monthly_champion')) return s.id === monthlyTop1StudentId;
       return hwCount >= t.targetCount;
     }).length;
   };
 
-  // Helper: calculate weekly top 1 wins count for a student
-  const getWeeklyWinsCount = (s: Student) => {
-    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
-    const stars = s.stars || 0;
-    return Math.max(0, Math.floor(hwCount / 10) + Math.floor(stars / 5));
+  // 3. Calculate REAL WEEKLY TOP 1 WINS count for a student
+  const getRealWeeklyWinsCount = (s: Student) => {
+    return s.id === weeklyTop1StudentId ? 1 : 0;
   };
 
-  // Helper: calculate monthly top 1 wins count for a student
-  const getMonthlyWinsCount = (s: Student) => {
-    const hwCount = s.completedHomeworkTaskIds ? s.completedHomeworkTaskIds.length : 0;
-    const stars = s.stars || 0;
-    return Math.max(0, Math.floor(hwCount / 20) + Math.floor(stars / 10));
+  // 4. Calculate REAL MONTHLY TOP 1 WINS count for a student
+  const getRealMonthlyWinsCount = (s: Student) => {
+    return s.id === monthlyTop1StudentId ? 1 : 0;
   };
 
   // 1. 🏅 Kỷ Lục Gia Badge
   const sortedByBadge = [...activeStudents].sort((a, b) => {
-    const countA = getBadgeCount(a);
-    const countB = getBadgeCount(b);
+    const countA = getRealBadgeCount(a);
+    const countB = getRealBadgeCount(b);
     if (countB !== countA) return countB - countA;
     return a.name.localeCompare(b.name);
   });
 
   const topBadgeStudent = sortedByBadge[0] || null;
-  const topBadgeCount = topBadgeStudent ? getBadgeCount(topBadgeStudent) : 0;
+  const topBadgeCount = topBadgeStudent ? getRealBadgeCount(topBadgeStudent) : 0;
 
   // 2. 👑 Kỷ Lục Gia Danh Hiệu
   const sortedByTitle = [...activeStudents].sort((a, b) => {
-    const countA = getTitleCount(a);
-    const countB = getTitleCount(b);
+    const countA = getRealTitleCount(a);
+    const countB = getRealTitleCount(b);
     if (countB !== countA) return countB - countA;
     return a.name.localeCompare(b.name);
   });
 
   const topTitleStudent = sortedByTitle[0] || null;
-  const topTitleCount = topTitleStudent ? getTitleCount(topTitleStudent) : 0;
+  const topTitleCount = topTitleStudent ? getRealTitleCount(topTitleStudent) : 0;
 
   // 3. 🥇 Vua Top Tuần
   const sortedByWeekly = [...activeStudents].sort((a, b) => {
-    const countA = getWeeklyWinsCount(a);
-    const countB = getWeeklyWinsCount(b);
+    const countA = getRealWeeklyWinsCount(a);
+    const countB = getRealWeeklyWinsCount(b);
     if (countB !== countA) return countB - countA;
     return a.name.localeCompare(b.name);
   });
 
   const topWeeklyStudent = sortedByWeekly[0] || null;
-  const topWeeklyCount = topWeeklyStudent ? getWeeklyWinsCount(topWeeklyStudent) : 0;
+  const topWeeklyCount = topWeeklyStudent ? getRealWeeklyWinsCount(topWeeklyStudent) : 0;
 
   // 4. 🏆 Vua Top Tháng
   const sortedByMonthly = [...activeStudents].sort((a, b) => {
-    const countA = getMonthlyWinsCount(a);
-    const countB = getMonthlyWinsCount(b);
+    const countA = getRealMonthlyWinsCount(a);
+    const countB = getRealMonthlyWinsCount(b);
     if (countB !== countA) return countB - countA;
     return a.name.localeCompare(b.name);
   });
 
   const topMonthlyStudent = sortedByMonthly[0] || null;
-  const topMonthlyCount = topMonthlyStudent ? getMonthlyWinsCount(topMonthlyStudent) : 0;
+  const topMonthlyCount = topMonthlyStudent ? getRealMonthlyWinsCount(topMonthlyStudent) : 0;
 
   return {
     badgeRecord: {
