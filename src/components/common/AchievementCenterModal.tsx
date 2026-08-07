@@ -11,7 +11,7 @@ import {
 } from '../../lib/rankingUtils';
 import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
 import { AchievementClaimModal } from './AchievementClaimModal';
-import { Award, Trophy, Crown, Sparkles, CheckCircle2, Lock, Filter, Star, X, Check } from 'lucide-react';
+import { Award, Trophy, Crown, Sparkles, CheckCircle2, Lock, Filter, Star, X, Check, Zap } from 'lucide-react';
 
 interface AchievementCenterModalProps {
   isOpen: boolean;
