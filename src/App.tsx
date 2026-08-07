@@ -228,23 +228,28 @@ export default function App() {
             <Route
               path="/login"
               element={
-                currentUser ? (
-                  <RoleRedirect currentUser={currentUser} />
-                ) : (
-                  <LoginModal
-                    isOpen={true}
-                    canClose={false}
-                    onClose={() => {}}
-                    onLoginSuccess={(user) => {
-                      setCurrentUser(user);
-                      if (user.role === 'student') navigate('/student');
-                      else if (user.role === 'teacher') navigate('/teacher');
-                      else if (user.role === 'admin') navigate('/admin');
-                      else if (user.role === 'super_admin') navigate('/super-admin');
+                <LoginModal
+                  isOpen={true}
+                  canClose={!!currentUser}
+                  onClose={() => {
+                    if (currentUser) {
+                      if (currentUser.role === 'student') navigate('/student');
+                      else if (currentUser.role === 'teacher') navigate('/teacher');
+                      else if (currentUser.role === 'admin') navigate('/admin');
+                      else if (currentUser.role === 'super_admin') navigate('/super-admin');
                       else navigate('/student');
-                    }}
-                  />
-                )
+                    }
+                  }}
+                  onLoginSuccess={(user) => {
+                    StorageEngine.setCurrentUser(user);
+                    setCurrentUser(user);
+                    if (user.role === 'student') navigate('/student');
+                    else if (user.role === 'teacher') navigate('/teacher');
+                    else if (user.role === 'admin') navigate('/admin');
+                    else if (user.role === 'super_admin') navigate('/super-admin');
+                    else navigate('/student');
+                  }}
+                />
               }
             />
 
