@@ -50,6 +50,8 @@ interface HeaderProps {
   canNavigateBack?: boolean;
   onNotificationClick?: (submissionId: string) => void;
   onSelectNotificationSubmission?: (submissionId: string) => void;
+  onToggleSidebar?: () => void;
+  onOpenMobileSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -70,6 +72,8 @@ export const Header: React.FC<HeaderProps> = ({
   canNavigateBack = false,
   onNotificationClick,
   onSelectNotificationSubmission,
+  onToggleSidebar,
+  onOpenMobileSidebar,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
   const [isPwaPermanentlyHidden, setIsPwaPermanentlyHidden] = useState(() => {
@@ -182,8 +186,23 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors duration-200 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-[80px] flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
         
-        {/* Left: Brand Logo & Title */}
-        <div className="flex items-center space-x-3.5 cursor-pointer group shrink-0 py-0.5" onClick={onNavigateHome}>
+        {/* Left: Hamburger & Brand Logo */}
+        <div className="flex items-center space-x-3 shrink-0">
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                onOpenMobileSidebar?.();
+              } else {
+                onToggleSidebar?.();
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+            title="Mở / Thu gọn Menu điều hướng"
+          >
+            <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+          </button>
+
+          <div className="flex items-center space-x-3.5 cursor-pointer group shrink-0 py-0.5" onClick={onNavigateHome}>
           <div className="relative shrink-0">
             <img
               src={logoImg}
@@ -217,8 +236,9 @@ export const Header: React.FC<HeaderProps> = ({
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Right: Actions, Navigation, Role Switcher & Notifications */}
+      {/* Right: Actions, Navigation, Role Switcher & Notifications */}
         <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:gap-3 py-0.5 max-w-full overflow-x-auto scrollbar-none shrink-0">
 
           {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}
