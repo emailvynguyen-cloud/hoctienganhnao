@@ -643,6 +643,23 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                         <Video className="w-3.5 h-3.5 mr-1 text-sky-600" /> Xem Record Video
                       </a>
                     )}
+
+                    {/* EXTRA SESSION MATERIALS LIST */}
+                    {session.sessionMaterials && session.sessionMaterials.length > 0 && (
+                      session.sessionMaterials.map((mat, mIdx) => (
+                        mat.url ? (
+                          <a
+                            key={mat.id || mIdx}
+                            href={mat.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 border border-emerald-300 text-xs font-bold hover:bg-emerald-200 transition flex items-center shadow-2xs"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5 mr-1 text-emerald-600" /> 📁 {mat.title || 'Tài liệu phát sinh'} ↗
+                          </a>
+                        ) : null
+                      ))
+                    )}
                   </div>
                 </div>
 

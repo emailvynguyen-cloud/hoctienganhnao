@@ -289,14 +289,78 @@ const HomeworkItemCard = memo<HomeworkItemCardProps>(({ item, index, canRemove, 
     </div>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.item.id === nextProps.item.id && prevProps.index === nextProps.index && prevProps.canRemove === nextProps.canRemove;
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
+import { StorageEngine } from '../../lib/storage';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
+import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3, FolderOpen } from 'lucide-react';
+
+interface AddSessionModalProps {
+  isOpen?: boolean;
+  onClose: () => void;
+  classes: Class[];
+  students: Student[];
+  initialClassId?: string;
+  defaultClassId?: string;
+  editingSession?: Session | null;
+  onSessionAdded: () => void;
+}
+
+// ----------------------------------------------------------------------
+// MEMOIZED DEBOUNCED INPUT COMPONENTS FOR 60FPS TYPING PERFORMANCE
+// ----------------------------------------------------------------------
+interface DebouncedTextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
+  value: string;
+  onDebouncedChange: (val: string) => void;
+  delay?: number;
+}
+
+const DebouncedTextArea = memo<DebouncedTextAreaProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
+  const [localValue, setLocalValue] = useState(value);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onDebouncedChange(val);
+    }, delay);
+  };
+
+  return <textarea {...props} value={localValue} onChange={handleChange} />;
 });
 
-HomeworkItemCard.displayName = 'HomeworkItemCard';
+interface DebouncedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  value: string;
+  onDebouncedChange: (val: string) => void;
+  delay?: number;
+}
 
-// ----------------------------------------------------------------------
-// MAIN ADD SESSION MODAL COMPONENT
-// ----------------------------------------------------------------------
+const DebouncedInput = memo<DebouncedInputProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
+  const [localValue, setLocalValue] = useState(value);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onDebouncedChange(val);
+    }, delay);
+  };
+
+  return <input {...props} value={localValue} onChange={handleChange} />;
+});
+
 export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   isOpen = true,
   onClose,
@@ -373,6 +437,32 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [materials, setMaterials] = useState<ResourceLink[]>(editingSession?.sessionMaterials || []);
 
   if (!isOpen) return null;
+
+  // Material Handlers
+  const handleAddMaterial = () => {
+    setMaterials((prev) => [
+      ...prev,
+      {
+        id: `mat_${Date.now()}_${prev.length + 1}`,
+        title: '',
+        url: '',
+      },
+    ]);
+  };
+
+  const handleUpdateMaterial = (index: number, field: keyof ResourceLink, value: string) => {
+    setMaterials((prev) => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveMaterial = (index: number) => {
+    setMaterials((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Homework Item Handlers
   const handleAddHomeworkItem = () => {
@@ -610,6 +700,72 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     className="w-full p-3 rounded-xl border border-purple-200 bg-white dark:bg-slate-800 text-xs font-medium"
                   />
                 </div>
+              </div>
+
+              {/* EXTRA MATERIALS ARISING IN SESSION SECTION WITH "+ THÊM TÀI LIỆU" BUTTON */}
+              <div className="p-4 rounded-3xl bg-emerald-50/60 dark:bg-slate-800/60 border border-emerald-200/80 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-xs text-emerald-950 dark:text-emerald-300 uppercase tracking-wider flex items-center">
+                    <FolderOpen className="w-4 h-4 mr-1.5 text-emerald-600" /> Tài Liệu Phát Sinh Trong Buổi Học ({materials.length})
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleAddMaterial}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Tài Liệu
+                  </button>
+                </div>
+
+                {materials.length === 0 ? (
+                  <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-dashed border-emerald-300 dark:border-slate-700 text-center">
+                    <button
+                      type="button"
+                      onClick={handleAddMaterial}
+                      className="text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> + Bấm để thêm tài liệu học tập, Slide, Drive, PDF phát sinh khi cần
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {materials.map((mat, idx) => (
+                      <div
+                        key={mat.id || idx}
+                        className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-2xs"
+                      >
+                        <div className="flex-1">
+                          <DebouncedInput
+                            type="text"
+                            placeholder={`Tên tài liệu #${idx + 1} (VD: Slide Unit 5, File bài tập...)`}
+                            value={mat.title || ''}
+                            onDebouncedChange={(val) => handleUpdateMaterial(idx, 'title', val)}
+                            className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
+                          />
+                        </div>
+
+                        <div className="flex-1">
+                          <DebouncedInput
+                            type="url"
+                            placeholder="Link URL tài liệu (https://drive.google.com/...)"
+                            value={mat.url || ''}
+                            onDebouncedChange={(val) => handleUpdateMaterial(idx, 'url', val)}
+                            className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMaterial(idx)}
+                          className="p-2.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition shrink-0 cursor-pointer self-end sm:self-center"
+                          title="Xóa tài liệu này"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* NO HOMEWORK CHECKBOX */}
