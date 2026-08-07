@@ -85,7 +85,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
 
   // Filter & Sort sessions in this class chronologically descending (newest date first)
-  const classSessions = (sessions || [])
+  const rawClassSessions = (sessions || [])
     .filter((s) => s && s.classId === selectedClass.id)
     .sort((a, b) => {
       if (b.date && a.date && b.date !== a.date) {
@@ -93,6 +93,10 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
       }
       return b.sessionNumber - a.sessionNumber;
     });
+
+  // TIMELINE SESSIONS: Strictly exclude isExcusedAbsenceSession from main session timeline!
+  const classSessions = rawClassSessions.filter((s) => !s.isExcusedAbsenceSession);
+  const excusedAbsenceSessions = rawClassSessions.filter((s) => s.isExcusedAbsenceSession);
 
   // Extract all session materials (general session materials + student-specific materials + Quizlet + Record + Homework attachments)
   const allSessionMaterials = classSessions.flatMap((s) => {

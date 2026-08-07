@@ -206,8 +206,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
 
-  // Student's sessions sorted chronologically descending (newest date first, fallback to sessionNumber)
-  const studentSessions = (sessions || [])
+  // Student's raw sessions sorted chronologically descending (newest date first, fallback to sessionNumber)
+  const rawStudentSessions = (sessions || [])
     .filter((s) => s && primaryClass?.id && s.classId === primaryClass.id)
     .sort((a, b) => {
       if (!a || !b) return 0;
@@ -220,6 +220,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       const numB = Number(b.sessionNumber) || 0;
       return numB - numA;
     });
+
+  // TIMELINE SESSIONS: Strictly exclude isExcusedAbsenceSession from student main timeline!
+  const studentSessions = rawStudentSessions.filter((s) => !s.isExcusedAbsenceSession);
+
+  // EXCUSED ABSENCE SESSIONS: Store separately for "Tổng buổi nghỉ trong tháng"
+  const excusedAbsenceSessions = rawStudentSessions.filter((s) => {
+    if (s.isExcusedAbsenceSession) return true;
+    const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+    return att?.status === 'excused';
+  });
 
   // Split sessions: 2 Most Recent Sessions vs Older Sessions
   const recent2Sessions = studentSessions.slice(0, 2);
@@ -1944,19 +1954,24 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
                     <div className="divide-y divide-emerald-100 dark:divide-slate-800 rounded-2xl border border-emerald-200 dark:border-slate-800 overflow-hidden shadow-2xs">
                       {monthlyExcusedSessions.map((ses) => (
-                        <div key={ses.id} className="p-4 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                          <div className="space-y-1">
-                            <div className="font-black text-slate-900 dark:text-white text-sm flex items-center space-x-2">
+                        <div key={ses.id} className="p-4 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b last:border-b-0 border-emerald-100 dark:border-slate-800">
+                          <div className="space-y-1.5 flex-1">
+                            <div className="font-black text-slate-900 dark:text-white text-sm flex flex-wrap items-center gap-2">
                               <span>🗓 Ngày nghỉ: {formatSessionDate(ses.date)}</span>
-                              <span className="text-emerald-600 text-xs font-bold">(Buổi #{ses.sessionNumber})</span>
+                              <span className="text-slate-500 text-xs font-semibold">| ⏰ Giờ học: {ses.scheduleTimeStr || primaryClass?.schedule || 'Theo lịch cố định'}</span>
                             </div>
                             <div className="text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-3">
                               <span>🎓 Lớp: <strong>{ses.className}</strong></span>
                               <span>👩‍🏫 Giáo viên: <strong>{ses.teacherName || primaryClass?.teacherName || 'Ms. Vy'}</strong></span>
                             </div>
+                            {(ses.absenceReason || ses.notes) && (
+                              <p className="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl border border-emerald-200/60 font-medium">
+                                📝 <strong>Lý do nghỉ:</strong> {ses.absenceReason || ses.notes}
+                              </p>
+                            )}
                           </div>
 
-                          <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 font-black text-xs border border-emerald-300 shrink-0 self-start sm:self-center">
+                          <span className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 font-black text-xs border border-emerald-300 shrink-0 self-start sm:self-center">
                             🟢 Nghỉ có phép
                           </span>
                         </div>
