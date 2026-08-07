@@ -124,23 +124,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {
           groupTitle: 'QUẢN LÝ',
           items: [
-            { id: 'adm_home', title: 'Dashboard Admin', path: '/admin', icon: Home },
-            { id: 'adm_tasks', title: 'Công Việc Cần Xử Lý', path: '/admin/tasks', icon: CheckSquare },
-            { id: 'adm_classes', title: 'Quản Lý Lớp Học', path: '/admin', icon: BookOpen },
-            { id: 'adm_students', title: 'Quản Lý Học Viên', path: '/admin', icon: GraduationCap },
-            { id: 'adm_teachers', title: 'Đội Ngũ Giáo Viên', path: '/admin', icon: UserCheck },
+            { id: 'adm_home', title: 'Dashboard Admin', path: '/admin?tab=pending_tasks', icon: Home },
+            { id: 'adm_tasks', title: 'Công Việc Cần Xử Lý', path: '/admin?tab=pending_tasks', icon: CheckSquare },
+            { id: 'adm_classes', title: 'Quản Lý Lớp Học', path: '/admin?tab=classes', icon: BookOpen },
+            { id: 'adm_students', title: 'Quản Lý Học Viên', path: '/admin?tab=students', icon: GraduationCap },
+            { id: 'adm_teachers', title: 'Đội Ngũ Giáo Viên', path: '/admin?tab=teachers', icon: UserCheck },
           ],
         },
         {
           groupTitle: 'THỐNG KÊ',
           items: [
-            { id: 'adm_stats', title: 'Thống Kê Hệ Thống', path: '/admin', icon: BarChart2 },
+            { id: 'adm_stats', title: 'Thống Kê Hệ Thống', path: '/admin?tab=pending_tasks', icon: BarChart2 },
           ],
         },
         {
           groupTitle: 'HỆ THỐNG',
           items: [
-            { id: 'adm_settings', title: 'Cài Đặt', path: '/admin', icon: Settings },
+            { id: 'adm_settings', title: 'Cài Đặt', path: '/admin?tab=pending_tasks', icon: Settings },
           ],
         },
       ];
@@ -151,18 +151,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {
         groupTitle: 'QUẢN LÝ TRUNG TÂM',
         items: [
-          { id: 'sa_home', title: 'Dashboard Super Admin', path: '/super-admin', icon: Home },
-          { id: 'sa_tasks', title: 'Công Việc Cần Xử Lý', path: '/admin/tasks', icon: CheckSquare },
-          { id: 'sa_classes', title: 'Quản Lý Lớp Học', path: '/super-admin', icon: BookOpen },
-          { id: 'sa_students', title: 'Quản Lý Học Viên', path: '/super-admin', icon: GraduationCap },
-          { id: 'sa_teachers', title: 'Đội Ngũ Giáo Viên', path: '/super-admin', icon: UserCheck },
+          { id: 'sa_home', title: 'Dashboard Super Admin', path: '/super-admin?tab=pending_tasks', icon: Home },
+          { id: 'sa_tasks', title: 'Công Việc Cần Xử Lý', path: '/super-admin?tab=pending_tasks', icon: CheckSquare },
+          { id: 'sa_classes', title: 'Quản Lý Lớp Học', path: '/super-admin?tab=classes', icon: BookOpen },
+          { id: 'sa_students', title: 'Quản Lý Học Viên', path: '/super-admin?tab=students', icon: GraduationCap },
+          { id: 'sa_teachers', title: 'Đội Ngũ Giáo Viên', path: '/super-admin?tab=teachers', icon: UserCheck },
         ],
       },
       {
         groupTitle: 'TÀI CHÍNH & THU NHẬP',
         items: [
-          { id: 'sa_revenue', title: 'Báo Cáo Doanh Thu', path: '/super-admin', icon: DollarSign },
-          { id: 'sa_salary', title: 'Lương & Học Phí VietQR', path: '/super-admin', icon: CreditCard },
+          { id: 'sa_revenue', title: 'Báo Cáo Doanh Thu', path: '/super-admin?tab=revenue', icon: DollarSign },
+          { id: 'sa_salary', title: 'Lương & Học Phí VietQR', path: '/super-admin?tab=invoices', icon: CreditCard },
         ],
       },
       {
@@ -185,15 +185,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const menuGroups = getMenuGroups();
 
   const isPathActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    const currentUrl = location.pathname + location.search;
+    if (path === currentUrl) return true;
+    if (path === '/super-admin?tab=pending_tasks' && location.pathname === '/super-admin' && (!location.search || location.search.includes('pending_tasks'))) return true;
+    if (path === '/admin?tab=pending_tasks' && location.pathname === '/admin' && (!location.search || location.search.includes('pending_tasks'))) return true;
+    if (path.includes('?tab=')) {
+      return location.pathname + location.search === path;
+    }
     return location.pathname === path || (path !== '/student' && path !== '/teacher' && path !== '/admin' && path !== '/super-admin' && location.pathname.startsWith(path));
   };
 
   const handleMenuItemClick = (item: MenuItem) => {
     if (item.onClick) {
       item.onClick();
-    } else {
+    } else if (item.path) {
       navigate(item.path);
+      window.dispatchEvent(new Event('navigation_tab_change'));
     }
     setIsMobileOpen(false);
   };

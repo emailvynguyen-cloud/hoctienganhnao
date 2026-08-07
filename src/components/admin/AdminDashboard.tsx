@@ -101,6 +101,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
 
   useEffect(() => {
+    const syncTabFromUrl = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam) {
+          setActiveTab(tabParam as any);
+        }
+      }
+    };
+
+    syncTabFromUrl();
+
+    window.addEventListener('popstate', syncTabFromUrl);
+    window.addEventListener('navigation_tab_change', syncTabFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncTabFromUrl);
+      window.removeEventListener('navigation_tab_change', syncTabFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
     if (targetSubmissionId) {
       setActiveTab('grading');
     }
