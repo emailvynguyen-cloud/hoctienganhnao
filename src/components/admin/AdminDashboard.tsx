@@ -665,6 +665,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           students={safeStudents}
           sessions={sessions}
           allUsers={allSystemUsers}
+          currentUser={currentUser}
           onOpenAddSession={onOpenAddSession}
           onInspectClass={(classId) => setInspectedClassId(classId)}
         />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Class, Student, Session, User } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { Bell, Clock, AlertCircle, BookOpen, CheckCircle2, UserCheck, ChevronRight, ExternalLink } from 'lucide-react';
+import { Bell, Clock, AlertCircle, BookOpen, CheckCircle2, UserCheck, ChevronRight, ExternalLink, Trash2 } from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface PendingTasksDashboardProps {
@@ -9,6 +9,7 @@ interface PendingTasksDashboardProps {
   students: Student[];
   sessions: Session[];
   allUsers?: User[];
+  currentUser?: User | null;
   onOpenAddSession?: (classId?: string, editingSession?: Session) => void;
   onInspectClass?: (classId: string) => void;
 }
@@ -95,9 +96,20 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
   students = [],
   sessions = [],
   allUsers = [],
+  currentUser,
   onOpenAddSession,
   onInspectClass,
 }) => {
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const [dismissedTaskIds, setDismissedTaskIds] = React.useState<string[]>(() => StorageEngine.getDismissedPendingTaskIds());
+
+  const handleDismissTask = (taskId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
+      StorageEngine.dismissPendingTaskId(taskId);
+      setDismissedTaskIds((prev) => [...prev, taskId]);
+    }
+  };
+
   const now = new Date();
   const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -145,9 +157,10 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
     if (!group) return;
 
     // INDEPENDENT CONDITION A: UNRECORDED SESSION (If end time passed & session not recorded today)
-    if (sched.isEndTimePassed && !recordedTodaySession) {
+    const unrecordedTaskId = `unrecorded_${cls.id}_${todayISO}`;
+    if (sched.isEndTimePassed && !recordedTodaySession && !dismissedTaskIds.includes(unrecordedTaskId)) {
       group.tasks.push({
-        id: `unrecorded_${cls.id}_${todayISO}`,
+        id: unrecordedTaskId,
         type: 'unrecorded_session',
         classId: cls.id,
         className: cls.className,
@@ -158,7 +171,12 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
     }
 
     // INDEPENDENT CONDITION B: MISSING QUIZLET (If end time passed, check missing Quizlet for students in class - skip if excused or charged absence session)
-    if (sched.isEndTimePassed && (!recordedTodaySession || (!recordedTodaySession.isExcusedAbsenceSession && !recordedTodaySession.isChargedAbsenceSession))) {
+    const quizletTaskId = `quizlet_${cls.id}_${todayISO}`;
+    if (
+      sched.isEndTimePassed &&
+      (!recordedTodaySession || (!recordedTodaySession.isExcusedAbsenceSession && !recordedTodaySession.isChargedAbsenceSession)) &&
+      !dismissedTaskIds.includes(quizletTaskId)
+    ) {
       const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(cls.id));
       const targetSession = recordedTodaySession || sessions.find((s) => s.classId === cls.id && !s.isExcusedAbsenceSession && !s.isChargedAbsenceSession);
 
@@ -188,7 +206,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
 
       if (missingQuizletStudentNames.length > 0) {
         group.tasks.push({
-          id: `quizlet_${cls.id}_${todayISO}`,
+          id: quizletTaskId,
           type: 'missing_quizlet',
           classId: cls.id,
           className: cls.className,
@@ -331,25 +349,42 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
                         </span>
                       </span>
 
-                      {task.type === 'unrecorded_session' && onOpenAddSession && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenAddSession(task.classId)}
-                          className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center"
-                        >
-                          + Nhập Buổi Ngay ↗
-                        </button>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {task.type === 'unrecorded_session' && onOpenAddSession && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenAddSession(task.classId)}
+                            className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                          >
+                            + Nhập Buổi Ngay ↗
+                          </button>
+                        )}
 
-                      {task.type === 'missing_quizlet' && onInspectClass && (
-                        <button
-                          type="button"
-                          onClick={() => onInspectClass(task.classId)}
-                          className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center"
-                        >
-                          Chỉnh Sửa Lớp ↗
-                        </button>
-                      )}
+                        {task.type === 'missing_quizlet' && onInspectClass && (
+                          <button
+                            type="button"
+                            onClick={() => onInspectClass(task.classId)}
+                            className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                          >
+                            Chỉnh Sửa Lớp ↗
+                          </button>
+                        )}
+
+                        {/* ONLY SUPER ADMIN HAS PERMISSION TO DISMISS TASK PERMANENTLY */}
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDismissTask(task.id);
+                            }}
+                            className="px-2.5 py-1 rounded-xl bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-700 font-extrabold text-[11px] transition shrink-0 cursor-pointer shadow-2xs border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                            title="Chỉ Super Admin: Bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1 text-slate-500 hover:text-white" /> 🗑 Bỏ qua
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-1 font-medium">
