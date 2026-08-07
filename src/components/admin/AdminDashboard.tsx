@@ -516,17 +516,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Tabs Navigation Bar */}
       <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
-        {/* ACCOUNT MANAGEMENT TAB - SUPER ADMIN ONLY */}
-        {isSuperAdmin && (
-          <button
-            onClick={onOpenAccountManagement}
-            className="h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 hover:bg-sky-100"
-            title="Quản Lý Cấp Mới & Đổi Mật Khẩu Tài Khoản Nhân Sự"
-          >
-            <Users className="w-4 h-4 mr-1.5 text-sky-600" /> Quản Lý Tài Khoản Đăng Nhập
-          </button>
-        )}
-
         <button
           onClick={() => setActiveTab('pending_tasks')}
           className={`h-11 px-4 rounded-xl text-sm font-bold transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
