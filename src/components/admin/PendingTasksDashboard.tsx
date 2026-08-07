@@ -1,7 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Class, Student, Session, User } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { Bell, Clock, AlertCircle, BookOpen, CheckCircle2, UserCheck, ChevronRight, ExternalLink, Trash2 } from 'lucide-react';
+import {
+  Bell,
+  Clock,
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  UserCheck,
+  ChevronRight,
+  ExternalLink,
+  Trash2,
+  Filter,
+  Calendar,
+  AlertTriangle,
+  User as UserIcon,
+  Sparkles,
+} from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 
 interface PendingTasksDashboardProps {
@@ -19,10 +34,16 @@ export interface PendingTaskItem {
   type: 'unrecorded_session' | 'missing_quizlet';
   classId: string;
   className: string;
+  teacherId: string;
+  teacherName: string;
+  teacherAvatar?: string;
+  dateISO: string;
   scheduleTimeStr: string;
-  endTimeStr: string;
-  overdueText?: string;
+  overdueDays: number;
+  overdueBadgeText: string;
+  priorityColor: 'yellow' | 'orange' | 'red';
   missingStudents?: string[];
+  sessionId?: string;
 }
 
 export interface TeacherPendingGroup {
@@ -33,11 +54,44 @@ export interface TeacherPendingGroup {
 }
 
 // ----------------------------------------------------------------------
-// HELPER: PARSE SCHEDULE & CHECK IF TODAY MATCHES & END TIME PASSED
+// HELPER: DATE FORMATTING & OVERDUE CALCULATION
 // ----------------------------------------------------------------------
-function getTodayScheduleInfo(scheduleStr: string = '') {
+function formatSessionDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
+function calculateOverdueInfo(todayISO: string, dateISO: string) {
+  const t = new Date(todayISO);
+  const d = new Date(dateISO);
+  const diffTime = t.getTime() - d.getTime();
+  const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 3600 * 24)));
+
+  let priorityColor: 'yellow' | 'orange' | 'red' = 'yellow';
+  if (diffDays >= 4) {
+    priorityColor = 'red';
+  } else if (diffDays >= 2) {
+    priorityColor = 'orange';
+  }
+
+  const overdueBadgeText = diffDays === 0 ? 'Hôm nay' : `Quá hạn ${diffDays} ngày`;
+
+  return {
+    overdueDays: diffDays,
+    overdueBadgeText,
+    priorityColor,
+  };
+}
+
+// Helper to extract past scheduled dates for a class (up to past 45 days)
+function getPastScheduledDates(cls: Class, daysBack: number = 45): string[] {
+  const result: string[] = [];
+  const scheduleStr = cls.schedule || '';
   const now = new Date();
-  const todayDayIdx = now.getDay(); // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
 
   const dayPatterns: { idx: number; pattern: RegExp }[] = [
     { idx: 1, pattern: /T2|THỨ 2|THỨ HAI/i },
@@ -49,46 +103,33 @@ function getTodayScheduleInfo(scheduleStr: string = '') {
     { idx: 0, pattern: /CN|CHỦ NHẬT/i },
   ];
 
-  const todayMatch = dayPatterns.find((p) => p.idx === todayDayIdx);
-  const isScheduledToday = todayMatch ? todayMatch.pattern.test(scheduleStr) : false;
+  for (let i = 0; i <= daysBack; i++) {
+    const d = new Date();
+    d.setDate(now.getDate() - i);
+    const dayIdx = d.getDay();
+    const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
+    if (matchPattern && matchPattern.pattern.test(scheduleStr)) {
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      result.push(iso);
+    }
+  }
+  return result;
+}
 
-  // Extract time slot (e.g. "18:00 - 19:30")
+function getScheduleTimeStr(scheduleStr: string = '') {
   const rangeMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
   const startTimeStr = rangeMatch ? rangeMatch[1].padStart(5, '0') : '18:00';
   const endTimeStr = rangeMatch ? rangeMatch[2].padStart(5, '0') : '19:30';
+  return { startTimeStr, endTimeStr };
+}
 
-  // Check if end time has passed today
+function isTodayEndTimePassed(scheduleStr: string = '') {
+  const now = new Date();
+  const { endTimeStr } = getScheduleTimeStr(scheduleStr);
   const currentHH = String(now.getHours()).padStart(2, '0');
   const currentMM = String(now.getMinutes()).padStart(2, '0');
   const currentTimeStr = `${currentHH}:${currentMM}`;
-
-  const isEndTimePassed = isScheduledToday && currentTimeStr >= endTimeStr;
-
-  // Overdue calculation
-  let overdueText = '';
-  if (isEndTimePassed) {
-    const [endH, endM] = endTimeStr.split(':').map(Number);
-    const endMinutes = endH * 60 + endM;
-    const curMinutes = now.getHours() * 60 + now.getMinutes();
-    const diffMin = curMinutes - endMinutes;
-    if (diffMin > 60) {
-      const hours = Math.floor(diffMin / 60);
-      const mins = diffMin % 60;
-      overdueText = `Quá hạn ${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
-    } else if (diffMin > 0) {
-      overdueText = `Quá hạn ${diffMin} phút`;
-    } else {
-      overdueText = 'Đã hết giờ học';
-    }
-  }
-
-  return {
-    isScheduledToday,
-    startTimeStr,
-    endTimeStr,
-    isEndTimePassed,
-    overdueText,
-  };
+  return currentTimeStr >= endTimeStr;
 }
 
 export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
@@ -101,7 +142,9 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
   onInspectClass,
 }) => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
-  const [dismissedTaskIds, setDismissedTaskIds] = React.useState<string[]>(() => StorageEngine.getDismissedPendingTaskIds());
+  const [dismissedTaskIds, setDismissedTaskIds] = useState<string[]>(() => StorageEngine.getDismissedPendingTaskIds());
+  const [filterType, setFilterType] = useState<'all' | 'unrecorded' | 'missing_quizlet' | 'overdue' | 'today'>('all');
+  const [selectedTeacherFilter, setSelectedTeacherFilter] = useState<string>('all');
 
   const handleDismissTask = (taskId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
@@ -113,119 +156,172 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
   const now = new Date();
   const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  // 1. CALCULATE TODAY SUMMARY METRICS
-  const todayClassesInfo = classes.map((cls) => {
-    const sched = getTodayScheduleInfo(cls.schedule);
-    const recordedTodaySession = sessions.find((s) => s.classId === cls.id && s.date === todayISO);
-    return {
-      cls,
-      sched,
-      recordedTodaySession,
-    };
+  const allPendingTasks: PendingTaskItem[] = [];
+
+  // =========================================================================
+  // SOURCE A: THEO LỊCH HỌC CỐ ĐỊNH (🔴 CHƯA NHẬP BUỔI HỌC)
+  // =========================================================================
+  classes.forEach((cls) => {
+    if (!cls || !cls.id) return;
+    const pastDates = getPastScheduledDates(cls, 45);
+
+    pastDates.forEach((dateISO) => {
+      const isToday = dateISO === todayISO;
+      const isTimePassed = !isToday || isTodayEndTimePassed(cls.schedule);
+
+      if (isTimePassed) {
+        const recordedSession = sessions.find((s) => s.classId === cls.id && s.date === dateISO);
+        const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
+
+        if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId)) {
+          const overdueInfo = calculateOverdueInfo(todayISO, dateISO);
+          const { startTimeStr, endTimeStr } = getScheduleTimeStr(cls.schedule);
+
+          allPendingTasks.push({
+            id: unrecordedTaskId,
+            type: 'unrecorded_session',
+            classId: cls.id,
+            className: cls.className,
+            teacherId: cls.teacherId || cls.teacherName || 'u_teacher',
+            teacherName: cls.teacherName || 'Giáo viên',
+            dateISO,
+            scheduleTimeStr: `Lịch cố định (${startTimeStr} - ${endTimeStr}) • Ngày ${formatSessionDate(dateISO)}`,
+            ...overdueInfo,
+          });
+        }
+      }
+    });
   });
 
-  const scheduledTodayClasses = todayClassesInfo.filter((i) => i.sched.isScheduledToday);
-  const totalScheduledToday = scheduledTodayClasses.length;
-  const totalRecordedToday = scheduledTodayClasses.filter((i) => !!i.recordedTodaySession).length;
-  const totalUnrecordedToday = scheduledTodayClasses.filter((i) => !i.recordedTodaySession && i.sched.isEndTimePassed).length;
+  // =========================================================================
+  // SOURCE B: THEO BUỔI HỌC ĐÃ ĐƯỢC TẠO (🟠 CHƯA THÊM QUIZLET)
+  // Applies to ALL created sessions (fixed schedule & extra out-of-schedule)
+  // Excludes: Nghỉ có phép, Nghỉ tính phí, Buổi bị hủy
+  // =========================================================================
+  sessions.forEach((session) => {
+    if (!session || !session.classId) return;
+    if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession) return;
 
-  // 2. COMPUTE INDEPENDENT PENDING TASKS GROUPED BY TEACHER
-  const teacherGroupsMap: Record<string, TeacherPendingGroup> = {};
+    const cls = classes.find((c) => c.id === session.classId);
+    const className = session.className || cls?.className || 'Lớp Học';
+    const teacherId = session.teacherId || cls?.teacherId || 'u_teacher';
+    const teacherName = session.teacherName || cls?.teacherName || 'Giáo viên';
 
-  // Initialize teacher groups from classes
-  classes.forEach((cls) => {
-    const teacherName = cls.teacherName || 'Giáo viên';
-    const teacherId = cls.teacherId || teacherName;
+    const quizletTaskId = `quizlet_${session.id}`;
+    if (dismissedTaskIds.includes(quizletTaskId)) return;
 
-    if (!teacherGroupsMap[teacherId]) {
-      const userObj = allUsers.find((u) => u.displayName === teacherName || u.uid === teacherId);
-      teacherGroupsMap[teacherId] = {
+    const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(session.classId));
+    const missingQuizletStudentNames: string[] = [];
+
+    classStudents.forEach((std) => {
+      // Exclude students who had an excused absence status in attendance
+      const attRecord = (session.attendance || []).find((a) => a.studentId === std.id);
+      if (attRecord?.status === 'excused') return;
+
+      const sessionQuizlet = session.quizletUrl;
+      const fbObj = session.studentFeedbacks?.[std.id];
+      const studentFbUrl = fbObj?.materialUrl;
+      const studentFbMaterials = fbObj?.materials || [];
+
+      const hasSessionQuizlet = !!sessionQuizlet && sessionQuizlet.trim().length > 0;
+      const hasFbUrlQuizlet = !!studentFbUrl && studentFbUrl.toLowerCase().includes('quizlet');
+      const hasFbMaterialsQuizlet = studentFbMaterials.some(
+        (m) => (m.url && m.url.toLowerCase().includes('quizlet')) || (m.title && m.title.toLowerCase().includes('quizlet'))
+      );
+      const hasStudentResourceQuizlet = (std.resourceLinks || []).some(
+        (r) => (r.url && r.url.toLowerCase().includes('quizlet')) || (r.title && r.title.toLowerCase().includes('quizlet'))
+      );
+
+      const isQuizletCompleted = hasSessionQuizlet || hasFbUrlQuizlet || hasFbMaterialsQuizlet || hasStudentResourceQuizlet;
+
+      if (!isQuizletCompleted) {
+        missingQuizletStudentNames.push(std.name);
+      }
+    });
+
+    if (missingQuizletStudentNames.length > 0) {
+      const overdueInfo = calculateOverdueInfo(todayISO, session.date);
+      allPendingTasks.push({
+        id: quizletTaskId,
+        type: 'missing_quizlet',
+        classId: session.classId,
+        className,
         teacherId,
         teacherName,
+        dateISO: session.date,
+        scheduleTimeStr: `Buổi #${session.sessionNumber} • Ngày ${formatSessionDate(session.date)}`,
+        missingStudents: missingQuizletStudentNames,
+        sessionId: session.id,
+        ...overdueInfo,
+      });
+    }
+  });
+
+  // =========================================================================
+  // PRIORITY SORTING:
+  // 1. Most overdue days first (highest overdueDays at top)
+  // 2. Unrecorded before Quizlet
+  // 3. Newest date first
+  // =========================================================================
+  allPendingTasks.sort((a, b) => {
+    if (b.overdueDays !== a.overdueDays) {
+      return b.overdueDays - a.overdueDays;
+    }
+    if (a.type !== b.type) {
+      return a.type === 'unrecorded_session' ? -1 : 1;
+    }
+    return b.dateISO.localeCompare(a.dateISO);
+  });
+
+  // Calculate summary counters
+  const totalTasksCount = allPendingTasks.length;
+  const unrecordedCount = allPendingTasks.filter((t) => t.type === 'unrecorded_session').length;
+  const quizletCount = allPendingTasks.filter((t) => t.type === 'missing_quizlet').length;
+  const overdueCount = allPendingTasks.filter((t) => t.overdueDays > 0).length;
+  const todayCount = allPendingTasks.filter((t) => t.overdueDays === 0).length;
+
+  // Extract unique teacher list for filter dropdown
+  const uniqueTeachers = Array.from(
+    new Set(allPendingTasks.map((t) => JSON.stringify({ id: t.teacherId, name: t.teacherName })))
+  ).map((str) => JSON.parse(str) as { id: string; name: string });
+
+  // Apply Quick Filters
+  const filteredTasks = allPendingTasks.filter((task) => {
+    if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;
+    if (filterType === 'missing_quizlet' && task.type !== 'missing_quizlet') return false;
+    if (filterType === 'overdue' && task.overdueDays === 0) return false;
+    if (filterType === 'today' && task.overdueDays !== 0) return false;
+
+    if (selectedTeacherFilter !== 'all') {
+      if (task.teacherId !== selectedTeacherFilter && task.teacherName !== selectedTeacherFilter) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Group by Teacher
+  const teacherGroupsMap: Record<string, TeacherPendingGroup> = {};
+  filteredTasks.forEach((task) => {
+    const teacherKey = task.teacherId || task.teacherName;
+    if (!teacherGroupsMap[teacherKey]) {
+      const userObj = allUsers.find((u) => u.displayName === task.teacherName || u.uid === task.teacherId);
+      teacherGroupsMap[teacherKey] = {
+        teacherId: teacherKey,
+        teacherName: task.teacherName,
         teacherAvatar: userObj?.avatarUrl,
         tasks: [],
       };
     }
+    teacherGroupsMap[teacherKey].tasks.push(task);
   });
 
-  // Evaluate scheduled classes whose END TIME HAS PASSED today
-  scheduledTodayClasses.forEach(({ cls, sched, recordedTodaySession }) => {
-    const teacherName = cls.teacherName || 'Giáo viên';
-    const teacherId = cls.teacherId || teacherName;
-    const group = teacherGroupsMap[teacherId];
-
-    if (!group) return;
-
-    // INDEPENDENT CONDITION A: UNRECORDED SESSION (If end time passed & session not recorded today)
-    const unrecordedTaskId = `unrecorded_${cls.id}_${todayISO}`;
-    if (sched.isEndTimePassed && !recordedTodaySession && !dismissedTaskIds.includes(unrecordedTaskId)) {
-      group.tasks.push({
-        id: unrecordedTaskId,
-        type: 'unrecorded_session',
-        classId: cls.id,
-        className: cls.className,
-        scheduleTimeStr: `${sched.startTimeStr} - ${sched.endTimeStr}`,
-        endTimeStr: sched.endTimeStr,
-        overdueText: sched.overdueText,
-      });
-    }
-
-    // INDEPENDENT CONDITION B: MISSING QUIZLET (If end time passed, check missing Quizlet for students in class - skip if excused or charged absence session)
-    const quizletTaskId = `quizlet_${cls.id}_${todayISO}`;
-    if (
-      sched.isEndTimePassed &&
-      (!recordedTodaySession || (!recordedTodaySession.isExcusedAbsenceSession && !recordedTodaySession.isChargedAbsenceSession)) &&
-      !dismissedTaskIds.includes(quizletTaskId)
-    ) {
-      const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(cls.id));
-      const targetSession = recordedTodaySession || sessions.find((s) => s.classId === cls.id && !s.isExcusedAbsenceSession && !s.isChargedAbsenceSession);
-
-      const missingQuizletStudentNames: string[] = [];
-
-      classStudents.forEach((std) => {
-        const sessionQuizlet = targetSession?.quizletUrl;
-        const fbObj = targetSession?.studentFeedbacks?.[std.id];
-        const studentFbUrl = fbObj?.materialUrl;
-        const studentFbMaterials = fbObj?.materials || [];
-
-        const hasSessionQuizlet = !!sessionQuizlet && sessionQuizlet.trim().length > 0;
-        const hasFbUrlQuizlet = !!studentFbUrl && studentFbUrl.toLowerCase().includes('quizlet');
-        const hasFbMaterialsQuizlet = studentFbMaterials.some(
-          (m) => (m.url && m.url.toLowerCase().includes('quizlet')) || (m.title && m.title.toLowerCase().includes('quizlet'))
-        );
-        const hasStudentResourceQuizlet = (std.resourceLinks || []).some(
-          (r) => (r.url && r.url.toLowerCase().includes('quizlet')) || (r.title && r.title.toLowerCase().includes('quizlet'))
-        );
-
-        const isQuizletCompleted = hasSessionQuizlet || hasFbUrlQuizlet || hasFbMaterialsQuizlet || hasStudentResourceQuizlet;
-
-        if (!isQuizletCompleted) {
-          missingQuizletStudentNames.push(std.name);
-        }
-      });
-
-      if (missingQuizletStudentNames.length > 0) {
-        group.tasks.push({
-          id: quizletTaskId,
-          type: 'missing_quizlet',
-          classId: cls.id,
-          className: cls.className,
-          scheduleTimeStr: `${sched.startTimeStr} - ${sched.endTimeStr}`,
-          endTimeStr: sched.endTimeStr,
-          missingStudents: missingQuizletStudentNames,
-        });
-      }
-    }
-  });
-
-  // Filter ONLY teachers who have at least 1 pending task (totalPendingTasks > 0)
   const activeTeacherGroups = Object.values(teacherGroupsMap).filter((g) => g.tasks.length > 0);
-  const totalTeachersWithPending = activeTeacherGroups.length;
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* 3. TODAY SUMMARY OVERVIEW BAR ("TỔNG QUAN HÔM NAY") */}
-      <div className="bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 text-white rounded-3xl p-6 sm:p-7 shadow-md space-y-4 relative overflow-hidden">
+      {/* HEADER BANNER */}
+      <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white rounded-3xl p-6 sm:p-7 shadow-md space-y-4 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center font-black text-2xl shadow-2xs">
@@ -233,10 +329,10 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                CÔNG VIỆC CẦN XỬ LÝ (TODAY DASHBOARD)
+                CÔNG VIỆC CẦN XỬ LÝ (BACKLOG TRACKING)
               </h2>
               <p className="text-xs text-rose-100 font-medium">
-                Tự động tổng hợp và kiểm tra độc lập lịch học & tình trạng Quizlet theo thời gian thực
+                Theo dõi tồn đọng liên tục • Không tự xóa theo ngày • Cập nhật Realtime khi hoàn thành
               </p>
             </div>
           </div>
@@ -246,55 +342,132 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
           </div>
         </div>
 
-        {/* 4 SUMMARY STAT CARDS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-1">
-          <div className="bg-white/15 backdrop-blur-xs p-4 rounded-2xl border border-white/20 space-y-1">
-            <span className="text-[11px] font-bold text-rose-100 block uppercase">
-              Tổng Buổi Học Hôm Nay
-            </span>
-            <span className="text-2xl sm:text-3xl font-black text-white block">
-              {totalScheduledToday} buổi
-            </span>
+        {/* SUMMARY STAT CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
+            <span className="text-[10px] font-bold text-rose-100 block uppercase">Tổng Việc Tồn</span>
+            <span className="text-2xl font-black text-white block">{totalTasksCount} việc</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-4 rounded-2xl border border-white/20 space-y-1">
-            <span className="text-[11px] font-bold text-emerald-200 block uppercase">
-              Số Buổi Đã Nhập
-            </span>
-            <span className="text-2xl sm:text-3xl font-black text-emerald-100 block">
-              {totalRecordedToday} buổi
-            </span>
+          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
+            <span className="text-[10px] font-bold text-rose-200 block uppercase">🔴 Chưa Nhập Buổi</span>
+            <span className="text-2xl font-black text-rose-100 block">{unrecordedCount} buổi</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-4 rounded-2xl border border-white/20 space-y-1">
-            <span className="text-[11px] font-bold text-rose-200 block uppercase">
-              Số Buổi Chưa Nhập
-            </span>
-            <span className="text-2xl sm:text-3xl font-black text-rose-100 block">
-              {totalUnrecordedToday} buổi
-            </span>
+          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
+            <span className="text-[10px] font-bold text-amber-200 block uppercase">🟠 Chưa Thêm Quizlet</span>
+            <span className="text-2xl font-black text-amber-100 block">{quizletCount} ca</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-4 rounded-2xl border border-white/20 space-y-1">
-            <span className="text-[11px] font-bold text-amber-200 block uppercase">
-              GV Còn Việc Xử Lý
-            </span>
-            <span className="text-2xl sm:text-3xl font-black text-amber-100 block">
-              {totalTeachersWithPending} GV
-            </span>
+          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
+            <span className="text-[10px] font-bold text-rose-200 block uppercase">⏰ Vi Phạm Quá Hạn</span>
+            <span className="text-2xl font-black text-rose-200 block">{overdueCount} việc</span>
+          </div>
+
+          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
+            <span className="text-[10px] font-bold text-emerald-200 block uppercase">📅 Phát Sinh Hôm Nay</span>
+            <span className="text-2xl font-black text-emerald-100 block">{todayCount} việc</span>
           </div>
         </div>
       </div>
 
-      {/* 4. TEACHER CARDS GRID */}
+      {/* QUICK FILTERS BAR */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-slate-500 uppercase tracking-wider mr-1 flex items-center">
+            <Filter className="w-3.5 h-3.5 mr-1" /> Lọc Nhanh:
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setFilterType('all')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              filterType === 'all'
+                ? 'bg-rose-500 text-white shadow-2xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Tất Cả ({totalTasksCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterType('unrecorded')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              filterType === 'unrecorded'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 hover:bg-rose-100'
+            }`}
+          >
+            🔴 Chưa Nhập Buổi ({unrecordedCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterType('missing_quizlet')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              filterType === 'missing_quizlet'
+                ? 'bg-amber-600 text-white shadow-2xs'
+                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+            }`}
+          >
+            🟠 Chưa Thêm Quizlet ({quizletCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterType('overdue')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              filterType === 'overdue'
+                ? 'bg-rose-700 text-white shadow-2xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-rose-700 dark:text-rose-400 hover:bg-rose-100'
+            }`}
+          >
+            ⏰ Quá Hạn ({overdueCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterType('today')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              filterType === 'today'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+            }`}
+          >
+            📅 Hôm Nay ({todayCount})
+          </button>
+        </div>
+
+        {/* TEACHER FILTER DROPDOWN */}
+        {uniqueTeachers.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-bold text-slate-500 shrink-0">👩‍🏫 Theo Giáo Viên:</span>
+            <select
+              value={selectedTeacherFilter}
+              onChange={(e) => setSelectedTeacherFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer"
+            >
+              <option value="all">Tất Cả Giáo Viên ({uniqueTeachers.length})</option>
+              {uniqueTeachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* MAIN TEACHER GROUPS GRID */}
       {activeTeacherGroups.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-emerald-200 dark:border-slate-800 space-y-3 shadow-2xs">
           <span className="text-4xl">🎉</span>
           <h3 className="text-lg font-black text-emerald-950 dark:text-emerald-300">
-            Tuyệt Vời! Không Có Công Việc Nào Tồn Đọng Hôm Nay
+            Tuyệt Vời! Không Có Công Việc Nào Tồn Đọng
           </h3>
           <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
-            Toàn bộ giáo viên đã hoàn thành nhập buổi học và thêm Quizlet đầy đủ cho học viên.
+            Toàn bộ công việc theo bộ lọc đã hoàn thành hoặc chưa có công việc nào bị quá hạn.
           </p>
         </div>
       ) : (
@@ -331,88 +504,103 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
               </div>
 
               {/* PENDING TASKS LIST */}
-              <div className="space-y-3">
-                {group.tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`p-4 rounded-2xl border space-y-2 text-xs transition duration-150 ${
-                      task.type === 'unrecorded_session'
-                        ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-200'
-                        : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-950 dark:text-amber-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-black">
-                      <span className="flex items-center space-x-1.5">
-                        <span className="text-sm">{task.type === 'unrecorded_session' ? '🔴' : '🟠'}</span>
-                        <span className="uppercase tracking-wider">
-                          {task.type === 'unrecorded_session' ? 'Chưa Nhập Buổi Học' : 'Chưa Thêm Quizlet'}
-                        </span>
-                      </span>
+              <div className="space-y-3.5">
+                {group.tasks.map((task) => {
+                  // Priority color badges:
+                  // yellow: 0-1 days
+                  // orange: 2-3 days
+                  // red: 4+ days
+                  const priorityBg =
+                    task.priorityColor === 'red'
+                      ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-100 border-rose-300 dark:border-rose-800'
+                      : task.priorityColor === 'orange'
+                      ? 'bg-orange-100 dark:bg-orange-950/80 text-orange-900 dark:text-orange-100 border-orange-300 dark:border-orange-800'
+                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-800';
 
-                      <div className="flex items-center space-x-2">
-                        {task.type === 'unrecorded_session' && onOpenAddSession && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenAddSession(task.classId)}
-                            className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
-                          >
-                            + Nhập Buổi Ngay ↗
-                          </button>
-                        )}
+                  const cardBorderBg =
+                    task.type === 'unrecorded_session'
+                      ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-200'
+                      : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-950 dark:text-amber-200';
 
-                        {task.type === 'missing_quizlet' && onInspectClass && (
-                          <button
-                            type="button"
-                            onClick={() => onInspectClass(task.classId)}
-                            className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
-                          >
-                            Chỉnh Sửa Lớp ↗
-                          </button>
-                        )}
+                  return (
+                    <div key={task.id} className={`p-4.5 rounded-2xl border space-y-3 text-xs transition duration-150 ${cardBorderBg}`}>
+                      {/* TASK HEADER & OVERDUE BADGE */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 font-black">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">{task.type === 'unrecorded_session' ? '🔴' : '🟠'}</span>
+                          <span className="uppercase tracking-wider">
+                            {task.type === 'unrecorded_session' ? 'Chưa Nhập Buổi Học' : 'Chưa Thêm Quizlet'}
+                          </span>
 
-                        {/* ONLY SUPER ADMIN HAS PERMISSION TO DISMISS TASK PERMANENTLY */}
-                        {isSuperAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDismissTask(task.id);
-                            }}
-                            className="px-2.5 py-1 rounded-xl bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-700 font-extrabold text-[11px] transition shrink-0 cursor-pointer shadow-2xs border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
-                            title="Chỉ Super Admin: Bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1 text-slate-500 hover:text-white" /> 🗑 Bỏ qua
-                          </button>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-black border uppercase shadow-2xs ${priorityBg}`}>
+                            ⏰ {task.overdueBadgeText}
+                          </span>
+                        </div>
+
+                        {/* ACTION BUTTONS */}
+                        <div className="flex items-center space-x-2">
+                          {task.type === 'unrecorded_session' && onOpenAddSession && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenAddSession(task.classId)}
+                              className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                            >
+                              + Nhập Buổi Ngay ↗
+                            </button>
+                          )}
+
+                          {task.type === 'missing_quizlet' && onInspectClass && (
+                            <button
+                              type="button"
+                              onClick={() => onInspectClass(task.classId)}
+                              className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                            >
+                              Chỉnh Sửa Lớp ↗
+                            </button>
+                          )}
+
+                          {/* ONLY SUPER ADMIN HAS PERMISSION TO DISMISS TASK PERMANENTLY */}
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDismissTask(task.id);
+                              }}
+                              className="px-2.5 py-1 rounded-xl bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-700 font-extrabold text-[11px] transition shrink-0 cursor-pointer shadow-2xs border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                              title="Chỉ Super Admin: Bỏ qua vĩnh viễn công việc này khỏi danh sách"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-1 text-slate-500 hover:text-white" /> 🗑 Bỏ qua
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* TASK BODY & QUIZLET MISSING STUDENTS HIERARCHY */}
+                      <div className="space-y-1.5 font-medium">
+                        <p className="font-extrabold text-slate-900 dark:text-white text-sm">
+                          • Lớp: <span className="underline text-pink-700 dark:text-pink-300">{task.className}</span> ({task.scheduleTimeStr})
+                        </p>
+
+                        {task.type === 'missing_quizlet' && task.missingStudents && task.missingStudents.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-amber-200/80 dark:border-amber-900/60 space-y-1.5 bg-amber-100/50 dark:bg-slate-800/60 p-3 rounded-xl border border-amber-200 dark:border-slate-700">
+                            <span className="font-extrabold text-amber-950 dark:text-amber-300 block">
+                              Chưa thêm Quizlet cho các học viên ({task.missingStudents.length} em):
+                            </span>
+                            <div className="pl-3 space-y-1 text-slate-800 dark:text-slate-200 font-bold">
+                              {task.missingStudents.map((stdName, sIdx) => (
+                                <div key={sIdx} className="flex items-center space-x-2 text-xs">
+                                  <span className="text-amber-600 font-black">└── 👤</span>
+                                  <span>{stdName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
-
-                    <div className="space-y-1 font-medium">
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">
-                        • {task.scheduleTimeStr} - Lớp: <span className="underline">{task.className}</span>
-                      </p>
-
-                      {task.type === 'unrecorded_session' && task.overdueText && (
-                        <span className="inline-block px-2.5 py-0.5 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 text-rose-950 dark:text-rose-100 font-extrabold text-[11px]">
-                          ⏰ {task.overdueText}
-                        </span>
-                      )}
-
-                      {task.type === 'missing_quizlet' && task.missingStudents && task.missingStudents.length > 0 && (
-                        <div className="pt-1.5 border-t border-amber-200/60 dark:border-amber-900/60 space-y-1">
-                          <span className="font-bold text-amber-900 dark:text-amber-300">
-                            Chưa thêm Quizlet cho các học viên:
-                          </span>
-                          <ul className="list-disc list-inside space-y-0.5 text-slate-800 dark:text-slate-200 font-semibold pl-1">
-                            {task.missingStudents.map((stdName, sIdx) => (
-                              <li key={sIdx}>- {stdName}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
