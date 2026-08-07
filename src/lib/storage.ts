@@ -953,6 +953,7 @@ export const StorageEngine = {
     sessionMaterials?: ResourceLink[];
     attendanceList: AttendanceRecord[];
     isChargedAbsenceSession?: boolean;
+    isExcusedAbsenceSession?: boolean;
     hasNoHomework?: boolean;
   }): Session {
     const sessions = this.getSessions() || [];
@@ -979,6 +980,7 @@ export const StorageEngine = {
       quizletUrl: sessionData.quizletUrl,
       sessionMaterials: sessionData.sessionMaterials || [],
       isChargedAbsenceSession: sessionData.isChargedAbsenceSession || false,
+      isExcusedAbsenceSession: sessionData.isExcusedAbsenceSession || false,
       hasNoHomework: sessionData.hasNoHomework || false,
       createdAt: new Date().toISOString(),
     };
@@ -989,8 +991,13 @@ export const StorageEngine = {
     const students = this.getStudents() || [];
     let updated = false;
 
+    // Remaining sessions deduction: strictly SKIPPED if isExcusedAbsenceSession is true
     (sessionData.attendanceList || []).forEach((att) => {
-      if (att && (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)) {
+      if (
+        att &&
+        !sessionData.isExcusedAbsenceSession &&
+        (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)
+      ) {
         const std = students.find((s) => s && s.id === att.studentId);
         if (std && std.remainingSessions > 0) {
           std.remainingSessions -= 1;

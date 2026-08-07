@@ -556,6 +556,29 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
         {classSessions.length > 0 ? (
           classSessions.map((session) => {
+            if (session.isExcusedAbsenceSession) {
+              return (
+                <div
+                  key={session.id}
+                  className="p-5 rounded-3xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-between text-xs font-black text-emerald-950 dark:text-emerald-300 shadow-2xs"
+                >
+                  <span className="truncate mr-2 flex items-center">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200 border border-emerald-300 mr-2 shrink-0">🟢 Nghỉ có phép</span>
+                    Buổi #{session.sessionNumber} - Ngày {formatSessionDate(session.date)} (Không tính phí • Không trừ số buổi)
+                  </span>
+
+                  {onOpenEditSession && (
+                    <button
+                      onClick={() => onOpenEditSession(session)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-200 hover:bg-emerald-300 text-emerald-950 border border-emerald-400 font-extrabold text-[11px] transition shrink-0 cursor-pointer"
+                    >
+                      ✏️ Chỉnh Sửa
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
             if (session.isChargedAbsenceSession) {
               return (
                 <div

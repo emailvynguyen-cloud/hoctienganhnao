@@ -157,10 +157,10 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
       });
     }
 
-    // INDEPENDENT CONDITION B: MISSING QUIZLET (If end time passed, check missing Quizlet for students in class)
-    if (sched.isEndTimePassed) {
+    // INDEPENDENT CONDITION B: MISSING QUIZLET (If end time passed, check missing Quizlet for students in class - skip if excused or charged absence session)
+    if (sched.isEndTimePassed && (!recordedTodaySession || (!recordedTodaySession.isExcusedAbsenceSession && !recordedTodaySession.isChargedAbsenceSession))) {
       const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(cls.id));
-      const targetSession = recordedTodaySession || sessions.find((s) => s.classId === cls.id);
+      const targetSession = recordedTodaySession || sessions.find((s) => s.classId === cls.id && !s.isExcusedAbsenceSession && !s.isChargedAbsenceSession);
 
       const missingQuizletStudentNames: string[] = [];
 

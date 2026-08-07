@@ -135,6 +135,7 @@ export interface Session {
   quizletUrl?: string; // Link Quizlet Học Từ Vựng Buổi Học
   sessionMaterials?: ResourceLink[];
   isChargedAbsenceSession?: boolean; // Lớp nghỉ tính phí vì nghỉ quá số lần quy định hoặc học viên không vào lớp
+  isExcusedAbsenceSession?: boolean; // Lớp nghỉ có phép (không tính phí)
   hasNoHomework?: boolean; // Tùy chọn đánh dấu buổi học không có bài tập về nhà
   createdAt: string;
 }

@@ -335,6 +335,38 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     ];
     const cardBgStyle = sessionPastelBgPalette[(session.sessionNumber - 1) % sessionPastelBgPalette.length];
 
+    if (session.isExcusedAbsenceSession) {
+      return (
+        <div
+          key={session.id}
+          className="rounded-2xl border border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-300"
+        >
+          <div className="flex items-center space-x-3">
+            <span className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200/60">
+              #{session.sessionNumber}
+            </span>
+            <div>
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Buổi Học #{session.sessionNumber} • Ngày {formatSessionDate(session.date)}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 uppercase flex items-center">
+                  🟢 Nghỉ có phép
+                </span>
+              </div>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-normal mt-0.5">
+                Buổi xin nghỉ có phép (Không tính phí • Không trừ số buổi học còn lại của gói).
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[11px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 px-3 py-1 rounded-xl border border-emerald-300 shrink-0 text-center">
+            ✨ Không tính phí & Không trừ số buổi
+          </span>
+        </div>
+      );
+    }
+
     if (session.isChargedAbsenceSession) {
       return (
         <div
@@ -802,28 +834,68 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
         </div>
 
-        {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
-        <div
-          onClick={() => setIsPaymentHistoryOpen(true)}
-          className="bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white px-7 py-6 rounded-2xl border border-rose-200/80 dark:border-slate-700 shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
-          title="Bấm vào để xem lịch sử đóng học phí chi tiết"
-        >
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
-            SỐ BUỔI CÒN LẠI <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition" />
-          </span>
-
-          <div className="flex items-baseline justify-center gap-1.5 py-1">
-            <span className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
-              {currentStudent.remainingSessions}
+        {/* RIGHT: STAT CARDS CONTAINER */}
+        <div className="flex flex-col sm:flex-row gap-3.5 w-full lg:w-auto shrink-0">
+          {/* STAT CARD 1: SỐ BUỔI CÒN LẠI */}
+          <div
+            onClick={() => setIsPaymentHistoryOpen(true)}
+            className="bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white px-6 py-5 rounded-2xl border border-rose-200/80 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-1.5 flex-1 lg:w-44 cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
+            title="Bấm vào để xem lịch sử đóng học phí chi tiết"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+              SỐ BUỔI CÒN LẠI <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition" />
             </span>
-            <span className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400 leading-none">
-              Buổi
+
+            <div className="flex items-baseline justify-center gap-1 py-0.5">
+              <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
+                {currentStudent.remainingSessions}
+              </span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-none">
+                Buổi
+              </span>
+            </div>
+
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline transition">
+              🔍 Học phí chi tiết →
             </span>
           </div>
 
-          <span className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline transition">
-            🔍 Bấm xem chi tiết đóng học phí →
-          </span>
+          {/* STAT CARD 2: TỔNG BUỔI NGHỈ THÁNG NÀY */}
+          {(() => {
+            const now = new Date();
+            const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const monthlyExcusedCount = sessions.filter((s) => {
+              if (!s.date.startsWith(currentMonthISO)) return false;
+              if (s.isExcusedAbsenceSession) return true;
+              const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+              return att?.status === 'excused';
+            }).length;
+
+            return (
+              <div
+                onClick={() => setIsExcusedAbsencesModalOpen(true)}
+                className="bg-emerald-50/90 dark:bg-emerald-950/40 text-slate-900 dark:text-white px-6 py-5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 flex flex-col items-center justify-center text-center gap-1.5 flex-1 lg:w-48 cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
+                title="Bấm để xem chi tiết danh sách các buổi xin nghỉ có phép trong tháng"
+              >
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1">
+                  🟢 NGHỈ THÁNG NÀY <ExternalLink className="w-3 h-3 text-emerald-600 opacity-60 group-hover:opacity-100 transition" />
+                </span>
+
+                <div className="flex items-baseline justify-center gap-1 py-0.5">
+                  <span className="text-3xl sm:text-4xl font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none tracking-tight">
+                    {monthlyExcusedCount}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 leading-none">
+                    Buổi
+                  </span>
+                </div>
+
+                <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 hover:underline transition">
+                  🔍 Xem buổi nghỉ phép →
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -1640,6 +1712,88 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         allSubmissions={homeworkSubmissions}
         onRefreshData={onRefreshData}
       />
+
+      {/* 🟢 EXCUSED ABSENCES DETAIL MODAL */}
+      {isExcusedAbsencesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border-2 border-emerald-300 dark:border-emerald-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-900 dark:text-white">
+            {/* Header */}
+            <div className="p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">🟢</span>
+                <div>
+                  <h3 className="font-black text-lg sm:text-xl tracking-tight">
+                    CHI TIẾT BUỔI NGHỈ CÓ PHÉP THÁNG {new Date().getMonth() + 1}/{new Date().getFullYear()}
+                  </h3>
+                  <p className="text-xs text-emerald-100 font-medium">
+                    Danh sách các buổi xin nghỉ có phép của học viên {currentStudent.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExcusedAbsencesModalOpen(false)}
+                className="p-2 rounded-full bg-slate-950/20 hover:bg-slate-950/40 text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Table */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {(() => {
+                const now = new Date();
+                const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const monthlyExcusedSessions = sessions.filter((s) => {
+                  if (!s.date.startsWith(currentMonthISO)) return false;
+                  if (s.isExcusedAbsenceSession) return true;
+                  const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+                  return att?.status === 'excused';
+                });
+
+                if (monthlyExcusedSessions.length === 0) {
+                  return (
+                    <div className="p-8 text-center bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-dashed border-emerald-300 text-xs font-bold text-emerald-800 dark:text-emerald-300 space-y-1">
+                      <span>🎉 Học viên không có buổi nghỉ có phép nào trong tháng {now.getMonth() + 1}/{now.getFullYear()}!</span>
+                      <p className="font-normal opacity-80">Đi học rất đều đặn và chăm chỉ.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                      <span>Tổng cộng: {monthlyExcusedSessions.length} buổi xin nghỉ có phép</span>
+                      <span className="text-[11px] text-slate-500 font-normal">✨ Không tính phí & Không trừ số buổi</span>
+                    </div>
+
+                    <div className="divide-y divide-emerald-100 dark:divide-slate-800 rounded-2xl border border-emerald-200 dark:border-slate-800 overflow-hidden shadow-2xs">
+                      {monthlyExcusedSessions.map((ses) => (
+                        <div key={ses.id} className="p-4 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                          <div className="space-y-1">
+                            <div className="font-black text-slate-900 dark:text-white text-sm flex items-center space-x-2">
+                              <span>🗓 Ngày nghỉ: {formatSessionDate(ses.date)}</span>
+                              <span className="text-emerald-600 text-xs font-bold">(Buổi #{ses.sessionNumber})</span>
+                            </div>
+                            <div className="text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-3">
+                              <span>🎓 Lớp: <strong>{ses.className}</strong></span>
+                              <span>👩‍🏫 Giáo viên: <strong>{ses.teacherName || primaryClass?.teacherName || 'Ms. Vy'}</strong></span>
+                            </div>
+                          </div>
+
+                          <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 font-black text-xs border border-emerald-300 shrink-0 self-start sm:self-center">
+                            🟢 Nghỉ có phép
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
