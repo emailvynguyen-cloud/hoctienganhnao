@@ -467,3 +467,43 @@ body {
 .transition-saas {
   transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ============================================================
+   RESPONSIVE LAYOUT & TEXT WRAPPING PROTECTIONS
+   ============================================================ */
+
+/* Enforce natural word wrapping across all elements (no single-character text fragmentation) */
+h1, h2, h3, h4, h5, h6, p, span, div, a, label, button, td, th {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Prevent action buttons from shrinking below minimum touch dimensions or overlapping */
+.btn-responsive,
+button,
+a.btn-link {
+  min-height: max-content;
+}
+
+/* Flex containers auto-wrap items on narrow mobile viewports */
+.flex-wrap-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Table container horizontal scrolling protection */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Modal Max Width Fixes for Small Devices */
+@media (max-width: 640px) {
+  .responsive-modal-padding {
+    padding: 1rem !important;
+  }
+}
+

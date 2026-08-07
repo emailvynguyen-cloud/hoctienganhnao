@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Class } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { DraftStorage } from '../../lib/draftStorage';
+import { DraftPromptBanner } from '../common/DraftPromptBanner';
 import { Edit3, X, Clock, Plus, Trash2 } from 'lucide-react';
 
 interface EditClassModalProps {
@@ -108,6 +110,39 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [startSessionNumber, setStartSessionNumber] = useState(targetClass.startSessionNumber || 1);
   const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(typeof targetClass.teacherPayRatePerSession === 'number' ? targetClass.teacherPayRatePerSession : 150000);
 
+  const draftKey = `edit_class_${targetClass.id}`;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      DraftStorage.saveDraft(draftKey, {
+        className,
+        code,
+        adminId,
+        teacherName,
+        schedule,
+        courseName,
+        zoomLink,
+        startSessionNumber,
+        teacherPayRatePerSession,
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isOpen, draftKey, className, code, adminId, teacherName, schedule, courseName, zoomLink, startSessionNumber, teacherPayRatePerSession]);
+
+  const handleRestoreDraft = (data: any) => {
+    if (!data) return;
+    if (data.className) setClassName(data.className);
+    if (data.code) setCode(data.code);
+    if (data.adminId) setAdminId(data.adminId);
+    if (data.teacherName) setTeacherName(data.teacherName);
+    if (data.schedule) setSchedule(data.schedule);
+    if (data.courseName) setCourseName(data.courseName);
+    if (data.zoomLink !== undefined) setZoomLink(data.zoomLink);
+    if (data.startSessionNumber) setStartSessionNumber(data.startSessionNumber);
+    if (data.teacherPayRatePerSession) setTeacherPayRatePerSession(data.teacherPayRatePerSession);
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -137,6 +172,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       teacherPayRatePerSession: typeof teacherPayRatePerSession === 'number' && !isNaN(teacherPayRatePerSession) ? teacherPayRatePerSession : 0,
     });
 
+    DraftStorage.clearDraft(draftKey);
     alert(`Đã cập nhật thông tin lớp học "${className}" & gán Admin "${resolvedAdminName}" phụ trách thành công!`);
     onRefreshData();
     onClose();
@@ -170,6 +206,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
           
           {/* BODY CONTENT - Scrollable */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+            <DraftPromptBanner draftKey={draftKey} onRestore={handleRestoreDraft} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tên Lớp Học (*)</label>

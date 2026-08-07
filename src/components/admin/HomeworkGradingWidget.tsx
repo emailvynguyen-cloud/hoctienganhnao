@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HomeworkSubmission, Student, Class, User } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { DraftStorage } from '../../lib/draftStorage';
 import { CheckCircle2, Star, Sparkles, MessageSquare, Clock, AlertCircle, Bell, UserCheck, Check, Send } from 'lucide-react';
 import { GeminiEngine } from '../../lib/gemini';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
@@ -59,8 +60,14 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
 
   const handleOpenGrading = (sub: HomeworkSubmission) => {
     setSelectedSubId(sub.id);
-    setFeedbackText(sub.feedbackText || 'Em làm bài tập rất xuất sắc! Giữ vững phong độ nhé. ✨');
-    setStars(sub.ratingStars || 5);
+    const draft = DraftStorage.getDraft(`grading_${sub.id}`);
+    if (draft && draft.data) {
+      if (draft.data.feedbackText !== undefined) setFeedbackText(draft.data.feedbackText);
+      if (draft.data.stars !== undefined) setStars(draft.data.stars);
+    } else {
+      setFeedbackText(sub.feedbackText || 'Em làm bài tập rất xuất sắc! Giữ vững phong độ nhé. ✨');
+      setStars(sub.ratingStars || 5);
+    }
   };
 
   React.useEffect(() => {
@@ -73,6 +80,18 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
       }
     }
   }, [targetSubmissionId]);
+
+  // AUTO-SAVE DRAFT FOR GRADING FEEDBACK
+  React.useEffect(() => {
+    if (!selectedSubId) return;
+    const timer = setTimeout(() => {
+      DraftStorage.saveDraft(`grading_${selectedSubId}`, {
+        feedbackText,
+        stars,
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [selectedSubId, feedbackText, stars]);
 
   const handleAutoGenerateAI = async (sub: HomeworkSubmission) => {
     setIsGeneratingAI(true);
@@ -91,6 +110,7 @@ export const HomeworkGradingWidget: React.FC<HomeworkGradingWidgetProps> = ({
 
   const handleSubmitFeedback = (sub: HomeworkSubmission) => {
     StorageEngine.submitHomeworkFeedback(sub.id, feedbackText, stars, currentUser);
+    DraftStorage.clearDraft(`grading_${sub.id}`);
     setSelectedSubId(null);
     onRefreshData();
   };

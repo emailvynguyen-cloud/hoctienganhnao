@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Student, Class, Invoice, BankConfig, Session, User, UserRole } from '../../types';
 import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
+import { PendingTasksDashboard } from './PendingTasksDashboard';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
 import { AiStudioPortal } from './AiStudioPortal';
@@ -80,7 +81,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules'>('timetable');
+  const [activeTab, setActiveTab] = useState<'pending_tasks' | 'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules'>('pending_tasks');
 
   // CLASS RULES MANAGEMENT STATE
   const [isEditingClassRules, setIsEditingClassRules] = useState(false);
@@ -526,6 +527,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         <button
+          onClick={() => setActiveTab('pending_tasks')}
+          className={`h-11 px-4 rounded-xl text-sm font-bold transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
+            activeTab === 'pending_tasks'
+              ? 'bg-rose-600 text-white shadow-2xs'
+              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
+          }`}
+        >
+          <Clock className="w-4 h-4 mr-1.5 text-rose-500 animate-pulse" /> 📋 Công Việc Cần Xử Lý
+        </button>
+
+        <button
           onClick={() => setActiveTab('timetable')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
             activeTab === 'timetable'
@@ -644,6 +656,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <BookOpen className="w-4 h-4 mr-1.5" /> Quản Lý Nội Quy Lớp Học
         </button>
       </div>
+
+      {/* TAB 0: PENDING TASKS DASHBOARD ("CÔNG VIỆC CẦN XỬ LÝ") */}
+      {activeTab === 'pending_tasks' && (
+        <PendingTasksDashboard
+          classes={safeClasses}
+          students={safeStudents}
+          sessions={sessions}
+          allUsers={allSystemUsers}
+          onOpenAddSession={onOpenAddSession}
+          onInspectClass={(classId) => setInspectedClassId(classId)}
+        />
+      )}
 
       {/* TAB 1: WEEKLY TIMETABLE (SUPER ADMIN SHOWS ONLY MS. VY'S CLASSES TO KEEP IT CLEAN & LEAN) */}
       {activeTab === 'timetable' && (

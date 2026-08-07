@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { DraftStorage } from '../../lib/draftStorage';
+import { DraftPromptBanner } from './DraftPromptBanner';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3, FolderOpen } from 'lucide-react';
 
@@ -372,6 +374,8 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [isChargedAbsenceSession, setIsChargedAbsenceSession] = useState<boolean>(editingSession?.isChargedAbsenceSession || false);
   const [hasNoHomework, setHasNoHomework] = useState<boolean>(editingSession?.hasNoHomework || false);
 
+  const draftKey = editingSession ? `session_edit_${editingSession.id}` : `session_add_${selectedClassId || 'new'}`;
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -428,6 +432,64 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   // Materials List
   const [materials, setMaterials] = useState<ResourceLink[]>(editingSession?.sessionMaterials || []);
 
+  // AUTO-SAVE DRAFT TO LOCALSTORAGE
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      if (
+        lessonContent ||
+        recordLink ||
+        quizletUrl ||
+        homeworkItems.some((h) => h.title || h.content) ||
+        Object.keys(studentFeedbacks).length > 0
+      ) {
+        DraftStorage.saveDraft(draftKey, {
+          selectedClassId,
+          date,
+          lessonContent,
+          recordLink,
+          quizletUrl,
+          isChargedAbsenceSession,
+          hasNoHomework,
+          homeworkItems,
+          studentFeedbacks,
+          materials,
+          attendanceMap,
+        });
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [
+    isOpen,
+    draftKey,
+    selectedClassId,
+    date,
+    lessonContent,
+    recordLink,
+    quizletUrl,
+    isChargedAbsenceSession,
+    hasNoHomework,
+    homeworkItems,
+    studentFeedbacks,
+    materials,
+    attendanceMap,
+  ]);
+
+  const handleRestoreDraft = (data: any) => {
+    if (!data) return;
+    if (data.selectedClassId) setSelectedClassId(data.selectedClassId);
+    if (data.date) setDate(data.date);
+    if (data.lessonContent) setLessonContent(data.lessonContent);
+    if (data.recordLink !== undefined) setRecordLink(data.recordLink);
+    if (data.quizletUrl !== undefined) setQuizletUrl(data.quizletUrl);
+    if (data.isChargedAbsenceSession !== undefined) setIsChargedAbsenceSession(data.isChargedAbsenceSession);
+    if (data.hasNoHomework !== undefined) setHasNoHomework(data.hasNoHomework);
+    if (data.homeworkItems) setHomeworkItems(data.homeworkItems);
+    if (data.studentFeedbacks) setStudentFeedbacks(data.studentFeedbacks);
+    if (data.materials) setMaterials(data.materials);
+    if (data.attendanceMap) setAttendanceMap(data.attendanceMap);
+  };
+
   if (!isOpen) return null;
 
   // Material Handlers
@@ -456,6 +518,8 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     setMaterials((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const lastHomeworkRef = useRef<HTMLDivElement | null>(null);
+
   // Homework Item Handlers
   const handleAddHomeworkItem = () => {
     setHomeworkItems((prev) => [
@@ -467,6 +531,9 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         attachmentUrl: '',
       },
     ]);
+    setTimeout(() => {
+      lastHomeworkRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 120);
   };
 
   const handleUpdateHomeworkItem = useCallback((index: number, field: keyof HomeworkTaskItem, value: string) => {
@@ -553,38 +620,43 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       alert('Đã tạo buổi học mới thành công!');
     }
 
-    onSessionAdded();
-    onClose();
-  };
+      onSessionAdded();
+      DraftStorage.clearDraft(draftKey);
+      onClose();
+    };
 
-  const isLockedToSingleClass = !!(initialClassId || defaultClassId || editingSession);
+    const isLockedToSingleClass = !!(initialClassId || defaultClassId || editingSession);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative text-slate-800 dark:text-white">
-        
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fadeIn">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl shadow-2xl border-2 border-pink-200 dark:border-slate-800 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative text-slate-800 dark:text-white">
+          
+          <button
+            onClick={() => {
+              onClose();
+            }}
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="flex items-center space-x-3 border-b border-pink-100 dark:border-slate-800 pb-4">
-          <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-700 flex items-center justify-center font-black">
-            {editingSession ? <Edit3 className="w-6 h-6 text-pink-600" /> : <PlusCircle className="w-6 h-6 text-pink-600" />}
+          <div className="flex items-center space-x-3 border-b border-pink-100 dark:border-slate-800 pb-4">
+            <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-slate-800 text-pink-700 flex items-center justify-center font-black">
+              {editingSession ? <Edit3 className="w-6 h-6 text-pink-600" /> : <PlusCircle className="w-6 h-6 text-pink-600" />}
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                {editingSession ? `✏️ Chỉnh Sửa Buổi Học #${editingSession.sessionNumber}` : 'Cập Nhật Buổi Học Mới'}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Chỉnh sửa link Quizlet từ vựng, bài tập về nhà, video record & nhận xét học viên
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
-              {editingSession ? `✏️ Chỉnh Sửa Buổi Học #${editingSession.sessionNumber}` : 'Cập Nhật Buổi Học Mới'}
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Chỉnh sửa link Quizlet từ vựng, bài tập về nhà, video record & nhận xét học viên
-            </p>
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 text-xs font-medium">
+          <DraftPromptBanner draftKey={draftKey} onRestore={handleRestoreDraft} />
+
+          <form onSubmit={handleSubmit} className="space-y-5 text-xs font-medium">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -713,29 +785,36 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               {/* MULTIPLE HOMEWORK TASKS LIST */}
               {!hasNoHomework && (
                 <div className="p-4 rounded-3xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between border-b border-amber-200/80 dark:border-slate-700/80 pb-2">
                     <h4 className="font-black text-xs text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center">
-                      <BookOpen className="w-4 h-4 mr-1 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
+                      <BookOpen className="w-4 h-4 mr-1.5 text-amber-600" /> Danh Sách Bài Tập Về Nhà ({homeworkItems.length} bài)
                     </h4>
+                  </div>
+
+                  <div className="space-y-3">
+                    {homeworkItems.map((item, idx) => (
+                      <div key={item.id || idx} ref={idx === homeworkItems.length - 1 ? lastHomeworkRef : null}>
+                        <HomeworkItemCard
+                          item={item}
+                          index={idx}
+                          canRemove={homeworkItems.length > 1}
+                          onUpdate={handleUpdateHomeworkItem}
+                          onRemove={handleRemoveHomeworkItem}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* MOVED TO BOTTOM: + THÊM BÀI TẬP BUTTON */}
+                  <div className="pt-2">
                     <button
                       type="button"
                       onClick={handleAddHomeworkItem}
-                      className="px-3 py-1.5 rounded-xl bg-amber-400 text-white font-extrabold text-xs hover:bg-amber-500 transition flex items-center cursor-pointer"
+                      className="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs shadow-2xs transition duration-150 flex items-center justify-center cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5 mr-1" /> + Thêm Bài Tập
+                      <Plus className="w-4 h-4 mr-1.5" /> + Thêm Bài Tập Về Nhà Mới
                     </button>
                   </div>
-
-                  {homeworkItems.map((item, idx) => (
-                    <HomeworkItemCard
-                      key={item.id || idx}
-                      item={item}
-                      index={idx}
-                      canRemove={homeworkItems.length > 1}
-                      onUpdate={handleUpdateHomeworkItem}
-                      onRemove={handleRemoveHomeworkItem}
-                    />
-                  ))}
                 </div>
               )}
 

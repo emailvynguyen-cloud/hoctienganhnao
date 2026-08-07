@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Student, Class } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { DraftStorage } from '../../lib/draftStorage';
+import { DraftPromptBanner } from '../common/DraftPromptBanner';
 import { Edit3, X, DollarSign, BookOpen } from 'lucide-react';
 
 interface EditStudentModalProps {
@@ -27,6 +29,37 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
   const [tuitionPackagePrice, setTuitionPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
   const [internalNotes, setInternalNotes] = useState(student.internalNotes || '');
 
+  const draftKey = `edit_student_${student.id}`;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      DraftStorage.saveDraft(draftKey, {
+        name,
+        phone,
+        email,
+        selectedClassId,
+        remainingSessions,
+        packageSessionCount,
+        tuitionPackagePrice,
+        internalNotes,
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isOpen, draftKey, name, phone, email, selectedClassId, remainingSessions, packageSessionCount, tuitionPackagePrice, internalNotes]);
+
+  const handleRestoreDraft = (data: any) => {
+    if (!data) return;
+    if (data.name) setName(data.name);
+    if (data.phone !== undefined) setPhone(data.phone);
+    if (data.email !== undefined) setEmail(data.email);
+    if (data.selectedClassId) setSelectedClassId(data.selectedClassId);
+    if (data.remainingSessions !== undefined) setRemainingSessions(data.remainingSessions);
+    if (data.packageSessionCount !== undefined) setPackageSessionCount(data.packageSessionCount);
+    if (data.tuitionPackagePrice !== undefined) setTuitionPackagePrice(data.tuitionPackagePrice);
+    if (data.internalNotes !== undefined) setInternalNotes(data.internalNotes);
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,6 +83,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
 
     StorageEngine.updateStudentInternalNotes(student.id, internalNotes);
 
+    DraftStorage.clearDraft(draftKey);
     alert(`Đã cập nhật thông tin học viên & ghi chú nội bộ cho "${name}" thành công!`);
     onRefreshData();
     onClose();
@@ -94,6 +128,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
           
           {/* BODY CONTENT - Scrollable */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+            <DraftPromptBanner draftKey={draftKey} onRestore={handleRestoreDraft} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Họ Và Tên Học Viên (*)</label>
