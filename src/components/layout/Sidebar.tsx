@@ -284,8 +284,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       flex items-center group relative cursor-pointer
                       ${
                         active
-                          ? 'bg-rose-500 text-white shadow-sm font-bold'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-rose-50/80 dark:hover:bg-slate-800/80 hover:text-rose-600 dark:hover:text-rose-300'
+                          ? 'bg-rose-600 dark:bg-rose-700 text-white shadow-xs font-bold'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-rose-700 dark:hover:text-rose-300 font-medium'
                       }
                       ${isCollapsed && !isMobileOpen ? 'justify-center' : 'justify-start space-x-3'}
                     `}

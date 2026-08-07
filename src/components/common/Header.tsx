@@ -238,44 +238,16 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right: Actions, Navigation, Role Switcher & Notifications */}
         <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:gap-3 py-0.5 max-w-full overflow-x-auto scrollbar-none shrink-0">
 
-          {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}
-          {!activePublicHash && (
-            <div className="flex items-center space-x-2 shrink-0">
-              {/* HOME BUTTON */}
-              <button
-                onClick={onNavigateHome}
-                className="h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs sm:text-sm transition-all duration-180 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:-translate-y-0.5 flex items-center shadow-2xs cursor-pointer shrink-0"
-                title="Về Trang Chủ Quản Lý"
-              >
-                <Home className="w-4 h-4 sm:mr-1.5 text-slate-500 shrink-0" />
-                <span className="hidden sm:inline">Trang Chủ</span>
-              </button>
-
-              {/* EXIT GENUINE PUBLIC VIEW IF ACTIVE */}
-              {activePublicHash && onExitPublicView && (
-                <button
-                  onClick={onExitPublicView}
-                  className="h-10 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-amber-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
-                  title="Thoát chế độ xem học viên bí mật"
-                >
-                  <Lock className="w-4 h-4 mr-1.5 text-amber-600 shrink-0" />
-                  <span>Thoát Link Secret</span>
-                </button>
-              )}
-
-              {/* BACK BUTTON (ACTIVE IN SUB-VIEWS) */}
-              {canNavigateBack && onNavigateBack && (
-                <button
-                  onClick={onNavigateBack}
-                  className="h-10 px-3.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-sky-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
-                  title="Quay lại trang trước"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-1.5 text-sky-600 shrink-0" />
-                  <span className="hidden sm:inline">Quay Lại</span>
-                </button>
-              )}
-
-            </div>
+          {/* EXIT GENUINE PUBLIC VIEW IF ACTIVE */}
+          {activePublicHash && onExitPublicView && (
+            <button
+              onClick={onExitPublicView}
+              className="h-10 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-amber-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
+              title="Thoát chế độ xem học viên bí mật"
+            >
+              <Lock className="w-4 h-4 mr-1.5 text-amber-600 shrink-0" />
+              <span>Thoát Link Secret</span>
+            </button>
           )}
 
 
