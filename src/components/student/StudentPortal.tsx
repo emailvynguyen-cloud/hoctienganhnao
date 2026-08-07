@@ -1889,7 +1889,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       />
 
       {/* 🟢 EXCUSED ABSENCES DETAIL MODAL */}
-      {isExcusedAbsencesModalOpen && (
+      {isAbsenceDetailsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border-2 border-emerald-300 dark:border-emerald-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-900 dark:text-white">
             {/* Header */}
@@ -1907,7 +1907,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setIsExcusedAbsencesModalOpen(false)}
+                onClick={() => setIsAbsenceDetailsModalOpen(false)}
                 className="p-2 rounded-full bg-slate-950/20 hover:bg-slate-950/40 text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
