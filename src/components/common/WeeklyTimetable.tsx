@@ -516,7 +516,7 @@ export const WeeklyTimetable: React.FC<WeeklyTimetableProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsExportImageModalOpen(true)}
             className="px-4 py-2.5 rounded-2xl bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-amber-950 dark:text-amber-200 font-extrabold text-xs border border-amber-300 shadow-xs transition flex items-center shrink-0 cursor-pointer"

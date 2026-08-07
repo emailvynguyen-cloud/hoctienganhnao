@@ -180,7 +180,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
     <div className="space-y-6 max-w-6xl mx-auto animate-fadeIn">
       
       {/* Top Back Navigation Bar */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs">
         <button
           onClick={onBack}
           className="px-4 py-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center border border-pink-200"

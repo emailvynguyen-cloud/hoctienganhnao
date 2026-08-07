@@ -479,12 +479,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-6">
       
       {/* Role Notice Banner */}
-      <div className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between text-sm font-normal shadow-2xs ${
+      <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-sm font-normal shadow-2xs ${
         isSuperAdmin
           ? 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
           : 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
       }`}>
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2.5 min-w-0">
           {isSuperAdmin ? <Crown className="w-4.5 h-4.5 text-amber-500 shrink-0" /> : <ShieldAlert className="w-4.5 h-4.5 text-rose-500 shrink-0" />}
           <span className="text-sm leading-relaxed">
             {isSuperAdmin
@@ -494,7 +494,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {isSuperAdmin && (
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={onOpenAccountManagement}
               className="h-10 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm transition shadow-2xs flex items-center shrink-0 cursor-pointer border border-transparent"
