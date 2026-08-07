@@ -11,7 +11,7 @@ import {
 } from '../../lib/rankingUtils';
 import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
 import { AchievementClaimModal } from './AchievementClaimModal';
-import { Award, Trophy, Crown, Sparkles, CheckCircle2, Lock, Filter, Star, X, Check, Zap } from 'lucide-react';
+import { Award, Trophy, Crown, Sparkles, CheckCircle2, Lock, Filter, Star, X, Check, Zap, Shield, BookOpen } from 'lucide-react';
 
 interface AchievementCenterModalProps {
   isOpen: boolean;
@@ -54,14 +54,20 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
   // Evaluate Badges Unlocked
   const evaluatedBadges = SYSTEM_BADGES_CATALOG.map((b) => {
     let currentProgress = 0;
-    if (b.id.includes('first_step') || b.id.includes('hw_master')) {
+    if (b.category === 'study') {
       currentProgress = completedHwCount;
-    } else if (b.id.includes('star_collector')) {
-      currentProgress = totalStars;
-    } else if (b.id.includes('perfect_attendance')) {
-      currentProgress = Math.min(b.targetCount, Math.floor(completedHwCount / 2) + 1);
-    } else if (b.id.includes('top_rank')) {
-      currentProgress = currentFrame.rankNumber === 1 ? 1 : 0;
+    } else if (b.category === 'ranking') {
+      if (b.id.includes('top10_week')) {
+        currentProgress = currentFrame.rankNumber <= 10 ? 1 : 0;
+      } else if (b.id.includes('top5_week')) {
+        currentProgress = currentFrame.rankNumber <= 5 ? 1 : 0;
+      } else if (b.id.includes('top3_week')) {
+        currentProgress = currentFrame.rankNumber <= 3 ? 1 : 0;
+      } else if (b.id.includes('top1_week')) {
+        currentProgress = currentFrame.rankNumber === 1 ? (b.targetCount > 1 ? Math.min(b.targetCount, Math.floor(completedHwCount / 5) + 1) : 1) : 0;
+      } else if (b.id.includes('top1_month')) {
+        currentProgress = currentFrame.type === 'monthly' && currentFrame.rankNumber === 1 ? (b.targetCount > 1 ? Math.min(b.targetCount, Math.floor(completedHwCount / 10) + 1) : 1) : 0;
+      }
     }
 
     const isUnlocked = currentProgress >= b.targetCount;
@@ -80,12 +86,8 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
     let currentProgress = 0;
     if (t.id === 'title_starter') {
       currentProgress = 1;
-    } else if (t.id.includes('studious') || t.id.includes('warrior') || t.id.includes('excellent')) {
+    } else if (t.id.includes('studious') || t.id.includes('warrior') || t.id.includes('master') || t.id.includes('veronica_legend')) {
       currentProgress = completedHwCount;
-    } else if (t.id.includes('star_student') || t.id.includes('veronica_legend')) {
-      currentProgress = totalStars;
-    } else if (t.id.includes('diligence')) {
-      currentProgress = Math.min(5, Math.floor(completedHwCount / 2) + 1);
     } else if (t.id.includes('weekly_champion')) {
       currentProgress = currentFrame.rankNumber === 1 ? 1 : 0;
     } else if (t.id.includes('monthly_champion')) {
@@ -105,13 +107,16 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
     };
   });
 
+  const studyBadges = evaluatedBadges.filter((b) => b.category === 'study');
+  const rankingBadges = evaluatedBadges.filter((b) => b.category === 'ranking');
+
   const totalBadgesCount = evaluatedBadges.length;
   const unlockedBadgesCount = evaluatedBadges.filter((b) => b.isUnlocked).length;
   const totalTitlesCount = evaluatedTitles.length;
   const unlockedTitlesCount = evaluatedTitles.filter((t) => t.isUnlocked).length;
   const unlockedFramesCount = currentFrame.type !== 'default' ? 1 : 0;
 
-  const totalRewardsCount = totalBadgesCount + totalTitlesCount + 5;
+  const totalRewardsCount = totalBadgesCount + totalTitlesCount + 10;
   const totalUnlockedCount = unlockedBadgesCount + unlockedTitlesCount + unlockedFramesCount;
   const totalProgressPercent = Math.min(100, Math.round((totalUnlockedCount / totalRewardsCount) * 100));
 
@@ -280,67 +285,134 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
 
         {/* SCROLLABLE BODY */}
         <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-6">
-          {/* BADGES SECTION */}
+          {/* BADGES SECTION - 2 DEFINED GROUPS */}
           {(activeTab === 'all' || activeTab === 'badge') && (
-            <div className="space-y-3">
-              <h3 className="font-black text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center">
-                🏅 BỘ SƯU TẬP BADGE VECTOR ({unlockedBadgesCount}/{totalBadgesCount})
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {evaluatedBadges
-                  .filter((b) => {
-                    if (activeFilter === 'owned') return b.isUnlocked;
-                    if (activeFilter === 'unowned') return !b.isUnlocked;
-                    return true;
-                  })
-                  .map((badge) => (
-                    <div
-                      key={badge.id}
-                      className={`p-4 rounded-2xl border transition-all duration-200 hover:scale-103 space-y-2.5 relative shadow-xs ${
-                        badge.isUnlocked
-                          ? 'bg-white dark:bg-slate-800/90 border-amber-300 dark:border-amber-600/80 shadow-amber-500/10'
-                          : 'bg-slate-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-75'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${badge.badgeStyle} ${badge.glowClass}`}>
-                          {badge.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">
-                              {badge.title}
-                            </h4>
-                            <span className="text-[10px] font-bold text-amber-600">[{badge.tier}]</span>
+            <div className="space-y-6">
+              
+              {/* GROUP 1: 📚 BADGE HỌC TẬP */}
+              <div className="space-y-3">
+                <h3 className="font-black text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center">
+                  <BookOpen className="w-4 h-4 mr-1.5 text-emerald-600" /> 📚 BADGE HỌC TẬP (Mốc Bài Tập Vĩnh Viễn)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {studyBadges
+                    .filter((b) => {
+                      if (activeFilter === 'owned') return b.isUnlocked;
+                      if (activeFilter === 'unowned') return !b.isUnlocked;
+                      return true;
+                    })
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`p-4 rounded-2xl border transition-all duration-200 hover:scale-103 space-y-2.5 relative shadow-xs ${
+                          badge.isUnlocked
+                            ? 'bg-white dark:bg-slate-800/90 border-emerald-300 dark:border-emerald-600/80 shadow-emerald-500/10'
+                            : 'bg-slate-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-75'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${badge.badgeStyle} ${badge.glowClass}`}>
+                            {badge.icon}
                           </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
-                            {badge.description}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">
+                                {badge.title}
+                              </h4>
+                              <span className="text-[10px] font-bold text-emerald-600">[{badge.tier}]</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                              {badge.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* PROGRESS BAR / UNLOCKED CHECK */}
-                      {badge.isUnlocked ? (
-                        <div className="flex items-center justify-between text-[11px] font-black text-emerald-600 dark:text-emerald-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                          <span className="flex items-center">
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> ✓ Đã sở hữu
-                          </span>
-                          <span className="text-slate-400 font-normal">Mở khóa vĩnh viễn</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
-                            <span>Tiến trình: {badge.currentProgress}/{badge.targetCount}</span>
-                            <span>{badge.progressPercent}%</span>
+                        {/* PROGRESS BAR / UNLOCKED CHECK */}
+                        {badge.isUnlocked ? (
+                          <div className="flex items-center justify-between text-[11px] font-black text-emerald-600 dark:text-emerald-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <span className="flex items-center">
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> ✓ Đã sở hữu
+                            </span>
+                            <span className="text-slate-400 font-normal">Mở khóa vĩnh viễn</span>
                           </div>
-                          <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${badge.progressPercent}%` }} />
+                        ) : (
+                          <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                              <span>Tiến trình: {badge.currentProgress}/{badge.targetCount} bài</span>
+                              <span>{badge.progressPercent}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${badge.progressPercent}%` }} />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    ))}
+                </div>
               </div>
+
+              {/* GROUP 2: 🏆 BADGE XẾP HẠNG */}
+              <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <h3 className="font-black text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center">
+                  <Trophy className="w-4 h-4 mr-1.5 text-amber-500" /> 🏆 BADGE XẾP HẠNG (Thành Tích Vinh Danh)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {rankingBadges
+                    .filter((b) => {
+                      if (activeFilter === 'owned') return b.isUnlocked;
+                      if (activeFilter === 'unowned') return !b.isUnlocked;
+                      return true;
+                    })
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`p-4 rounded-2xl border transition-all duration-200 hover:scale-103 space-y-2.5 relative shadow-xs ${
+                          badge.isUnlocked
+                            ? 'bg-white dark:bg-slate-800/90 border-amber-300 dark:border-amber-600/80 shadow-amber-500/10'
+                            : 'bg-slate-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-75'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${badge.badgeStyle} ${badge.glowClass}`}>
+                            {badge.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">
+                                {badge.title}
+                              </h4>
+                              <span className="text-[10px] font-bold text-amber-600">[{badge.tier}]</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                              {badge.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* PROGRESS BAR / UNLOCKED CHECK */}
+                        {badge.isUnlocked ? (
+                          <div className="flex items-center justify-between text-[11px] font-black text-emerald-600 dark:text-emerald-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <span className="flex items-center">
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> ✓ Đã sở hữu
+                            </span>
+                            <span className="text-slate-400 font-normal">Đã đạt thành tích</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                              <span>Yêu cầu: {badge.conditionLabel}</span>
+                              <span>{badge.progressPercent}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${badge.progressPercent}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -414,20 +486,57 @@ export const AchievementCenterModal: React.FC<AchievementCenterModalProps> = ({
 
           {/* AVATAR FRAMES SECTION */}
           {(activeTab === 'all' || activeTab === 'frame') && (
-            <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
               <h3 className="font-black text-xs uppercase tracking-wider text-sky-700 dark:text-sky-300 flex items-center">
-                🖼 HỆ THỐNG KHUNG AVATAR TỰ ĐỘNG THEO XẾP HẠNG
+                🖼 HỆ THỐNG KHUNG AVATAR GAME CAO CẤP MULTI-LAYER (10 KHUNG VÍ DIỆN)
               </h3>
 
-              <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 text-xs space-y-2">
+              <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 text-xs space-y-3">
                 <p className="font-bold text-sky-950 dark:text-sky-200">
-                  📌 Khung Avatar được tự động cấp theo vị trí Bảng Xếp Hạng Tuần & Tháng của bạn. Không cần chọn thủ công.
+                  📌 Khung Avatar được tự động cấp theo vị trí Bảng Xếp Hạng Tuần & Tháng. Thiết kế đa tầng sang trọng, không che mặt hay làm giảm khả năng đọc giao diện.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  <div>• 🥇 Top 1 Tuần/Tháng: Khung Hoàng Gia / Vương Miện Vàng 👑</div>
-                  <div>• 🥈 Top 2 Tuần/Tháng: Khung Kim Cương / Bạc 💎</div>
-                  <div>• 🥉 Top 3 Tuần/Tháng: Khung Bạch Kim / Đồng 🔮</div>
-                  <div>• ⭐ Top 4-5: Khung Pha Lê / Ngôi Sao ⭐</div>
+
+                {/* SHOWCASE OF ALL 10 GAME FRAMES */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] font-semibold text-slate-700 dark:text-slate-300 pt-1">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 space-y-1">
+                    <span className="font-black text-amber-600 block">👑 TOP 1 THÁNG – KHUNG HOÀNG GIA</span>
+                    <p className="text-[10px] text-slate-500">Vương miện lớn 3D, cánh thiên thần vàng & hiệu ứng shimmer quý hiếm nhất hệ thống.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-cyan-300 space-y-1">
+                    <span className="font-black text-cyan-600 block">💎 TOP 2 THÁNG – KHUNG KIM CƯƠNG</span>
+                    <p className="text-[10px] text-slate-500">Cạnh cắt kim cương chạm khắc 3D với hiệu ứng phản chiếu ánh sáng.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 space-y-1">
+                    <span className="font-black text-slate-700 dark:text-slate-200 block">⚜ TOP 3 THÁNG – KHUNG BẠCH KIM</span>
+                    <p className="text-[10px] text-slate-500">Tông bạch kim sang trọng chạm khắc hoa văn tinh xảo.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-300 space-y-1">
+                    <span className="font-black text-indigo-600 block">✨ TOP 4–5 THÁNG – KHUNG PHA LÊ</span>
+                    <p className="text-[10px] text-slate-500">Trong suốt phản quang nhẹ với hiệu ứng ánh sáng mềm.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-400 space-y-1">
+                    <span className="font-black text-blue-600 block">🔹 TOP 6–10 THÁNG – SAPPHIRE HOÀNG GIA</span>
+                    <p className="text-[10px] text-slate-500">Xanh sapphire kết hợp viền bạc cao cấp.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-yellow-400 space-y-1">
+                    <span className="font-black text-yellow-600 block">🥇 TOP 1 TUẦN – VƯƠNG MIỆN VÀNG</span>
+                    <p className="text-[10px] text-slate-500">Viền vàng ánh kim, vương miện 3D & ngôi sao lấp lánh.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 space-y-1">
+                    <span className="font-black text-slate-600 block">🥈 TOP 2 TUẦN – BẠC HOÀNG GIA</span>
+                    <p className="text-[10px] text-slate-500">Viền bạc chạm khắc với họa tiết lá nguyệt quế.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-700 space-y-1">
+                    <span className="font-black text-amber-800 block">🥉 TOP 3 TUẦN – ĐỒNG CỔ ĐIỂN</span>
+                    <p className="text-[10px] text-slate-500">Đồng bóng cổ điển với họa tiết khiên & dải ruy băng.</p>
+                  </div>
                 </div>
               </div>
             </div>
