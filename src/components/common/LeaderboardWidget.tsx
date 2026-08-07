@@ -36,8 +36,9 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   onClose,
   students,
   sessions = [],
+  initialTab = 'week',
 }) => {
-  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'hall_of_fame'>('week');
+  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'hall_of_fame'>(initialTab);
 
   // FETCH FRESH DATA FROM STORAGEENGINE
   const freshStudentsList = StorageEngine.getStudents() || students || [];

@@ -18,7 +18,6 @@ import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
 import { PublicStudentPortal } from './components/public/PublicStudentPortal';
 import { ClassDetailsView } from './components/admin/ClassDetailsView';
 import { PendingTasksDashboard } from './components/admin/PendingTasksDashboard';
-import { HallOfFameWidget } from './components/common/HallOfFameWidget';
 import { Crown, LogIn } from 'lucide-react';
 
 // Lazy Loaded Portals for Code-Splitting
@@ -484,10 +483,14 @@ export default function App() {
               path="/hall-of-fame"
               element={
                 <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <HallOfFameWidget
+                  <LeaderboardWidget
+                    isOpen={true}
+                    onClose={() => navigate(-1)}
                     students={students}
                     sessions={sessions}
                     homeworkSubmissions={homeworkSubmissions}
+                    isEmbedded={true}
+                    initialTab="hall_of_fame"
                   />
                 </div>
               }
