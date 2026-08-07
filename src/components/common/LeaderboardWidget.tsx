@@ -542,6 +542,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           );
         })}
       </div>
+      )}
     </div>
   );
 
