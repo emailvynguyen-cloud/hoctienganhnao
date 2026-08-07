@@ -1057,7 +1057,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             return (
               <div
-                onClick={() => setIsExcusedAbsencesModalOpen(true)}
+                onClick={() => setIsAbsenceDetailsModalOpen(true)}
                 className="bg-emerald-50/90 dark:bg-emerald-950/40 text-slate-900 dark:text-white px-6 py-5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 flex flex-col items-center justify-center text-center gap-1.5 flex-1 lg:w-48 cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
                 title="Bấm để xem chi tiết danh sách các buổi xin nghỉ có phép trong tháng"
               >
