@@ -953,17 +953,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* SUPER ADMIN BATCH ADMIN REASSIGNMENT BAR */}
           {isSuperAdmin && (
-            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-              <div className="flex items-center space-x-2">
-                <span className="font-black text-purple-950 dark:text-purple-300">
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center space-x-2 min-w-0">
+                <span className="font-black text-purple-950 dark:text-purple-300 leading-relaxed">
                   👑 Gán Hàng Loạt Admin Phụ Trách Lớp Học ({selectedBatchClassIds.length} lớp đã chọn):
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={batchTargetAdminId}
                   onChange={(e) => setBatchTargetAdminId(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-purple-300 bg-white dark:bg-slate-900 font-extrabold text-xs text-purple-950 dark:text-white cursor-pointer"
+                  className="px-3 py-2 rounded-xl border border-purple-300 bg-white dark:bg-slate-900 font-extrabold text-xs text-purple-950 dark:text-white cursor-pointer max-w-full flex-1 sm:flex-none"
                 >
                   <option value="">-- Chọn Admin Phụ Trách --</option>
                   {adminUsersList.map((a) => (
@@ -1140,7 +1140,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setInspectedStudentId(std.id)}
                     className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center"
