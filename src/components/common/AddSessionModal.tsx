@@ -289,77 +289,10 @@ const HomeworkItemCard = memo<HomeworkItemCardProps>(({ item, index, canRemove, 
     </div>
   );
 }, (prevProps, nextProps) => {
-import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
-import { Class, Student, Session, AttendanceRecord, ResourceLink, HomeworkTaskItem, StudentFeedback } from '../../types';
-import { StorageEngine } from '../../lib/storage';
-import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
-import { PlusCircle, Calendar, BookOpen, Video, Link2, CheckCircle2, UserCheck, X, FileText, Image, Sparkles, Plus, Trash2, Edit3, FolderOpen } from 'lucide-react';
-
-interface AddSessionModalProps {
-  isOpen?: boolean;
-  onClose: () => void;
-  classes: Class[];
-  students: Student[];
-  initialClassId?: string;
-  defaultClassId?: string;
-  editingSession?: Session | null;
-  onSessionAdded: () => void;
-}
-
-// ----------------------------------------------------------------------
-// MEMOIZED DEBOUNCED INPUT COMPONENTS FOR 60FPS TYPING PERFORMANCE
-// ----------------------------------------------------------------------
-interface DebouncedTextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
-  value: string;
-  onDebouncedChange: (val: string) => void;
-  delay?: number;
-}
-
-const DebouncedTextArea = memo<DebouncedTextAreaProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
-  const [localValue, setLocalValue] = useState(value);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setLocalValue(val);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      onDebouncedChange(val);
-    }, delay);
-  };
-
-  return <textarea {...props} value={localValue} onChange={handleChange} />;
+  return prevProps.item.id === nextProps.item.id && prevProps.index === nextProps.index && prevProps.canRemove === nextProps.canRemove;
 });
 
-interface DebouncedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
-  value: string;
-  onDebouncedChange: (val: string) => void;
-  delay?: number;
-}
-
-const DebouncedInput = memo<DebouncedInputProps>(({ value, onDebouncedChange, delay = 300, ...props }) => {
-  const [localValue, setLocalValue] = useState(value);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalValue(val);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      onDebouncedChange(val);
-    }, delay);
-  };
-
-  return <input {...props} value={localValue} onChange={handleChange} />;
-});
+HomeworkItemCard.displayName = 'HomeworkItemCard';
 
 export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   isOpen = true,
