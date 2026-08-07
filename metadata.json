@@ -1,0 +1,6 @@
+{
+  "name": "Veronica Language Corner",
+  "description": "Hệ thống Quản lý Giáo dục & Cổng Học viên Veronica Language Corner với 3 phân hệ Admin, Giáo viên và Học viên (VietQR, Điểm danh, Gamification).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

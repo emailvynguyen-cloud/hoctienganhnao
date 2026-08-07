@@ -1,0 +1,16 @@
+{
+  "short_name": "Ms. Vy",
+  "name": "MS. VY ENGLISH - Theo Dõi Học Tập Online",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "type": "image/jpg",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F3E8FF",
+  "theme_color": "#9333EA",
+  "display": "standalone",
+  "orientation": "portrait"
+}
