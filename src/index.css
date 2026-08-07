@@ -507,3 +507,34 @@ a.btn-link {
   }
 }
 
+/* AVATAR FRAME ANIMATIONS & GAMIFICATION UTILITIES */
+.scale-103 {
+  transform: scale(1.03);
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
+  }
+}
+
+.glow-golden-crown {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+

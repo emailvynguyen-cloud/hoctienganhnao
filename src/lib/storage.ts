@@ -345,6 +345,17 @@ export const StorageEngine = {
     }
     return false;
   },
+  updateStudentEquippedTitle(studentId: string, titleId: string) {
+    const students = this.getStudents() || [];
+    const idx = students.findIndex((s) => s && s.id === studentId);
+    if (idx !== -1) {
+      const updated = [...students];
+      updated[idx] = { ...updated[idx], equippedTitleId: titleId };
+      this.saveStudents(updated);
+      return true;
+    }
+    return false;
+  },
 
   addStudentAbsence(studentId: string, date: string, reason?: string, isMakeupCompleted?: boolean, actorUser?: User | null) {
     const students = this.getStudents() || [];

@@ -69,6 +69,7 @@ export interface Student {
   internalNotes?: string; // Ghi chú nội bộ học viên (chỉ dành riêng cho Admin/Super Admin/Giáo viên)
   internalNotesHistory?: InternalNoteEntry[];
   honorNickname?: string;
+  equippedTitleId?: string; // ID danh hiệu đang được học viên trang bị
   completedHomeworkTaskIds?: string[]; // IDs các homework item mà học viên đã check xong
   resourceLinks?: ResourceLink[];
   createdAt: string;

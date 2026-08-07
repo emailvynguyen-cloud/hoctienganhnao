@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Class, Student, Session, HomeworkSubmission, BankConfig, User } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { StorageEngine } from '../../lib/storage';
+import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
 import { ManageResourceLinksModal } from './ManageResourceLinksModal';
 import {
   ArrowLeft,
@@ -332,14 +333,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                 className="p-4 rounded-3xl border border-pink-100 bg-pink-50/30 hover:bg-pink-100/50 hover:border-pink-300 transition cursor-pointer flex items-center justify-between group shadow-xs"
               >
                 <div className="flex items-center space-x-3">
-                  <img
-                    src={resolveAvatarUrl(std.avatar)}
-                    alt={std.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                    }}
-                    className="w-12 h-12 rounded-2xl object-cover border-2 border-pink-200 shrink-0 group-hover:scale-105 transition"
-                  />
+                  <StudentAvatarWithFrame student={std} sizeClassName="w-12 h-12" />
                   <div>
                     <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-pink-600 transition underline decoration-pink-300">
                       {std.name}

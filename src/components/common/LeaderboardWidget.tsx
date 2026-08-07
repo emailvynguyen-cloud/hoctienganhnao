@@ -4,6 +4,8 @@ import { StorageEngine } from '../../lib/storage';
 import { Trophy, Star, CheckCircle2, Flame, Medal, X, ArrowLeft, Crown, BookOpen, Award } from 'lucide-react';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { getCurrentWeekRange, getCurrentMonthString, getPreviousWeekRange, getPreviousMonthString } from '../../lib/dateUtils';
+import { StudentAvatarWithFrame } from './StudentAvatarWithFrame';
+import { getEquippedTitleInfo } from '../../lib/achievementCenterUtils';
 
 interface LeaderboardWidgetProps {
   isOpen?: boolean;
@@ -318,41 +320,50 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                   )}
                 </div>
 
-                {/* AVATAR IMAGE CONTAINER */}
-                <div className="relative shrink-0 w-12 h-12">
-                  <img
-                    src={avatarSrc}
-                    alt={item.student.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                    }}
-                    className="w-12 h-12 rounded-xl object-cover shadow-2xs border border-white/40"
+                {/* AVATAR IMAGE CONTAINER WITH RANK FRAME */}
+                <div className="relative shrink-0">
+                  <StudentAvatarWithFrame
+                    student={item.student}
+                    allStudents={freshStudentsList}
+                    allSessions={allSessions}
+                    allSubmissions={allSubmissions}
+                    sizeClassName="w-12 h-12"
                   />
                 </div>
 
-                {/* STUDENT NAME & HONOR NICKNAME BADGE */}
+                {/* STUDENT NAME, EQUIPPED TITLE & HONOR NICKNAME BADGE */}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="text-base sm:text-lg font-extrabold leading-tight">
                       {item.student.name}
                     </h4>
 
-                    {/* SHOW HONOR TITLE ONLY FOR TOP 5 WITH TIER BADGE CARD STYLING */}
-                    {honorTitle && (
-                      <span className={`px-3 py-1 rounded-xl text-xs font-bold shadow-xs border flex items-center shrink-0 ${
-                        index === 0
-                          ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 border-yellow-200 shadow-amber-500/30 font-black'
-                          : index === 1
-                          ? 'bg-purple-600 text-white border-purple-400 shadow-purple-500/30 font-bold'
-                          : index === 2
-                          ? 'bg-blue-600 text-white border-blue-400 shadow-blue-500/30 font-bold'
-                          : index === 3
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-emerald-500/30 font-bold'
-                          : 'bg-slate-700 text-slate-100 border-slate-500 shadow-slate-900/30 font-bold'
-                      }`}>
-                        {honorTitle}
-                      </span>
-                    )}
+                    {/* EQUIPPED TITLE OR HONOR BADGE */}
+                    {(() => {
+                      const equippedTitle = getEquippedTitleInfo(item.student.equippedTitleId);
+                      if (equippedTitle) {
+                        return (
+                          <span className={`px-3 py-1 rounded-xl text-xs font-black shadow-2xs border ${equippedTitle.badgeStyle}`}>
+                            {equippedTitle.title}
+                          </span>
+                        );
+                      }
+                      return honorTitle ? (
+                        <span className={`px-3 py-1 rounded-xl text-xs font-bold shadow-xs border flex items-center shrink-0 ${
+                          index === 0
+                            ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 text-slate-950 border-yellow-200 shadow-amber-500/30 font-black'
+                            : index === 1
+                            ? 'bg-purple-600 text-white border-purple-400 shadow-purple-500/30 font-bold'
+                            : index === 2
+                            ? 'bg-blue-600 text-white border-blue-400 shadow-blue-500/30 font-bold'
+                            : index === 3
+                            ? 'bg-emerald-600 text-white border-emerald-400 shadow-emerald-500/30 font-bold'
+                            : 'bg-slate-700 text-slate-100 border-slate-500 shadow-slate-900/30 font-bold'
+                        }`}>
+                          {honorTitle}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
 
                   {/* PREVIOUS PERIOD CHAMPION CAPTION (IF APPLICABLE) */}

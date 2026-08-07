@@ -3,6 +3,7 @@ import { Student, Class, Invoice, BankConfig, Session, User, UserRole } from '..
 import { MonthlyRevenueWidget } from './MonthlyRevenueWidget';
 import { HomeworkGradingWidget } from './HomeworkGradingWidget';
 import { PendingTasksDashboard } from './PendingTasksDashboard';
+import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
 import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
 import { AiStudioPortal } from './AiStudioPortal';
@@ -1131,14 +1132,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {filteredStudents.map((std) => (
               <div key={std.id} className="p-4 rounded-2xl border border-pink-100 bg-pink-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
-                  <img
-                    src={resolveAvatarUrl(std.avatar)}
-                    alt={std.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
-                    }}
-                    className="w-12 h-12 rounded-2xl object-cover border border-pink-200 shrink-0"
-                  />
+                  <StudentAvatarWithFrame student={std} sizeClassName="w-12 h-12" />
                   <div>
                     <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{std.name}</h4>
                     <p className="text-xs text-slate-500">SĐT: {std.phone || ''} • Gói: {formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</p>
