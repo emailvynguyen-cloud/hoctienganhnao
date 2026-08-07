@@ -427,6 +427,8 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </>
+          )}
+
           {/* MOBILE HAMBURGER MENU TOGGLE BUTTON (VISIBLE ON MOBILE ONLY) */}
           <button
             type="button"
