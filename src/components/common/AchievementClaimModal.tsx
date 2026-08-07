@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { X, Sparkles, Award, Trophy, Crown } from 'lucide-react';
-import { RarityTier } from '../../lib/achievementCenterUtils';
+import { RarityTier } from '../../lib/rankingUtils';
 
 interface AchievementClaimModalProps {
   isOpen: boolean;
