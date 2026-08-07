@@ -29,6 +29,7 @@ import {
   Bell,
   Check,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -96,6 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -425,10 +427,109 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </>
-          )}
-
+          {/* MOBILE HAMBURGER MENU TOGGLE BUTTON (VISIBLE ON MOBILE ONLY) */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="sm:hidden h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Mở menu hệ thống"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* MOBILE SLIDE-DOWN NAVIGATION DRAWER */}
+      {isMobileMenuOpen && (
+        <div className="sm:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-md animate-fadeIn">
+          {currentUser && (
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                {currentUser.role === 'super_admin' ? (
+                  <Crown className="w-4 h-4 text-amber-500" />
+                ) : currentUser.role === 'admin' ? (
+                  <Shield className="w-4 h-4 text-rose-500" />
+                ) : (
+                  <UserCheck className="w-4 h-4 text-sky-500" />
+                )}
+                <span className="font-bold text-slate-900 dark:text-white">{currentUser.displayName}</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 font-bold text-[10px] uppercase">
+                {currentUser.role}
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                onNavigateHome?.();
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center space-x-1.5"
+            >
+              <Home className="w-4 h-4 text-sky-500" />
+              <span>Trang Chủ</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onOpenLeaderboard();
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center justify-center space-x-1.5"
+            >
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>Thi Đua TOP</span>
+            </button>
+
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  onOpenAccountManagement();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2"
+              >
+                <Users className="w-4 h-4 text-sky-600" />
+                <span>Quản Lý Tài Khoản Đăng Nhập</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+              <span>{isDarkMode ? 'Chế độ Sáng (Light Mode)' : 'Chế độ Tối (Dark Mode)'}</span>
+            </button>
+
+            {currentUser ? (
+              <button
+                onClick={() => {
+                  onLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Đăng Xuất</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onOpenLogin();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Đăng Nhập Hệ Thống</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PWA FLOATING ACTION BUTTON (FAB) AT BOTTOM-RIGHT */}
       {!isPwaPermanentlyHidden && !isStandalone && (

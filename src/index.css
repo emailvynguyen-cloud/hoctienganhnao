@@ -473,7 +473,7 @@ body {
    ============================================================ */
 
 /* Enforce natural word wrapping across all elements (no single-character text fragmentation) */
-h1, h2, h3, h4, h5, h6, p, span, div, a, label, button, td, th {
+* {
   overflow-wrap: break-word;
   word-break: normal;
 }
@@ -485,6 +485,13 @@ a.btn-link {
   min-height: max-content;
 }
 
+/* Touch-friendly inputs and form controls on Mobile */
+@media (max-width: 640px) {
+  input, select, textarea, button, a.btn-link {
+    min-height: 44px;
+  }
+}
+
 /* Flex containers auto-wrap items on narrow mobile viewports */
 .flex-wrap-responsive {
   display: flex;
@@ -494,8 +501,10 @@ a.btn-link {
 }
 
 /* Table container horizontal scrolling protection */
-.table-responsive-wrapper {
+.table-responsive-wrapper,
+.table-wrapper {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -504,6 +513,14 @@ a.btn-link {
 @media (max-width: 640px) {
   .responsive-modal-padding {
     padding: 1rem !important;
+  }
+  
+  /* Enforce modal 95vw max width on mobile devices */
+  .modal-responsive {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    margin: 0 auto !important;
   }
 }
 
