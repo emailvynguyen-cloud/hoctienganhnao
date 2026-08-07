@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from './lib/router';
 import { UserRole, User, Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig } from './types';
 import { StorageEngine } from './lib/storage';
 import { CloudSyncEngine } from './lib/cloudSync';

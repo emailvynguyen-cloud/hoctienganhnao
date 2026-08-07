@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from '../../lib/router';
 import { Header } from '../common/Header';
 import { User, UserRole } from '../../types';
 import { Crown, Shield, UserCheck, GraduationCap } from 'lucide-react';

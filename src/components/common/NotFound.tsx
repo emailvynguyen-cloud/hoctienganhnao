@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/router';
 import { Compass, Home, ArrowLeft } from 'lucide-react';
 
 export const NotFound: React.FC = () => {
