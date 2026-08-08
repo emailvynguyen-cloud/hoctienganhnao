@@ -138,6 +138,42 @@ const RootRouteHandler: React.FC<{
   return <RoleRedirect currentUser={props.currentUser} />;
 };
 
+// Secret Link Handler (/s/:hash and ?hash=...)
+const SecretLinkWrapper: React.FC<{
+  students: Student[];
+  classes: Class[];
+  sessions: Session[];
+  homeworkTasks: HomeworkTask[];
+  homeworkSubmissions: HomeworkSubmission[];
+  invoices: Invoice[];
+  bankConfig: BankConfig;
+  onRefreshData: () => void;
+  currentUser?: User | null;
+}> = (props) => {
+  const { hash } = useParams();
+  const searchParams = new URLSearchParams(window.location.search);
+  const activeHash = hash || searchParams.get('hash') || searchParams.get('student') || '';
+
+  if (!activeHash) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <StudentPrivateLayout
+      publicHash={activeHash}
+      students={props.students}
+      classes={props.classes}
+      sessions={props.sessions}
+      homeworkTasks={props.homeworkTasks}
+      homeworkSubmissions={props.homeworkSubmissions}
+      invoices={props.invoices}
+      bankConfig={props.bankConfig}
+      loadData={props.onRefreshData}
+      currentUser={props.currentUser || null}
+    />
+  );
+};
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
