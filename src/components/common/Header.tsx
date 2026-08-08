@@ -54,7 +54,7 @@ interface HeaderProps {
   onOpenMobileSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   currentUser,
   currentRole,
   onOpenLogin,
@@ -615,4 +615,4 @@ export const Header: React.FC<HeaderProps> = ({
 
     </header>
   );
-};
+});

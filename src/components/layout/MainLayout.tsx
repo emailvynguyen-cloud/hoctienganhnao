@@ -42,7 +42,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const handleNavigateHome = () => {
+  const handleNavigateHome = React.useCallback(() => {
     if (!currentUser) {
       navigate('/login');
       return;
@@ -52,11 +52,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     else if (currentUser.role === 'admin') navigate('/admin');
     else if (currentUser.role === 'super_admin') navigate('/super-admin');
     else navigate('/student');
-  };
+  }, [currentUser, navigate]);
 
-  const handleNavigateBack = () => {
+  const handleNavigateBack = React.useCallback(() => {
     navigate(-1);
-  };
+  }, [navigate]);
+
+  const handleToggleSidebar = React.useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
+
+  const handleOpenMobileSidebar = React.useCallback(() => {
+    setIsMobileSidebarOpen(true);
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 font-sans w-full max-w-full overflow-x-hidden">
@@ -93,8 +101,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           onNavigateHome={handleNavigateHome}
           onNavigateBack={handleNavigateBack}
           canNavigateBack={canNavigateBack || location.pathname !== '/'}
-          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          onToggleSidebar={handleToggleSidebar}
+          onOpenMobileSidebar={handleOpenMobileSidebar}
         />
 
         {/* SUPER ADMIN QUICK ROLE SWITCHER BAR */}

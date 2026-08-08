@@ -63,7 +63,7 @@ interface AdminDashboardProps {
   targetSubmissionId?: string | null;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   currentUser,
   effectiveRole,
   students,
@@ -88,9 +88,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isEditingClassRules, setIsEditingClassRules] = useState(false);
   const [classRulesEditValue, setClassRulesEditValue] = useState(StorageEngine.getClassRules());
 
-  // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING
-  const scopedClasses = StorageEngine.getScopedClasses(currentUser, classes || []);
-  const scopedStudents = StorageEngine.getScopedStudents(currentUser, students || [], classes || []);
+  // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING (MEMOIZED)
+  const scopedClasses = React.useMemo(() => StorageEngine.getScopedClasses(currentUser, classes || []), [currentUser, classes]);
+  const scopedStudents = React.useMemo(() => StorageEngine.getScopedStudents(currentUser, students || [], classes || []), [currentUser, students, classes]);
   const safeClasses = scopedClasses;
   const safeStudents = scopedStudents;
 
@@ -1899,4 +1899,4 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     </div>
   );
-};
+});

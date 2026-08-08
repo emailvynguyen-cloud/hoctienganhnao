@@ -132,7 +132,7 @@ function isTodayEndTimePassed(scheduleStr: string = '') {
   return currentTimeStr >= endTimeStr;
 }
 
-export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
+export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React.memo(({
   classes = [],
   students = [],
   sessions = [],
@@ -153,170 +153,181 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
     }
   };
 
-  const now = new Date();
-  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const {
+    allPendingTasks,
+    totalTasksCount,
+    unrecordedCount,
+    quizletCount,
+    overdueCount,
+    todayCount,
+    uniqueTeachers,
+    filteredTasks,
+    activeTeacherGroups,
+  } = React.useMemo(() => {
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const allPendingTasks: PendingTaskItem[] = [];
+    const tasks: PendingTaskItem[] = [];
 
-  // =========================================================================
-  // SOURCE A: THEO LỊCH HỌC CỐ ĐỊNH (🔴 CHƯA NHẬP BUỔI HỌC)
-  // =========================================================================
-  classes.forEach((cls) => {
-    if (!cls || !cls.id) return;
-    const pastDates = getPastScheduledDates(cls, 45);
+    // =========================================================================
+    // SOURCE A: THEO LỊCH HỌC CỐ ĐỊNH (🔴 CHƯA NHẬP BUỔI HỌC)
+    // =========================================================================
+    classes.forEach((cls) => {
+      if (!cls || !cls.id) return;
+      const pastDates = getPastScheduledDates(cls, 45);
 
-    pastDates.forEach((dateISO) => {
-      const isToday = dateISO === todayISO;
-      const isTimePassed = !isToday || isTodayEndTimePassed(cls.schedule);
+      pastDates.forEach((dateISO) => {
+        const isToday = dateISO === todayISO;
+        const isTimePassed = !isToday || isTodayEndTimePassed(cls.schedule);
 
-      if (isTimePassed) {
-        const recordedSession = sessions.find((s) => s.classId === cls.id && s.date === dateISO);
-        const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
+        if (isTimePassed) {
+          const recordedSession = sessions.find((s) => s.classId === cls.id && s.date === dateISO);
+          const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
 
-        if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId)) {
-          const overdueInfo = calculateOverdueInfo(todayISO, dateISO);
-          const { startTimeStr, endTimeStr } = getScheduleTimeStr(cls.schedule);
+          if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId)) {
+            const overdueInfo = calculateOverdueInfo(todayISO, dateISO);
+            const { startTimeStr, endTimeStr } = getScheduleTimeStr(cls.schedule);
 
-          allPendingTasks.push({
-            id: unrecordedTaskId,
-            type: 'unrecorded_session',
-            classId: cls.id,
-            className: cls.className,
-            teacherId: cls.teacherId || cls.teacherName || 'u_teacher',
-            teacherName: cls.teacherName || 'Giáo viên',
-            dateISO,
-            scheduleTimeStr: `Lịch cố định (${startTimeStr} - ${endTimeStr}) • Ngày ${formatSessionDate(dateISO)}`,
-            ...overdueInfo,
-          });
+            tasks.push({
+              id: unrecordedTaskId,
+              type: 'unrecorded_session',
+              classId: cls.id,
+              className: cls.className,
+              teacherId: cls.teacherId || cls.teacherName || 'u_teacher',
+              teacherName: cls.teacherName || 'Giáo viên',
+              dateISO,
+              scheduleTimeStr: `Lịch cố định (${startTimeStr} - ${endTimeStr}) • Ngày ${formatSessionDate(dateISO)}`,
+              ...overdueInfo,
+            });
+          }
+        }
+      });
+    });
+
+    // =========================================================================
+    // SOURCE B: THEO BUỔI HỌC ĐÃ ĐƯỢC TẠO (🟠 CHƯA THÊM QUIZLET)
+    // =========================================================================
+    sessions.forEach((session) => {
+      if (!session || !session.classId) return;
+      if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession) return;
+
+      const cls = classes.find((c) => c.id === session.classId);
+      const className = session.className || cls?.className || 'Lớp Học';
+      const teacherId = session.teacherId || cls?.teacherId || 'u_teacher';
+      const teacherName = session.teacherName || cls?.teacherName || 'Giáo viên';
+
+      const quizletTaskId = `quizlet_${session.id}`;
+      if (dismissedTaskIds.includes(quizletTaskId)) return;
+
+      const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(session.classId));
+      const missingQuizletStudentNames: string[] = [];
+
+      classStudents.forEach((std) => {
+        const attRecord = (session.attendance || []).find((a) => a.studentId === std.id);
+        if (attRecord?.status === 'excused') return;
+
+        const sessionQuizlet = session.quizletUrl;
+        const fbObj = session.studentFeedbacks?.[std.id];
+        const studentFbUrl = fbObj?.materialUrl;
+        const studentFbMaterials = fbObj?.materials || [];
+
+        const hasSessionQuizlet = !!sessionQuizlet && sessionQuizlet.trim().length > 0;
+        const hasFbUrlQuizlet = !!studentFbUrl && studentFbUrl.toLowerCase().includes('quizlet');
+        const hasFbMaterialsQuizlet = studentFbMaterials.some(
+          (m) => (m.url && m.url.toLowerCase().includes('quizlet')) || (m.title && m.title.toLowerCase().includes('quizlet'))
+        );
+        const hasStudentResourceQuizlet = (std.resourceLinks || []).some(
+          (r) => (r.url && r.url.toLowerCase().includes('quizlet')) || (r.title && r.title.toLowerCase().includes('quizlet'))
+        );
+
+        const isQuizletCompleted = hasSessionQuizlet || hasFbUrlQuizlet || hasFbMaterialsQuizlet || hasStudentResourceQuizlet;
+
+        if (!isQuizletCompleted) {
+          missingQuizletStudentNames.push(std.name);
+        }
+      });
+
+      if (missingQuizletStudentNames.length > 0) {
+        const overdueInfo = calculateOverdueInfo(todayISO, session.date);
+        tasks.push({
+          id: quizletTaskId,
+          type: 'missing_quizlet',
+          classId: session.classId,
+          className,
+          teacherId,
+          teacherName,
+          dateISO: session.date,
+          scheduleTimeStr: `Buổi #${session.sessionNumber} • Ngày ${formatSessionDate(session.date)}`,
+          missingStudents: missingQuizletStudentNames,
+          sessionId: session.id,
+          ...overdueInfo,
+        });
+      }
+    });
+
+    tasks.sort((a, b) => {
+      if (b.overdueDays !== a.overdueDays) {
+        return b.overdueDays - a.overdueDays;
+      }
+      if (a.type !== b.type) {
+        return a.type === 'unrecorded_session' ? -1 : 1;
+      }
+      return b.dateISO.localeCompare(a.dateISO);
+    });
+
+    const totalCount = tasks.length;
+    const unrecCount = tasks.filter((t) => t.type === 'unrecorded_session').length;
+    const quizCount = tasks.filter((t) => t.type === 'missing_quizlet').length;
+    const ovdCount = tasks.filter((t) => t.overdueDays > 0).length;
+    const tdayCount = tasks.filter((t) => t.overdueDays === 0).length;
+
+    const uTeachers = Array.from(
+      new Set(tasks.map((t) => JSON.stringify({ id: t.teacherId, name: t.teacherName })))
+    ).map((str) => JSON.parse(str) as { id: string; name: string });
+
+    const fTasks = tasks.filter((task) => {
+      if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;
+      if (filterType === 'missing_quizlet' && task.type !== 'missing_quizlet') return false;
+      if (filterType === 'overdue' && task.overdueDays === 0) return false;
+      if (filterType === 'today' && task.overdueDays !== 0) return false;
+
+      if (selectedTeacherFilter !== 'all') {
+        if (task.teacherId !== selectedTeacherFilter && task.teacherName !== selectedTeacherFilter) {
+          return false;
         }
       }
-    });
-  });
-
-  // =========================================================================
-  // SOURCE B: THEO BUỔI HỌC ĐÃ ĐƯỢC TẠO (🟠 CHƯA THÊM QUIZLET)
-  // Applies to ALL created sessions (fixed schedule & extra out-of-schedule)
-  // Excludes: Nghỉ có phép, Nghỉ tính phí, Buổi bị hủy
-  // =========================================================================
-  sessions.forEach((session) => {
-    if (!session || !session.classId) return;
-    if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession) return;
-
-    const cls = classes.find((c) => c.id === session.classId);
-    const className = session.className || cls?.className || 'Lớp Học';
-    const teacherId = session.teacherId || cls?.teacherId || 'u_teacher';
-    const teacherName = session.teacherName || cls?.teacherName || 'Giáo viên';
-
-    const quizletTaskId = `quizlet_${session.id}`;
-    if (dismissedTaskIds.includes(quizletTaskId)) return;
-
-    const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(session.classId));
-    const missingQuizletStudentNames: string[] = [];
-
-    classStudents.forEach((std) => {
-      // Exclude students who had an excused absence status in attendance
-      const attRecord = (session.attendance || []).find((a) => a.studentId === std.id);
-      if (attRecord?.status === 'excused') return;
-
-      const sessionQuizlet = session.quizletUrl;
-      const fbObj = session.studentFeedbacks?.[std.id];
-      const studentFbUrl = fbObj?.materialUrl;
-      const studentFbMaterials = fbObj?.materials || [];
-
-      const hasSessionQuizlet = !!sessionQuizlet && sessionQuizlet.trim().length > 0;
-      const hasFbUrlQuizlet = !!studentFbUrl && studentFbUrl.toLowerCase().includes('quizlet');
-      const hasFbMaterialsQuizlet = studentFbMaterials.some(
-        (m) => (m.url && m.url.toLowerCase().includes('quizlet')) || (m.title && m.title.toLowerCase().includes('quizlet'))
-      );
-      const hasStudentResourceQuizlet = (std.resourceLinks || []).some(
-        (r) => (r.url && r.url.toLowerCase().includes('quizlet')) || (r.title && r.title.toLowerCase().includes('quizlet'))
-      );
-
-      const isQuizletCompleted = hasSessionQuizlet || hasFbUrlQuizlet || hasFbMaterialsQuizlet || hasStudentResourceQuizlet;
-
-      if (!isQuizletCompleted) {
-        missingQuizletStudentNames.push(std.name);
-      }
+      return true;
     });
 
-    if (missingQuizletStudentNames.length > 0) {
-      const overdueInfo = calculateOverdueInfo(todayISO, session.date);
-      allPendingTasks.push({
-        id: quizletTaskId,
-        type: 'missing_quizlet',
-        classId: session.classId,
-        className,
-        teacherId,
-        teacherName,
-        dateISO: session.date,
-        scheduleTimeStr: `Buổi #${session.sessionNumber} • Ngày ${formatSessionDate(session.date)}`,
-        missingStudents: missingQuizletStudentNames,
-        sessionId: session.id,
-        ...overdueInfo,
-      });
-    }
-  });
-
-  // =========================================================================
-  // PRIORITY SORTING:
-  // 1. Most overdue days first (highest overdueDays at top)
-  // 2. Unrecorded before Quizlet
-  // 3. Newest date first
-  // =========================================================================
-  allPendingTasks.sort((a, b) => {
-    if (b.overdueDays !== a.overdueDays) {
-      return b.overdueDays - a.overdueDays;
-    }
-    if (a.type !== b.type) {
-      return a.type === 'unrecorded_session' ? -1 : 1;
-    }
-    return b.dateISO.localeCompare(a.dateISO);
-  });
-
-  // Calculate summary counters
-  const totalTasksCount = allPendingTasks.length;
-  const unrecordedCount = allPendingTasks.filter((t) => t.type === 'unrecorded_session').length;
-  const quizletCount = allPendingTasks.filter((t) => t.type === 'missing_quizlet').length;
-  const overdueCount = allPendingTasks.filter((t) => t.overdueDays > 0).length;
-  const todayCount = allPendingTasks.filter((t) => t.overdueDays === 0).length;
-
-  // Extract unique teacher list for filter dropdown
-  const uniqueTeachers = Array.from(
-    new Set(allPendingTasks.map((t) => JSON.stringify({ id: t.teacherId, name: t.teacherName })))
-  ).map((str) => JSON.parse(str) as { id: string; name: string });
-
-  // Apply Quick Filters
-  const filteredTasks = allPendingTasks.filter((task) => {
-    if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;
-    if (filterType === 'missing_quizlet' && task.type !== 'missing_quizlet') return false;
-    if (filterType === 'overdue' && task.overdueDays === 0) return false;
-    if (filterType === 'today' && task.overdueDays !== 0) return false;
-
-    if (selectedTeacherFilter !== 'all') {
-      if (task.teacherId !== selectedTeacherFilter && task.teacherName !== selectedTeacherFilter) {
-        return false;
+    const teacherGroupsMap: Record<string, TeacherPendingGroup> = {};
+    fTasks.forEach((task) => {
+      const teacherKey = task.teacherId || task.teacherName;
+      if (!teacherGroupsMap[teacherKey]) {
+        const userObj = allUsers.find((u) => u.displayName === task.teacherName || u.uid === task.teacherId);
+        teacherGroupsMap[teacherKey] = {
+          teacherId: teacherKey,
+          teacherName: task.teacherName,
+          teacherAvatar: userObj?.avatarUrl,
+          tasks: [],
+        };
       }
-    }
-    return true;
-  });
+      teacherGroupsMap[teacherKey].tasks.push(task);
+    });
 
-  // Group by Teacher
-  const teacherGroupsMap: Record<string, TeacherPendingGroup> = {};
-  filteredTasks.forEach((task) => {
-    const teacherKey = task.teacherId || task.teacherName;
-    if (!teacherGroupsMap[teacherKey]) {
-      const userObj = allUsers.find((u) => u.displayName === task.teacherName || u.uid === task.teacherId);
-      teacherGroupsMap[teacherKey] = {
-        teacherId: teacherKey,
-        teacherName: task.teacherName,
-        teacherAvatar: userObj?.avatarUrl,
-        tasks: [],
-      };
-    }
-    teacherGroupsMap[teacherKey].tasks.push(task);
-  });
+    const groups = Object.values(teacherGroupsMap).filter((g) => g.tasks.length > 0);
 
-  const activeTeacherGroups = Object.values(teacherGroupsMap).filter((g) => g.tasks.length > 0);
+    return {
+      allPendingTasks: tasks,
+      totalTasksCount: totalCount,
+      unrecordedCount: unrecCount,
+      quizletCount: quizCount,
+      overdueCount: ovdCount,
+      todayCount: tdayCount,
+      uniqueTeachers: uTeachers,
+      filteredTasks: fTasks,
+      activeTeacherGroups: groups,
+    };
+  }, [classes, sessions, students, allUsers, dismissedTaskIds, filterType, selectedTeacherFilter]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -608,4 +619,4 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = ({
       )}
     </div>
   );
-};
+});

@@ -49,7 +49,7 @@ interface MenuGroup {
   items: MenuItem[];
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar: React.FC<SidebarProps> = React.memo(({
   currentUser,
   currentRole,
   isCollapsed,
@@ -64,8 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const role = currentUser?.role || 'student';
 
-  // BUILD ROLE-SPECIFIC MENU GROUPS
-  const getMenuGroups = (): MenuGroup[] => {
+  // BUILD ROLE-SPECIFIC MENU GROUPS (MEMOIZED)
+  const menuGroups = React.useMemo((): MenuGroup[] => {
     if (role === 'student') {
       return [
         {
@@ -180,11 +180,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ],
       },
     ];
-  };
+  }, [role, onOpenAccountManagement, onOpenGeminiSettings]);
 
-  const menuGroups = getMenuGroups();
-
-  const isPathActive = (path: string) => {
+  const isPathActive = React.useCallback((path: string) => {
     const currentUrl = location.pathname + location.search;
     if (path === currentUrl) return true;
     if (path === '/super-admin?tab=pending_tasks' && location.pathname === '/super-admin' && (!location.search || location.search.includes('pending_tasks'))) return true;
@@ -193,9 +191,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return location.pathname + location.search === path;
     }
     return location.pathname === path || (path !== '/student' && path !== '/teacher' && path !== '/admin' && path !== '/super-admin' && location.pathname.startsWith(path));
-  };
+  }, [location.pathname, location.search]);
 
-  const handleMenuItemClick = (item: MenuItem) => {
+  const handleMenuItemClick = React.useCallback((item: MenuItem) => {
     if (item.onClick) {
       item.onClick();
     } else if (item.path) {
@@ -203,7 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       window.dispatchEvent(new Event('navigation_tab_change'));
     }
     setIsMobileOpen(false);
-  };
+  }, [navigate, setIsMobileOpen]);
 
   return (
     <>
@@ -219,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`
           fixed md:sticky top-0 left-0 z-50 h-screen bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800
-          flex flex-col transition-all duration-200 ease-in-out shrink-0 select-none shadow-xs
+          flex flex-col transition-[width,transform] duration-200 ease-in-out will-change-[width,transform] shrink-0 select-none shadow-xs
           ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'}
           ${isCollapsed ? 'md:w-20' : 'md:w-64'}
         `}
@@ -344,4 +342,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </aside>
     </>
   );
-};
+});
