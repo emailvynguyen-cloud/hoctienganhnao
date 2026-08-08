@@ -163,9 +163,11 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
     uniqueTeachers,
     filteredTasks,
     activeTeacherGroups,
+    todayFormatted,
   } = React.useMemo(() => {
     const now = new Date();
     const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayFmt = now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
     const tasks: PendingTaskItem[] = [];
 
@@ -326,6 +328,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
       uniqueTeachers: uTeachers,
       filteredTasks: fTasks,
       activeTeacherGroups: groups,
+      todayFormatted: todayFmt,
     };
   }, [classes, sessions, students, allUsers, dismissedTaskIds, filterType, selectedTeacherFilter]);
 
@@ -349,7 +352,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
           </div>
 
           <div className="px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-xs border border-white/20 text-xs font-bold shrink-0 self-start sm:self-center">
-            📅 Hôm nay: {now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+            📅 Hôm nay: {todayFormatted}
           </div>
         </div>
 
