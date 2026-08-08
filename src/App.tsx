@@ -68,6 +68,8 @@ const StudentPrivateLayout: React.FC<{
   loadData: () => void;
   currentUser: User | null;
   onOpenLeaderboard: () => void;
+  onCloseLeaderboard: () => void;
+    isLeaderboardOpen: boolean;
 }> = (props) => {
   return (
     <div className="min-h-screen bg-pink-50/20 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans w-full max-w-full overflow-x-hidden">
@@ -321,6 +323,8 @@ export default function App() {
         loadData={loadData}
         currentUser={currentUser}
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+        onCloseLeaderboard={() => setIsLeaderboardOpen(false)}
+        isLeaderboardOpen={isLeaderboardOpen}
       />
     );
   }
@@ -646,7 +650,7 @@ export default function App() {
       {isLeaderboardOpen && (
         <LeaderboardWidget
           isOpen={isLeaderboardOpen}
-          onClose={() => setIsLeaderboardOpen(false)}
+          onClose={props.onCloseLeaderboard}
           students={students}
           sessions={sessions}
           homeworkSubmissions={homeworkSubmissions}
