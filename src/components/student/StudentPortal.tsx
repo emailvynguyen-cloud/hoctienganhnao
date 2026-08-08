@@ -7,7 +7,14 @@ import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { ClassRulesModal } from '../common/ClassRulesModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
-import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST, getEquippedTitleInfo } from '../../lib/rankingUtils';
+import {
+  getStudentHonorBadge,
+  SYSTEM_HONOR_BADGES_LIST,
+  getEquippedTitleInfo,
+  SYSTEM_BADGES_CATALOG,
+  SYSTEM_TITLES_CATALOG,
+  AVATAR_FRAMES_CATALOG,
+} from '../../lib/rankingUtils';
 import { AchievementCenterModal } from '../common/AchievementCenterModal';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
 import {
@@ -1128,43 +1135,85 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </button>
             </div>
 
-            {/* QUICK STATS GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs font-bold">
-              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 space-y-0.5">
-                <span className="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-extrabold">🏅 BADGE</span>
-                <span className="text-lg font-black text-amber-950 dark:text-amber-200">
-                  {completedHwNum > 0 ? Math.min(18, completedHwNum + 1) : 1} / 60
-                </span>
-              </div>
+            {/* QUICK STATS GRID - 100% DYNAMIC FROM REAL SYSTEM DATA */}
+            {(() => {
+              const realHonorBadge = getStudentHonorBadge(currentStudent.id, freshStudents, sessions, homeworkSubmissions);
+              const isTop1Week = realHonorBadge?.rank === 1;
+              const isTop5Week = !!realHonorBadge && realHonorBadge.rank <= 5;
+              const isTop10Week = !!realHonorBadge && realHonorBadge.rank <= 10;
 
-              <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 space-y-0.5">
-                <span className="text-[10px] text-purple-700 dark:text-purple-400 block uppercase font-extrabold">👑 DANH HIỆU</span>
-                <span className="text-lg font-black text-purple-950 dark:text-purple-200">
-                  {equippedTitle ? 6 : 1}
-                </span>
-              </div>
+              // 1. REAL BADGES UNLOCKED
+              const unlockedBadgesCount = SYSTEM_BADGES_CATALOG.filter((b) => {
+                if (b.category === 'study') return completedHwNum >= b.targetCount;
+                if (b.id.includes('top10_week')) return isTop10Week;
+                if (b.id.includes('top5_week')) return isTop5Week;
+                if (b.id.includes('top3_week')) return !!realHonorBadge && realHonorBadge.rank <= 3;
+                if (b.id.includes('top1_week')) return isTop1Week;
+                if (b.id.includes('top1_month')) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
+                return false;
+              }).length;
 
-              <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 space-y-0.5">
-                <span className="text-[10px] text-sky-700 dark:text-sky-400 block uppercase font-extrabold">🖼 KHUNG</span>
-                <span className="text-lg font-black text-sky-950 dark:text-sky-200">
-                  3
-                </span>
-              </div>
+              // 2. REAL TITLES UNLOCKED
+              const unlockedTitlesCount = SYSTEM_TITLES_CATALOG.filter((t) => {
+                if (t.targetCount === 0) return true; // Mặc định
+                if (t.id.includes('weekly_champion')) return isTop1Week || (currentStudent.weeklyWinsHistoryCount || 0) > 0;
+                if (t.id.includes('monthly_champion')) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
+                return completedHwNum >= t.targetCount;
+              }).length;
 
-              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block uppercase font-extrabold">🥇 TOP TUẦN</span>
-                <span className="text-lg font-black text-emerald-950 dark:text-emerald-200">
-                  5 lần
-                </span>
-              </div>
+              // 3. REAL AVATAR FRAMES UNLOCKED
+              const unlockedFramesCount = AVATAR_FRAMES_CATALOG.filter((f) => {
+                if (f.unlockedByDefault) return true;
+                if (f.requiredTopWeekly) return isTop1Week || (currentStudent.weeklyWinsHistoryCount || 0) > 0;
+                if (f.requiredTopMonthly) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
+                return completedHwNum >= f.requiredHomeworkCount;
+              }).length;
 
-              <div className="p-3 rounded-2xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 space-y-0.5 col-span-2 sm:col-span-1">
-                <span className="text-[10px] text-rose-700 dark:text-rose-400 block uppercase font-extrabold">🏆 TOP THÁNG</span>
-                <span className="text-lg font-black text-rose-950 dark:text-rose-200">
-                  2 lần
-                </span>
-              </div>
-            </div>
+              // 4. REAL WEEKLY WINS
+              const weeklyWinsCount = (isTop1Week ? 1 : 0) + (currentStudent.weeklyWinsHistoryCount || 0);
+
+              // 5. REAL MONTHLY WINS
+              const monthlyWinsCount = currentStudent.monthlyWinsHistoryCount || 0;
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs font-bold">
+                  <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 space-y-0.5">
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-extrabold">🏅 BADGE</span>
+                    <span className="text-lg font-black text-amber-950 dark:text-amber-200">
+                      {unlockedBadgesCount} / {SYSTEM_BADGES_CATALOG.length}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 space-y-0.5">
+                    <span className="text-[10px] text-purple-700 dark:text-purple-400 block uppercase font-extrabold">👑 DANH HIỆU</span>
+                    <span className="text-lg font-black text-purple-950 dark:text-purple-200">
+                      {unlockedTitlesCount}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 space-y-0.5">
+                    <span className="text-[10px] text-sky-700 dark:text-sky-400 block uppercase font-extrabold">🖼 KHUNG</span>
+                    <span className="text-lg font-black text-sky-950 dark:text-sky-200">
+                      {unlockedFramesCount}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block uppercase font-extrabold">🥇 TOP TUẦN</span>
+                    <span className="text-lg font-black text-emerald-950 dark:text-emerald-200">
+                      {weeklyWinsCount} lần
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 space-y-0.5 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] text-rose-700 dark:text-rose-400 block uppercase font-extrabold">🏆 TOP THÁNG</span>
+                    <span className="text-lg font-black text-rose-950 dark:text-rose-200">
+                      {monthlyWinsCount} lần
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
