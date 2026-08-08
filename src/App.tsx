@@ -55,7 +55,7 @@ const RoleRedirect: React.FC<{ currentUser: User | null }> = ({ currentUser }) =
   return <Navigate to="/student" replace />;
 };
 
-// Standalone Student Private Layout (NO Sidebar, NO Login Button, NO Admin Navigation)
+// Standalone Student Private Layout (NO Sidebar, NO Login Button, NO Admin Navigation; HAS Top Thi Đua)
 const StudentPrivateLayout: React.FC<{
   publicHash: string;
   students: Student[];
@@ -67,10 +67,11 @@ const StudentPrivateLayout: React.FC<{
   bankConfig: BankConfig;
   loadData: () => void;
   currentUser: User | null;
+  onOpenLeaderboard: () => void;
 }> = (props) => {
   return (
     <div className="min-h-screen bg-pink-50/20 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans w-full max-w-full overflow-x-hidden">
-      {/* MINIMAL TOP BRANDING HEADER */}
+      {/* STUDENT PRIVATE HEADER (NO SIDEBAR, NO LOGIN BUTTON, NO ADMIN NAV; HAS TOP THI ĐUA) */}
       <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-pink-100 dark:border-slate-800 sticky top-0 z-40 px-4 py-2.5 shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
@@ -87,19 +88,37 @@ const StudentPrivateLayout: React.FC<{
             </div>
           </div>
 
-          {/* DISCRETE BACK TO DASHBOARD BUTTON (ONLY IF LOGGED IN AS ADMIN/SUPER_ADMIN/TEACHER) */}
-          {props.currentUser && ['super_admin', 'admin', 'teacher'].includes(props.currentUser.role) && (
+          {/* STUDENT PRIVATE NAVIGATION: TOP THI ĐUA BUTTON & DISCRETE ADMIN BACK BUTTON */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* 🏆 TOP THI ĐUA BUTTON */}
             <button
-              onClick={() => {
-                if (props.currentUser?.role === 'super_admin') window.location.href = '/super-admin';
-                else if (props.currentUser?.role === 'admin') window.location.href = '/admin';
-                else if (props.currentUser?.role === 'teacher') window.location.href = '/teacher';
-              }}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer flex items-center space-x-1.5 border border-slate-200 dark:border-slate-700"
+              type="button"
+              onClick={props.onOpenLeaderboard}
+              className="h-9 px-3.5 rounded-xl bg-rose-50/90 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 font-bold text-xs transition-all duration-180 flex items-center space-x-1.5 shrink-0 whitespace-nowrap border border-rose-200/60 dark:border-rose-900/60 hover:-translate-y-0.5 cursor-pointer shadow-2xs"
+              title="Xem Bảng Thành Tích Thi Đua Vinh Danh"
             >
-              <span>⬅ Quay lại Dashboard Quản Lý</span>
+              <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="tracking-tight text-xs font-black uppercase">
+                <span className="hidden sm:inline">THI ĐUA TOP</span>
+                <span className="sm:hidden">TOP</span>
+              </span>
             </button>
-          )}
+
+            {/* DISCRETE BACK TO DASHBOARD BUTTON (ONLY IF LOGGED IN AS ADMIN/SUPER_ADMIN/TEACHER) */}
+            {props.currentUser && ['super_admin', 'admin', 'teacher'].includes(props.currentUser.role) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (props.currentUser?.role === 'super_admin') window.location.href = '/super-admin';
+                  else if (props.currentUser?.role === 'admin') window.location.href = '/admin';
+                  else if (props.currentUser?.role === 'teacher') window.location.href = '/teacher';
+                }}
+                className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer flex items-center space-x-1.5 border border-slate-200 dark:border-slate-700 shrink-0"
+              >
+                <span>⬅ Quay lại Dashboard Quản Lý</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -301,6 +320,7 @@ export default function App() {
         bankConfig={bankConfig}
         loadData={loadData}
         currentUser={currentUser}
+        onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
       />
     );
   }
