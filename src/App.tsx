@@ -71,6 +71,7 @@ const StudentPrivateLayout: React.FC<{
   onCloseLeaderboard: () => void;
     isLeaderboardOpen: boolean;
 }> = (props) => {
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   return (
     <div className="min-h-screen bg-pink-50/20 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans w-full max-w-full overflow-x-hidden">
       {/* STUDENT PRIVATE HEADER (NO SIDEBAR, NO LOGIN BUTTON, NO ADMIN NAV; HAS TOP THI ĐUA) */}
@@ -95,7 +96,7 @@ const StudentPrivateLayout: React.FC<{
             {/* 🏆 TOP THI ĐUA BUTTON */}
             <button
               type="button"
-              onClick={props.onOpenLeaderboard}
+              onClick={() => setIsLeaderboardOpen(true)}
               className="h-9 px-3.5 rounded-xl bg-rose-50/90 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 font-bold text-xs transition-all duration-180 flex items-center space-x-1.5 shrink-0 whitespace-nowrap border border-rose-200/60 dark:border-rose-900/60 hover:-translate-y-0.5 cursor-pointer shadow-2xs"
               title="Xem Bảng Thành Tích Thi Đua Vinh Danh"
             >
@@ -148,6 +149,15 @@ const StudentPrivateLayout: React.FC<{
           }}
         />
       </main>
+   
+      {isLeaderboardOpen && (
+        <LeaderboardWidget
+          isOpen={isLeaderboardOpen}
+          onClose={() => setIsLeaderboardOpen(false)}
+          students={props.students}
+          sessions={props.sessions}
+        />
+      )}
     </div>
   );
 };
