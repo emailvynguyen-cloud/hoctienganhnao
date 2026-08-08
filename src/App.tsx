@@ -55,9 +55,9 @@ const RoleRedirect: React.FC<{ currentUser: User | null }> = ({ currentUser }) =
   return <Navigate to="/student" replace />;
 };
 
-// Root Route Handler (Checks for student link ?hash=... or ?student=... before role redirect)
-const RootRouteHandler: React.FC<{
-  currentUser: User | null;
+// Standalone Student Private Layout (NO Sidebar, NO Login Button, NO Admin Navigation)
+const StudentPrivateLayout: React.FC<{
+  publicHash: string;
   students: Student[];
   classes: Class[];
   sessions: Session[];
@@ -66,73 +66,76 @@ const RootRouteHandler: React.FC<{
   invoices: Invoice[];
   bankConfig: BankConfig;
   loadData: () => void;
+  currentUser: User | null;
 }> = (props) => {
-  const searchParams = new URLSearchParams(window.location.search);
-  const studentHash = searchParams.get('hash') || searchParams.get('student');
+  return (
+    <div className="min-h-screen bg-pink-50/20 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans w-full max-w-full overflow-x-hidden">
+      {/* MINIMAL TOP BRANDING HEADER */}
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-pink-100 dark:border-slate-800 sticky top-0 z-40 px-4 py-2.5 shadow-2xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 text-white flex items-center justify-center font-black text-lg shadow-md shrink-0">
+              🌸
+            </div>
+            <div>
+              <h1 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                MS. VY ENGLISH
+              </h1>
+              <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">
+                Trang Theo Dõi Học Viên Cá Nhân
+              </span>
+            </div>
+          </div>
 
-  if (studentHash) {
-    return (
-      <PublicStudentPortal
-        publicHash={studentHash}
-        students={props.students}
-        classes={props.classes}
-        sessions={props.sessions}
-        homeworkTasks={props.homeworkTasks}
-        homeworkSubmissions={props.homeworkSubmissions}
-        invoices={props.invoices}
-        bankConfig={props.bankConfig}
-        onRefreshData={props.loadData}
-        onExit={() => {
-          if (props.currentUser) {
-            if (props.currentUser.role === 'super_admin') window.location.href = '/super-admin';
-            else if (props.currentUser.role === 'admin') window.location.href = '/admin';
-            else if (props.currentUser.role === 'teacher') window.location.href = '/teacher';
-            else window.location.href = '/login';
-          } else {
-            window.location.href = '/login';
-          }
-        }}
-      />
-    );
-  }
+          {/* DISCRETE BACK TO DASHBOARD BUTTON (ONLY IF LOGGED IN AS ADMIN/SUPER_ADMIN/TEACHER) */}
+          {props.currentUser && ['super_admin', 'admin', 'teacher'].includes(props.currentUser.role) && (
+            <button
+              onClick={() => {
+                if (props.currentUser?.role === 'super_admin') window.location.href = '/super-admin';
+                else if (props.currentUser?.role === 'admin') window.location.href = '/admin';
+                else if (props.currentUser?.role === 'teacher') window.location.href = '/teacher';
+              }}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer flex items-center space-x-1.5 border border-slate-200 dark:border-slate-700"
+            >
+              <span>⬅ Quay lại Dashboard Quản Lý</span>
+            </button>
+          )}
+        </div>
+      </header>
 
-  return <RoleRedirect currentUser={props.currentUser} />;
+      {/* STUDENT PORTAL CONTENT */}
+      <main className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8 space-y-6">
+        <PublicStudentPortal
+          publicHash={props.publicHash}
+          students={props.students}
+          classes={props.classes}
+          sessions={props.sessions}
+          homeworkTasks={props.homeworkTasks}
+          homeworkSubmissions={props.homeworkSubmissions}
+          invoices={props.invoices}
+          bankConfig={props.bankConfig}
+          onRefreshData={props.loadData}
+          onExit={() => {
+            if (props.currentUser) {
+              if (props.currentUser.role === 'super_admin') window.location.href = '/super-admin';
+              else if (props.currentUser.role === 'admin') window.location.href = '/admin';
+              else if (props.currentUser.role === 'teacher') window.location.href = '/teacher';
+              else window.location.href = '/login';
+            } else {
+              window.location.href = '/login';
+            }
+          }}
+        />
+      </main>
+    </div>
+  );
 };
 
-// Secret Link Handler (/s/:hash and ?hash=...)
-const SecretLinkWrapper: React.FC<{
-  students: Student[];
-  classes: Class[];
-  sessions: Session[];
-  homeworkTasks: HomeworkTask[];
-  homeworkSubmissions: HomeworkSubmission[];
-  invoices: Invoice[];
-  bankConfig: BankConfig;
-  onRefreshData: () => void;
+// Root Route Handler (Fallback for path="/" if no student secret link is in search params)
+const RootRouteHandler: React.FC<{
+  currentUser: User | null;
 }> = (props) => {
-  const { hash } = useParams();
-  const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
-  const activeHash = hash || searchParams.get('hash') || searchParams.get('student') || '';
-
-  if (!activeHash) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return (
-    <PublicStudentPortal
-      publicHash={activeHash}
-      students={props.students}
-      classes={props.classes}
-      sessions={props.sessions}
-      homeworkTasks={props.homeworkTasks}
-      homeworkSubmissions={props.homeworkSubmissions}
-      invoices={props.invoices}
-      bankConfig={props.bankConfig}
-      onRefreshData={props.onRefreshData}
-      onExit={() => navigate('/login')}
-    />
-  );
+  return <RoleRedirect currentUser={props.currentUser} />;
 };
 
 export default function App() {
@@ -242,6 +245,30 @@ export default function App() {
     );
   }
 
+  // CHECK IF CURRENT URL IS A STUDENT SECRET/PRIVATE LINK
+  const searchParams = new URLSearchParams(location.search);
+  const studentHashParam = searchParams.get('hash') || searchParams.get('student');
+  const isSecretPath = location.pathname.startsWith('/s/');
+  const secretPathHash = isSecretPath ? location.pathname.replace('/s/', '') : null;
+  const activeStudentSecretHash = secretPathHash || (location.pathname === '/' ? studentHashParam : null);
+
+  if (activeStudentSecretHash) {
+    return (
+      <StudentPrivateLayout
+        publicHash={activeStudentSecretHash}
+        students={students}
+        classes={classes}
+        sessions={sessions}
+        homeworkTasks={homeworkTasks}
+        homeworkSubmissions={homeworkSubmissions}
+        invoices={invoices}
+        bankConfig={bankConfig}
+        loadData={loadData}
+        currentUser={currentUser}
+      />
+    );
+  }
+
   return (
     <>
       <ScrollToTop />
@@ -266,22 +293,7 @@ export default function App() {
             }
           >
             {/* PUBLIC ROUTE: ROOT & ROLE REDIRECT */}
-            <Route
-              path="/"
-              element={
-                <RootRouteHandler
-                  currentUser={currentUser}
-                  students={students}
-                  classes={classes}
-                  sessions={sessions}
-                  homeworkTasks={homeworkTasks}
-                  homeworkSubmissions={homeworkSubmissions}
-                  invoices={invoices}
-                  bankConfig={bankConfig}
-                  loadData={loadData}
-                />
-              }
-            />
+            <Route path="/" element={<RootRouteHandler currentUser={currentUser} />} />
 
             {/* PUBLIC ROUTE: LOGIN */}
             <Route
