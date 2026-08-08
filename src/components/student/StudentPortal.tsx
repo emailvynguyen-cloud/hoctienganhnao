@@ -1974,7 +1974,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const monthlyExcusedSessions = sessions.filter((s) => {
                   if (!s.date.startsWith(currentMonthISO)) return false;
-                  if (s.isExcusedAbsenceSession) return true;
                   const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
                   return att?.status === 'excused';
                 });
