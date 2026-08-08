@@ -18,7 +18,7 @@ import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
 import { PublicStudentPortal } from './components/public/PublicStudentPortal';
 import { ClassDetailsView } from './components/admin/ClassDetailsView';
 import { PendingTasksDashboard } from './components/admin/PendingTasksDashboard';
-import { Crown, LogIn } from 'lucide-react';
+import { Crown, LogIn, Trophy } from 'lucide-react';
 
 // Lazy Loaded Portals for Code-Splitting
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
