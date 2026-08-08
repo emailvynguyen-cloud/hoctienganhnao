@@ -55,6 +55,50 @@ const RoleRedirect: React.FC<{ currentUser: User | null }> = ({ currentUser }) =
   return <Navigate to="/student" replace />;
 };
 
+// Root Route Handler (Checks for student link ?hash=... or ?student=... before role redirect)
+const RootRouteHandler: React.FC<{
+  currentUser: User | null;
+  students: Student[];
+  classes: Class[];
+  sessions: Session[];
+  homeworkTasks: HomeworkTask[];
+  homeworkSubmissions: HomeworkSubmission[];
+  invoices: Invoice[];
+  bankConfig: BankConfig;
+  loadData: () => void;
+}> = (props) => {
+  const searchParams = new URLSearchParams(window.location.search);
+  const studentHash = searchParams.get('hash') || searchParams.get('student');
+
+  if (studentHash) {
+    return (
+      <PublicStudentPortal
+        publicHash={studentHash}
+        students={props.students}
+        classes={props.classes}
+        sessions={props.sessions}
+        homeworkTasks={props.homeworkTasks}
+        homeworkSubmissions={props.homeworkSubmissions}
+        invoices={props.invoices}
+        bankConfig={props.bankConfig}
+        onRefreshData={props.loadData}
+        onExit={() => {
+          if (props.currentUser) {
+            if (props.currentUser.role === 'super_admin') window.location.href = '/super-admin';
+            else if (props.currentUser.role === 'admin') window.location.href = '/admin';
+            else if (props.currentUser.role === 'teacher') window.location.href = '/teacher';
+            else window.location.href = '/login';
+          } else {
+            window.location.href = '/login';
+          }
+        }}
+      />
+    );
+  }
+
+  return <RoleRedirect currentUser={props.currentUser} />;
+};
+
 // Secret Link Handler (/s/:hash and ?hash=...)
 const SecretLinkWrapper: React.FC<{
   students: Student[];
@@ -222,7 +266,22 @@ export default function App() {
             }
           >
             {/* PUBLIC ROUTE: ROOT & ROLE REDIRECT */}
-            <Route path="/" element={<RoleRedirect currentUser={currentUser} />} />
+            <Route
+              path="/"
+              element={
+                <RootRouteHandler
+                  currentUser={currentUser}
+                  students={students}
+                  classes={classes}
+                  sessions={sessions}
+                  homeworkTasks={homeworkTasks}
+                  homeworkSubmissions={homeworkSubmissions}
+                  invoices={invoices}
+                  bankConfig={bankConfig}
+                  loadData={loadData}
+                />
+              }
+            />
 
             {/* PUBLIC ROUTE: LOGIN */}
             <Route
