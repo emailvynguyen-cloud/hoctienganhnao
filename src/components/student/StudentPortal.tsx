@@ -13,7 +13,7 @@ import {
   getEquippedTitleInfo,
   SYSTEM_BADGES_CATALOG,
   SYSTEM_TITLES_CATALOG,
-  AVATAR_FRAMES_CATALOG,
+  getStudentAvatarFrameInfo,
 } from '../../lib/rankingUtils';
 import { AchievementCenterModal } from '../common/AchievementCenterModal';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
@@ -1162,12 +1162,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               }).length;
 
               // 3. REAL AVATAR FRAMES UNLOCKED
-              const unlockedFramesCount = AVATAR_FRAMES_CATALOG.filter((f) => {
-                if (f.unlockedByDefault) return true;
-                if (f.requiredTopWeekly) return isTop1Week || (currentStudent.weeklyWinsHistoryCount || 0) > 0;
-                if (f.requiredTopMonthly) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
-                return completedHwNum >= f.requiredHomeworkCount;
-              }).length;
+              const studentFrame = getStudentAvatarFrameInfo(currentStudent.id, freshStudents, sessions, homeworkSubmissions);
+              const unlockedFramesCount = studentFrame.frameId !== 'default' ? 2 : 1;
 
               // 4. REAL WEEKLY WINS
               const weeklyWinsCount = (isTop1Week ? 1 : 0) + (currentStudent.weeklyWinsHistoryCount || 0);
