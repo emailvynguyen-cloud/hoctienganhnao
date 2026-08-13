@@ -72,6 +72,8 @@ export interface Student {
   equippedTitleId?: string; // ID danh hiệu đang được học viên trang bị
   completedHomeworkTaskIds?: string[]; // IDs các homework item mà học viên đã check xong
   resourceLinks?: ResourceLink[];
+  studentCode?: string; // Mã học viên dùng để đăng nhập (Ví dụ: HV7K29, VE2026A7)
+  studentCodeStatus?: 'ACTIVE' | 'DISABLED'; // Trạng thái hoạt động của mã học viên
   createdAt: string;
 }
 

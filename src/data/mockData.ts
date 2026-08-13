@@ -123,6 +123,8 @@ export const INITIAL_STUDENTS: Student[] = [
   {
     id: 'std_01',
     publicHash: 'vy_std_minhanh99',
+    studentCode: 'HV7K29',
+    studentCodeStatus: 'ACTIVE',
     name: 'Trần Minh Anh',
     email: 'minhanh.tran@gmail.com',
     phone: '0988112233',
@@ -139,6 +141,8 @@ export const INITIAL_STUDENTS: Student[] = [
   {
     id: 'std_02',
     publicHash: 'vy_std_phuongthao88',
+    studentCode: 'VE8M42',
+    studentCodeStatus: 'ACTIVE',
     name: 'Phạm Phương Thảo',
     email: 'phuongthao.pham@gmail.com',
     phone: '0911445566',
@@ -155,6 +159,8 @@ export const INITIAL_STUDENTS: Student[] = [
   {
     id: 'std_03',
     publicHash: 'vy_std_hoangnam77',
+    studentCode: 'VY9N15',
+    studentCodeStatus: 'ACTIVE',
     name: 'Nguyen Van A',
     email: 'hoangnam.le@gmail.com',
     phone: '0977889900',
@@ -171,6 +177,8 @@ export const INITIAL_STUDENTS: Student[] = [
   {
     id: 'std_04',
     publicHash: 'vy_std_thanhha66',
+    studentCode: 'HV3P64',
+    studentCodeStatus: 'ACTIVE',
     name: 'Đặng Thanh Hà',
     email: 'thanhha.dang@gmail.com',
     phone: '0933221100',

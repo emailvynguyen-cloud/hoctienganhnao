@@ -47,7 +47,28 @@ const STORAGE_KEYS = {
   CLASS_RULES: 'vy_class_rules_v4',
   DISMISSED_PENDING_TASKS: 'vy_dismissed_pending_tasks_v4',
   LAST_STUDENT_PORTAL_URL: 'vy_last_student_portal_url_v4',
+  CURRENT_STUDENT_SESSION: 'vy_current_student_session_v4',
 };
+
+export function generateStudentCode(existingCodes: string[] = []): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  let attempts = 0;
+  const upperExisting = existingCodes.map((c) => (c || '').toUpperCase());
+  do {
+    let randomStr = '';
+    for (let i = 0; i < 4; i++) {
+      randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    code = `HV${randomStr}`;
+    attempts++;
+  } while (upperExisting.includes(code) && attempts < 100);
+
+  if (upperExisting.includes(code)) {
+    code = `HV${Date.now().toString().slice(-4)}`;
+  }
+  return code;
+}
 
 export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
 
@@ -241,7 +262,41 @@ export const StorageEngine = {
   },
 
   getStudents(): Student[] {
-    return getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+    const rawStudents = getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS) || [];
+    let modified = false;
+    const existingCodes = rawStudents.map((s) => s && s.studentCode).filter(Boolean) as string[];
+
+    const students = rawStudents.map((std) => {
+      if (!std) return std;
+      let updated = false;
+      let code = std.studentCode;
+      let codeStatus = std.studentCodeStatus || 'ACTIVE';
+
+      if (!code) {
+        code = generateStudentCode(existingCodes);
+        existingCodes.push(code);
+        updated = true;
+      }
+      if (!std.studentCodeStatus) {
+        codeStatus = 'ACTIVE';
+        updated = true;
+      }
+
+      if (updated) {
+        modified = true;
+        return {
+          ...std,
+          studentCode: code,
+          studentCodeStatus: codeStatus,
+        };
+      }
+      return std;
+    });
+
+    if (modified) {
+      setItem(STORAGE_KEYS.STUDENTS, students);
+    }
+    return students;
   },
   saveStudents(students: Student[]) {
     setItem(STORAGE_KEYS.STUDENTS, [...students]);
@@ -251,6 +306,9 @@ export const StorageEngine = {
     const students = this.getStudents() || [];
     const newId = studentData.id || `std_${Date.now()}`;
     const initialSessions = Number(studentData.remainingSessions) || Number(studentData.packageSessionCount) || 8;
+    const existingCodes = students.map((s) => s && s.studentCode).filter(Boolean) as string[];
+    const code = studentData.studentCode || generateStudentCode(existingCodes);
+
     const newStudent: Student = {
       id: newId,
       name: studentData.name || 'Học viên mới',
@@ -263,6 +321,8 @@ export const StorageEngine = {
       tuitionPackagePrice: Number(studentData.tuitionPackagePrice) || 2000000,
       packageSessionCount: Number(studentData.packageSessionCount) || 8,
       publicHash: `hash_${newId}_${Math.random().toString(36).substr(2, 6)}`,
+      studentCode: code,
+      studentCodeStatus: studentData.studentCodeStatus || 'ACTIVE',
       joinedDate: new Date().toISOString().split('T')[0],
       stars: 0,
       completedHomeworkTaskIds: [],
@@ -1314,6 +1374,18 @@ export const StorageEngine = {
       setItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, url);
     } else {
       removeItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL);
+    }
+  },
+
+  getCurrentStudentSession(): string | null {
+    return getItem<string | null>(STORAGE_KEYS.CURRENT_STUDENT_SESSION, null);
+  },
+
+  setCurrentStudentSession(studentId: string | null) {
+    if (studentId) {
+      setItem(STORAGE_KEYS.CURRENT_STUDENT_SESSION, studentId);
+    } else {
+      removeItem(STORAGE_KEYS.CURRENT_STUDENT_SESSION);
     }
   },
 };

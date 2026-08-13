@@ -21,7 +21,8 @@ import {
   X,
   Sparkles,
   Shield,
-  CreditCard
+  CreditCard,
+  Key
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -175,6 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       {
         groupTitle: 'HỆ THỐNG & NHÂN SỰ',
         items: [
+          { id: 'sa_student_codes', title: 'Quản Lý Mã Học Viên', path: '/super-admin?tab=student_codes', icon: Key },
           { id: 'sa_accounts', title: 'Quản Lý Tài Khoản', path: '/super-admin/accounts', icon: Users, onClick: onOpenAccountManagement },
           { id: 'sa_settings', title: 'Cài Đặt Gemini API', path: '/super-admin/settings', icon: Settings, onClick: onOpenGeminiSettings },
         ],

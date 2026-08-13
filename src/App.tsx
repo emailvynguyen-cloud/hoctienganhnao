@@ -67,14 +67,28 @@ function extractHashFromUrl(urlStr: string): string | null {
 // Role Redirection Helper
 const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> = ({ currentUser, students }) => {
   if (!currentUser) {
+    const currentStudentId = StorageEngine.getCurrentStudentSession();
     const savedStudentUrl = StorageEngine.getLastStudentPortalUrl();
-    if (savedStudentUrl) {
-      const candidateHash = extractHashFromUrl(savedStudentUrl);
-      if (candidateHash && students.some((s) => s && (s.publicHash === candidateHash || s.id === candidateHash))) {
-        return <Navigate to={savedStudentUrl} replace />;
+
+    if (currentStudentId) {
+      const activeStudent = students.find((s) => s && s.id === currentStudentId && s.status !== 'soft_deleted');
+      if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
+        const targetUrl = savedStudentUrl || `/student/${activeStudent.publicHash || activeStudent.id}`;
+        return <Navigate to={targetUrl} replace />;
       } else {
+        // Clear invalid or disabled student session
+        StorageEngine.setCurrentStudentSession(null);
         StorageEngine.setLastStudentPortalUrl(null);
       }
+    } else if (savedStudentUrl) {
+      const candidateHash = extractHashFromUrl(savedStudentUrl);
+      if (candidateHash) {
+        const activeStudent = students.find((s) => s && (s.publicHash === candidateHash || s.id === candidateHash) && s.status !== 'soft_deleted');
+        if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
+          return <Navigate to={savedStudentUrl} replace />;
+        }
+      }
+      StorageEngine.setLastStudentPortalUrl(null);
     }
     return <Navigate to="/login" replace />;
   }
@@ -165,6 +179,7 @@ const StudentPrivateLayout: React.FC<{
           bankConfig={props.bankConfig}
           onRefreshData={props.loadData}
           onExit={() => {
+            StorageEngine.setCurrentStudentSession(null);
             StorageEngine.setLastStudentPortalUrl(null);
             if (props.currentUser) {
               if (props.currentUser.role === 'super_admin') window.location.href = '/super-admin';
@@ -314,25 +329,6 @@ export default function App() {
     navigate('/login');
   };
 
-  if (isCloudLoading) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center space-y-4 text-slate-800 dark:text-white z-50">
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-400 to-rose-500 text-white flex items-center justify-center font-black text-2xl shadow-xl animate-bounce">
-          🌸
-        </div>
-        <div className="text-center space-y-1.5">
-          <h2 className="text-lg font-black tracking-tight text-pink-950 dark:text-pink-300">
-            THEO DÕI HỌC TẬP ONLINE - MS. VY ENGLISH
-          </h2>
-          <p className="text-xs font-extrabold text-slate-600 dark:text-slate-300 flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping mr-2"></span>
-            Đang đồng bộ dữ liệu thời gian thực từ Đám Mây Cloud...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // CHECK IF CURRENT URL IS A STUDENT SECRET/PRIVATE LINK (/s/:hash, /student/:hash, or ?student=:hash)
   const searchParams = new URLSearchParams(location.search);
   const studentHashParam = searchParams.get('hash') || searchParams.get('student');
@@ -355,6 +351,25 @@ export default function App() {
       }
     }
   }, [activeStudentSecretHash, location.pathname, location.search, students]);
+
+  if (isCloudLoading) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center justify-center space-y-4 text-slate-800 dark:text-white z-50">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-400 to-rose-500 text-white flex items-center justify-center font-black text-2xl shadow-xl animate-bounce">
+          🌸
+        </div>
+        <div className="text-center space-y-1.5">
+          <h2 className="text-lg font-black tracking-tight text-pink-950 dark:text-pink-300">
+            THEO DÕI HỌC TẬP ONLINE - MS. VY ENGLISH
+          </h2>
+          <p className="text-xs font-extrabold text-slate-600 dark:text-slate-300 flex items-center justify-center">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping mr-2"></span>
+            Đang đồng bộ dữ liệu thời gian thực từ Đám Mây Cloud...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (activeStudentSecretHash) {
     return (

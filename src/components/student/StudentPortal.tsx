@@ -950,6 +950,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               >
                 📋 Nội quy lớp học
               </button>
+
+              <button
+                onClick={() => {
+                  StorageEngine.setCurrentStudentSession(null);
+                  StorageEngine.setLastStudentPortalUrl(null);
+                  window.location.href = '/login';
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-500 hover:bg-rose-600 text-white transition inline-flex items-center space-x-1 cursor-pointer shadow-2xs uppercase"
+                title="Đăng xuất khỏi hệ thống"
+              >
+                <span>🚪 Đăng Xuất</span>
+              </button>
             </div>
 
             {/* 2x2 Grid Info Box with Rich Soft Pastel Highlight Background */}

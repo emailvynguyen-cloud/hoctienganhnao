@@ -9,7 +9,7 @@ import { ClassDetailsView } from './ClassDetailsView';
 import { AiStudioPortal } from './AiStudioPortal';
 import { StudentPortal } from '../student/StudentPortal';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
-import { StorageEngine } from '../../lib/storage';
+import { StorageEngine, generateStudentCode } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
@@ -82,17 +82,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'pending_tasks' | 'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules'>('pending_tasks');
+  const [activeTab, setActiveTab] = useState<'pending_tasks' | 'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules' | 'student_codes'>('pending_tasks');
 
   // CLASS RULES MANAGEMENT STATE
   const [isEditingClassRules, setIsEditingClassRules] = useState(false);
   const [classRulesEditValue, setClassRulesEditValue] = useState(StorageEngine.getClassRules());
+
+  // STUDENT CODES MANAGEMENT STATE FOR SUPER ADMIN
+  const [studentCodeSearchQuery, setStudentCodeSearchQuery] = useState('');
+  const [studentCodeStatusFilter, setStudentCodeStatusFilter] = useState<'all' | 'ACTIVE' | 'DISABLED'>('all');
+  const [editingStudentCodeModal, setEditingStudentCodeModal] = useState<Student | null>(null);
+  const [newStudentCodeInput, setNewStudentCodeInput] = useState('');
 
   // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING (MEMOIZED)
   const scopedClasses = React.useMemo(() => StorageEngine.getScopedClasses(currentUser, classes || []), [currentUser, classes]);
   const scopedStudents = React.useMemo(() => StorageEngine.getScopedStudents(currentUser, students || [], classes || []), [currentUser, students, classes]);
   const safeClasses = scopedClasses;
   const safeStudents = scopedStudents;
+
+  const filteredStudentCodesList = React.useMemo(() => {
+    return safeStudents.filter((std) => {
+      if (!std || std.status === 'soft_deleted') return false;
+
+      const codeStr = (std.studentCode || '').toLowerCase();
+      const nameStr = (std.name || '').toLowerCase();
+      const query = studentCodeSearchQuery.toLowerCase().trim();
+
+      const matchesQuery = !query || codeStr.includes(query) || nameStr.includes(query);
+      const matchesStatus =
+        studentCodeStatusFilter === 'all' ||
+        (studentCodeStatusFilter === 'ACTIVE' && (std.studentCodeStatus === 'ACTIVE' || !std.studentCodeStatus)) ||
+        (studentCodeStatusFilter === 'DISABLED' && std.studentCodeStatus === 'DISABLED');
+
+      return matchesQuery && matchesStatus;
+    });
+  }, [safeStudents, studentCodeSearchQuery, studentCodeStatusFilter]);
+
+  const handleToggleStudentCodeStatus = (std: Student) => {
+    const nextStatus = std.studentCodeStatus === 'DISABLED' ? 'ACTIVE' : 'DISABLED';
+    const updated = safeStudents.map((s) => (s.id === std.id ? { ...s, studentCodeStatus: nextStatus } : s));
+    StorageEngine.saveStudents(updated);
+    onUpdateStudents();
+  };
+
+  const handleSaveStudentCode = (stdId: string, codeToSave: string) => {
+    const cleanCode = codeToSave.trim().toUpperCase();
+    if (!cleanCode) {
+      alert('Vui lòng nhập mã học viên hợp lệ!');
+      return;
+    }
+
+    const existingOther = safeStudents.find(
+      (s) => s.id !== stdId && s.studentCode && s.studentCode.trim().toUpperCase() === cleanCode
+    );
+    if (existingOther) {
+      alert(`Mã học viên '${cleanCode}' đã tồn tại cho học viên ${existingOther.name}. Vui lòng nhập mã khác!`);
+      return;
+    }
+
+    const updated = safeStudents.map((s) =>
+      s.id === stdId
+        ? {
+            ...s,
+            studentCode: cleanCode,
+            studentCodeStatus: s.studentCodeStatus || 'ACTIVE',
+          }
+        : s
+    );
+    StorageEngine.saveStudents(updated);
+    onUpdateStudents();
+    setEditingStudentCodeModal(null);
+  };
 
   // Class Manager Assignment Modal State
   const [editingClassManagersModal, setEditingClassManagersModal] = useState<Class | null>(null);
@@ -1530,6 +1590,234 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* TAB: QUẢN LÝ MÃ HỌC VIÊN (SUPER ADMIN & ADMIN) */}
+      {activeTab === 'student_codes' && (
+        <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-purple-200 dark:border-slate-800 space-y-6 shadow-xs text-slate-800 dark:text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100 dark:border-slate-800 pb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 via-indigo-500 to-pink-500 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
+                🔑
+              </div>
+              <div>
+                <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
+                  Quản Lý Mã Đăng Nhập Học Viên
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Quản lý danh sách mã đăng nhập (Student Code) dành riêng cho từng học viên. Đổi mã, bật/tắt quyền đăng nhập.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* SEARCH & FILTER CONTROLS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <input
+                type="text"
+                placeholder="Tìm theo tên hoặc mã học viên..."
+                value={studentCodeSearchQuery}
+                onChange={(e) => setStudentCodeSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">Trạng thái:</label>
+              <select
+                value={studentCodeStatusFilter}
+                onChange={(e) => setStudentCodeStatusFilter(e.target.value as any)}
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-xs font-bold"
+              >
+                <option value="all">Tất cả ({safeStudents.length} học viên)</option>
+                <option value="ACTIVE">🟢 Đang hoạt động (ACTIVE)</option>
+                <option value="DISABLED">🔴 Đã vô hiệu hóa (DISABLED)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* TABLE OF STUDENT CODES */}
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-purple-50/80 dark:bg-slate-800/80 border-b border-purple-200 dark:border-slate-700 text-purple-950 dark:text-purple-200 uppercase font-black tracking-wider">
+                  <th className="p-3.5">Học Viên</th>
+                  <th className="p-3.5">Mã Đăng Nhập (Student Code)</th>
+                  <th className="p-3.5">Trạng Thái</th>
+                  <th className="p-3.5 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                {filteredStudentCodesList.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-slate-500 font-bold">
+                      Không tìm thấy học viên nào khớp với bộ lọc.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStudentCodesList.map((std) => {
+                    const isCodeActive = std.studentCodeStatus !== 'DISABLED';
+                    return (
+                      <tr key={std.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                        <td className="p-3.5">
+                          <div className="flex items-center space-x-3">
+                            <StudentAvatarWithFrame student={std} size="sm" />
+                            <div>
+                              <span className="font-black text-slate-900 dark:text-white block text-xs sm:text-sm">
+                                {std.name}
+                              </span>
+                              <span className="text-[11px] text-slate-500 block">
+                                ID: <code className="font-mono">{std.id}</code>
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-3.5">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-950 dark:text-purple-200 font-mono font-black text-sm tracking-wider border border-purple-200 dark:border-purple-800 shadow-2xs">
+                              {std.studentCode || 'Chưa có mã'}
+                            </span>
+                            {std.studentCode && (
+                              <button
+                                onClick={() => {
+                                  if (navigator.clipboard) navigator.clipboard.writeText(std.studentCode!);
+                                  alert(`Đã sao chép mã học viên '${std.studentCode}' của em ${std.name}!`);
+                                }}
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 transition cursor-pointer"
+                                title="Copy Mã Học Viên"
+                              >
+                                📋
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="p-3.5">
+                          {isCodeActive ? (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-950 dark:text-emerald-300 font-extrabold text-[11px] border border-emerald-300 flex items-center w-max">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                              ACTIVE (Đang hoạt động)
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-950 dark:text-rose-300 font-extrabold text-[11px] border border-rose-300 flex items-center w-max">
+                              <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span>
+                              DISABLED (Vô hiệu hóa)
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingStudentCodeModal(std);
+                                setNewStudentCodeInput(std.studentCode || generateStudentCode(safeStudents.map((s) => s.studentCode).filter(Boolean) as string[]));
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 dark:bg-purple-900 dark:text-purple-200 font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center"
+                            >
+                              🎲 Đổi/Tạo Mã
+                            </button>
+
+                            <button
+                              onClick={() => handleToggleStudentCodeStatus(std)}
+                              className={`px-3 py-1.5 rounded-xl font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center ${
+                                isCodeActive
+                                  ? 'bg-rose-100 hover:bg-rose-200 text-rose-950 dark:bg-rose-950 dark:text-rose-200 border border-rose-300'
+                                  : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300'
+                              }`}
+                            >
+                              {isCodeActive ? '🔒 Vô hiệu hóa' : '🔓 Bật lại mã'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT / GENERATE STUDENT CODE MODAL */}
+      {editingStudentCodeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border-2 border-purple-200 dark:border-slate-800 p-6 space-y-5 text-slate-800 dark:text-white relative">
+            <button
+              onClick={() => setEditingStudentCodeModal(null)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 border-b border-purple-100 dark:border-slate-800 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 flex items-center justify-center font-black">
+                🔑
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                  Đổi / Tạo Mã Cho {editingStudentCodeModal.name}
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">
+                  Mã học viên dùng để đăng nhập vào Student Portal.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-slate-700 dark:text-slate-200 uppercase mb-1">
+                  Mã Đăng Nhập Học Viên *
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newStudentCodeInput}
+                    onChange={(e) => setNewStudentCodeInput(e.target.value.toUpperCase())}
+                    className="flex-1 p-3 rounded-xl border border-purple-300 bg-purple-50/50 dark:bg-slate-800 font-mono font-black text-sm tracking-widest text-center uppercase"
+                    placeholder="VD: HV7K29"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const generated = generateStudentCode(safeStudents.map((s) => s.studentCode).filter(Boolean) as string[]);
+                      setNewStudentCodeInput(generated);
+                    }}
+                    className="px-3.5 py-3 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shrink-0 cursor-pointer"
+                  >
+                    🎲 Tự sinh mã
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-slate-800/80 border border-purple-200 dark:border-slate-700 text-xs font-semibold text-purple-950 dark:text-purple-200">
+                📌 Lưu ý: <code>studentId</code> ({editingStudentCodeModal.id}) và toàn bộ lịch sử học tập, bài tập, sao thưởng của học viên <strong>không bị thay đổi</strong> khi đổi mã.
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudentCodeModal(null)}
+                  className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveStudentCode(editingStudentCodeModal.id, newStudentCodeInput)}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-black text-xs shadow-md cursor-pointer"
+                >
+                  Lưu Thay Đổi
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
