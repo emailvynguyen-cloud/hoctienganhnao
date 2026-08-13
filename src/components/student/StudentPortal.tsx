@@ -5,6 +5,7 @@ import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
 import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { ClassRulesModal } from '../common/ClassRulesModal';
+import { StudentLearningHub } from './learning/StudentLearningHub';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
 import {
@@ -148,6 +149,28 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [copiedResId, setCopiedResId] = useState<string | null>(null);
+  const [isLearningHubOpen, setIsLearningHubOpen] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const syncLearningHubFromUrl = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'learning_hub') {
+          setIsLearningHubOpen(true);
+        } else {
+          setIsLearningHubOpen(false);
+        }
+      }
+    };
+
+    syncLearningHubFromUrl();
+    window.addEventListener('popstate', syncLearningHubFromUrl);
+    window.addEventListener('navigation_tab_change', syncLearningHubFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncLearningHubFromUrl);
+      window.removeEventListener('navigation_tab_change', syncLearningHubFromUrl);
+    };
+  }, []);
 
   React.useEffect(() => {
     const handlePushClick = (e: Event) => {
@@ -205,6 +228,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     return (
       <div className="p-8 text-center bg-white rounded-3xl border border-pink-100 text-xs text-slate-500 font-bold max-w-md mx-auto my-12 shadow-sm space-y-4">
         <p>Hệ thống đang sẵn sàng. Vui lòng đăng nhập tài khoản hoặc dùng đường link cá nhân.</p>
+      </div>
+    );
+  }
+
+  if (isLearningHubOpen) {
+    return (
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
+        <StudentLearningHub
+          currentStudent={currentStudent}
+          onExit={() => {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('tab');
+            const newSearch = params.toString() ? `?${params.toString()}` : window.location.pathname;
+            window.history.pushState({}, '', newSearch);
+            window.dispatchEvent(new Event('navigation_tab_change'));
+          }}
+        />
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { ClassDetailsView } from '../admin/ClassDetailsView';
 import { StudentPortal } from '../student/StudentPortal';
 import { HomeworkGradingWidget } from '../admin/HomeworkGradingWidget';
 import { AiStudioPortal } from '../admin/AiStudioPortal';
+import { AdminLearningHub } from '../admin/learning/AdminLearningHub';
 import { StorageEngine } from '../../lib/storage';
 import {
   Calendar,
@@ -517,6 +518,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('learning_hub')}
+          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
+            activeTab === 'learning_hub'
+              ? 'bg-rose-500 text-white shadow-2xs'
+              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 mr-1.5" /> Learning Hub (Ôn Luyện)
+        </button>
+
+        <button
           onClick={() => setActiveTab('ai_studio')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'ai_studio'
@@ -527,6 +539,11 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           <Sparkles className="w-4 h-4 mr-1.5 text-amber-300" /> AI Studio Dạy Học
         </button>
       </div>
+
+      {/* TAB LEARNING HUB */}
+      {activeTab === 'learning_hub' && (
+        <AdminLearningHub currentUser={currentUser} />
+      )}
 
       {/* TAB 1: TODAY'S CLASSES & SESSIONS */}
       {activeTab === 'today' && (

@@ -8,6 +8,7 @@ import { WeeklyTimetable } from '../common/WeeklyTimetable';
 import { ClassDetailsView } from './ClassDetailsView';
 import { AiStudioPortal } from './AiStudioPortal';
 import { StudentPortal } from '../student/StudentPortal';
+import { AdminLearningHub } from './learning/AdminLearningHub';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine, generateStudentCode } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
@@ -599,6 +600,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
       </div>
 
 
+
+      {/* TAB LEARNING HUB */}
+      {activeTab === 'learning_hub' && (
+        <AdminLearningHub currentUser={currentUser} />
+      )}
 
       {/* TAB 0: PENDING TASKS DASHBOARD ("CÔNG VIỆC CẦN XỬ LÝ") */}
       {activeTab === 'pending_tasks' && (
