@@ -3,6 +3,8 @@ import { Book, Chapter, Student, PracticeSet, LearningQuestion, ChapterTest, Cha
 import { LearningHubService } from '../../../lib/learningHubService';
 import { InteractivePracticePlayer } from './InteractivePracticePlayer';
 import { InteractiveTestPlayer } from './InteractiveTestPlayer';
+import { StudentResultsView } from './StudentResultsView';
+import { PracticeLeaderboardView } from './PracticeLeaderboardView';
 import { BookOpen, Award, Trophy, ChevronRight, ArrowLeft, Sparkles, CheckCircle2, FileText, Clock, PlayCircle, Flame } from 'lucide-react';
 
 interface StudentLearningHubProps {
@@ -439,25 +441,11 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
           )}
 
           {activeTab === 'results' && (
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                📊 Kết Quả Kiểm Tra Của Tôi
-              </h3>
-              <div className="p-6 text-center text-xs font-medium text-slate-500">
-                Chưa có dữ liệu kết quả kiểm tra nào. Hãy hoàn thành bài test Chapter để xem điểm tại đây!
-              </div>
-            </div>
+            <StudentResultsView currentStudent={currentStudent} />
           )}
 
           {activeTab === 'leaderboard' && (
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                🏆 Bảng Xếp Hạng Thi Đua Daily Practice
-              </h3>
-              <div className="p-6 text-center text-xs font-medium text-slate-500">
-                Bảng xếp hạng thi đua ôn tập hàng ngày sẽ cập nhật khi có lượt ôn tập mới.
-              </div>
-            </div>
+            <PracticeLeaderboardView currentStudent={currentStudent} />
           )}
         </div>
       )}
