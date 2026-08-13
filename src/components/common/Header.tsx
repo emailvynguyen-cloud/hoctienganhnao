@@ -29,6 +29,7 @@ import {
   Bell,
   Check,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -49,9 +50,11 @@ interface HeaderProps {
   canNavigateBack?: boolean;
   onNotificationClick?: (submissionId: string) => void;
   onSelectNotificationSubmission?: (submissionId: string) => void;
+  onToggleSidebar?: () => void;
+  onOpenMobileSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   currentUser,
   currentRole,
   onOpenLogin,
@@ -69,6 +72,8 @@ export const Header: React.FC<HeaderProps> = ({
   canNavigateBack = false,
   onNotificationClick,
   onSelectNotificationSubmission,
+  onToggleSidebar,
+  onOpenMobileSidebar,
 }) => {
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
   const [isPwaPermanentlyHidden, setIsPwaPermanentlyHidden] = useState(() => {
@@ -96,6 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -177,11 +183,26 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors duration-200 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-[80px] flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors duration-200 shadow-2xs max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 min-h-[80px] flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap min-w-0 max-w-full">
         
-        {/* Left: Brand Logo & Title */}
-        <div className="flex items-center space-x-3.5 cursor-pointer group shrink-0 py-0.5" onClick={onNavigateHome}>
+        {/* Left: Hamburger & Brand Logo */}
+        <div className="flex items-center space-x-3 shrink-0">
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                onOpenMobileSidebar?.();
+              } else {
+                onToggleSidebar?.();
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+            title="Mở / Thu gọn Menu điều hướng"
+          >
+            <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+          </button>
+
+          <div className="flex items-center space-x-3.5 cursor-pointer group shrink-0 py-0.5" onClick={onNavigateHome}>
           <div className="relative shrink-0">
             <img
               src={logoImg}
@@ -210,53 +231,23 @@ export const Header: React.FC<HeaderProps> = ({
                 ONLINE
               </span>
             </div>
-            <p className="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 tracking-wide hidden md:block mt-0.5">
-              Hệ Thống Theo Dõi Học Tập & Quản Lý Lớp Học
-            </p>
           </div>
         </div>
+      </div>
 
         {/* Right: Actions, Navigation, Role Switcher & Notifications */}
         <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:gap-3 py-0.5 max-w-full overflow-x-auto scrollbar-none shrink-0">
 
-          {/* SUB-VIEW BREADCRUMB & BACK / HOME BUTTONS FOR MANAGER PORTAL */}
-          {!activePublicHash && (
-            <div className="flex items-center space-x-2 shrink-0">
-              {/* HOME BUTTON */}
-              <button
-                onClick={onNavigateHome}
-                className="h-10 px-3.5 rounded-xl bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs sm:text-sm transition-all duration-180 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:-translate-y-0.5 flex items-center shadow-2xs cursor-pointer shrink-0"
-                title="Về Trang Chủ Quản Lý"
-              >
-                <Home className="w-4 h-4 sm:mr-1.5 text-slate-500 shrink-0" />
-                <span className="hidden sm:inline">Trang Chủ</span>
-              </button>
-
-              {/* EXIT GENUINE PUBLIC VIEW IF ACTIVE */}
-              {activePublicHash && onExitPublicView && (
-                <button
-                  onClick={onExitPublicView}
-                  className="h-10 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-amber-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
-                  title="Thoát chế độ xem học viên bí mật"
-                >
-                  <Lock className="w-4 h-4 mr-1.5 text-amber-600 shrink-0" />
-                  <span>Thoát Link Secret</span>
-                </button>
-              )}
-
-              {/* BACK BUTTON (ACTIVE IN SUB-VIEWS) */}
-              {canNavigateBack && onNavigateBack && (
-                <button
-                  onClick={onNavigateBack}
-                  className="h-10 px-3.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-sky-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
-                  title="Quay lại trang trước"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-1.5 text-sky-600 shrink-0" />
-                  <span className="hidden sm:inline">Quay Lại</span>
-                </button>
-              )}
-
-            </div>
+          {/* EXIT GENUINE PUBLIC VIEW IF ACTIVE */}
+          {activePublicHash && onExitPublicView && (
+            <button
+              onClick={onExitPublicView}
+              className="h-10 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-medium text-xs sm:text-sm transition-all duration-180 flex items-center border border-transparent hover:border-amber-200 hover:-translate-y-0.5 cursor-pointer shrink-0"
+              title="Thoát chế độ xem học viên bí mật"
+            >
+              <Lock className="w-4 h-4 mr-1.5 text-amber-600 shrink-0" />
+              <span>Thoát Link Secret</span>
+            </button>
           )}
 
 
@@ -408,10 +399,11 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* Logout Button */}
                   <button
                     onClick={onLogout}
-                    className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition shrink-0 cursor-pointer"
-                    title="Đăng Xuất"
+                    className="h-9 px-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-medium text-xs transition border border-transparent flex items-center shrink-0 cursor-pointer shadow-2xs"
+                    title="Đăng Xuất Khỏi Hệ Thống"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5 mr-1 text-rose-600 shrink-0" />
+                    <span>Đăng Xuất</span>
                   </button>
                 </div>
               ) : (
@@ -427,8 +419,109 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
 
+          {/* MOBILE HAMBURGER MENU TOGGLE BUTTON (VISIBLE ON MOBILE ONLY) */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="sm:hidden h-10 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Mở menu hệ thống"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* MOBILE SLIDE-DOWN NAVIGATION DRAWER */}
+      {isMobileMenuOpen && (
+        <div className="sm:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-md animate-fadeIn">
+          {currentUser && (
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                {currentUser.role === 'super_admin' ? (
+                  <Crown className="w-4 h-4 text-amber-500" />
+                ) : currentUser.role === 'admin' ? (
+                  <Shield className="w-4 h-4 text-rose-500" />
+                ) : (
+                  <UserCheck className="w-4 h-4 text-sky-500" />
+                )}
+                <span className="font-bold text-slate-900 dark:text-white">{currentUser.displayName}</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 font-bold text-[10px] uppercase">
+                {currentUser.role}
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                onNavigateHome?.();
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center space-x-1.5"
+            >
+              <Home className="w-4 h-4 text-sky-500" />
+              <span>Trang Chủ</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onOpenLeaderboard();
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center justify-center space-x-1.5"
+            >
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>Thi Đua TOP</span>
+            </button>
+
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  onOpenAccountManagement();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2"
+              >
+                <Users className="w-4 h-4 text-sky-600" />
+                <span>Quản Lý Tài Khoản Đăng Nhập</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+              <span>{isDarkMode ? 'Chế độ Sáng (Light Mode)' : 'Chế độ Tối (Dark Mode)'}</span>
+            </button>
+
+            {currentUser ? (
+              <button
+                onClick={() => {
+                  onLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Đăng Xuất</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onOpenLogin();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="p-3 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center space-x-1.5 col-span-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Đăng Nhập Hệ Thống</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PWA FLOATING ACTION BUTTON (FAB) AT BOTTOM-RIGHT */}
       {!isPwaPermanentlyHidden && !isStandalone && (
@@ -522,4 +615,4 @@ export const Header: React.FC<HeaderProps> = ({
 
     </header>
   );
-};
+});

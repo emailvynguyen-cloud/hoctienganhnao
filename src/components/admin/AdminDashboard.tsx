@@ -63,7 +63,7 @@ interface AdminDashboardProps {
   targetSubmissionId?: string | null;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   currentUser,
   effectiveRole,
   students,
@@ -88,9 +88,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isEditingClassRules, setIsEditingClassRules] = useState(false);
   const [classRulesEditValue, setClassRulesEditValue] = useState(StorageEngine.getClassRules());
 
-  // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING
-  const scopedClasses = StorageEngine.getScopedClasses(currentUser, classes || []);
-  const scopedStudents = StorageEngine.getScopedStudents(currentUser, students || [], classes || []);
+  // ENTERPRISE SCOPE-BASED ACCESS CONTROL DATA FILTERING (MEMOIZED)
+  const scopedClasses = React.useMemo(() => StorageEngine.getScopedClasses(currentUser, classes || []), [currentUser, classes]);
+  const scopedStudents = React.useMemo(() => StorageEngine.getScopedStudents(currentUser, students || [], classes || []), [currentUser, students, classes]);
   const safeClasses = scopedClasses;
   const safeStudents = scopedStudents;
 
@@ -99,6 +99,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Expanded Teacher in Teachers Management Tab
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const syncTabFromUrl = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam) {
+          setActiveTab(tabParam as any);
+        }
+      }
+    };
+
+    syncTabFromUrl();
+
+    window.addEventListener('popstate', syncTabFromUrl);
+    window.addEventListener('navigation_tab_change', syncTabFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncTabFromUrl);
+      window.removeEventListener('navigation_tab_change', syncTabFromUrl);
+    };
+  }, []);
 
   useEffect(() => {
     if (targetSubmissionId) {
@@ -479,12 +500,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-6">
       
       {/* Role Notice Banner */}
-      <div className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between text-sm font-normal shadow-2xs ${
+      <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-sm font-normal shadow-2xs ${
         isSuperAdmin
           ? 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
           : 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800'
       }`}>
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2.5 min-w-0">
           {isSuperAdmin ? <Crown className="w-4.5 h-4.5 text-amber-500 shrink-0" /> : <ShieldAlert className="w-4.5 h-4.5 text-rose-500 shrink-0" />}
           <span className="text-sm leading-relaxed">
             {isSuperAdmin
@@ -494,7 +515,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {isSuperAdmin && (
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={onOpenAccountManagement}
               className="h-10 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm transition shadow-2xs flex items-center shrink-0 cursor-pointer border border-transparent"
@@ -514,149 +535,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
-        {/* ACCOUNT MANAGEMENT TAB - SUPER ADMIN ONLY */}
-        {isSuperAdmin && (
-          <button
-            onClick={onOpenAccountManagement}
-            className="h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 hover:bg-sky-100"
-            title="Quản Lý Cấp Mới & Đổi Mật Khẩu Tài Khoản Nhân Sự"
-          >
-            <Users className="w-4 h-4 mr-1.5 text-sky-600" /> Quản Lý Tài Khoản Đăng Nhập
-          </button>
-        )}
 
-        <button
-          onClick={() => setActiveTab('pending_tasks')}
-          className={`h-11 px-4 rounded-xl text-sm font-bold transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'pending_tasks'
-              ? 'bg-rose-600 text-white shadow-2xs'
-              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
-          }`}
-        >
-          <Clock className="w-4 h-4 mr-1.5 text-rose-500 animate-pulse" /> 📋 Công Việc Cần Xử Lý
-        </button>
-
-        <button
-          onClick={() => setActiveTab('timetable')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'timetable'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Thời Khóa Biểu Tuần {isSuperAdmin ? '(Ms. Vy)' : ''}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('grading')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'grading'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4 mr-1.5" /> Chấm Bài Tập Về Nhà
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ai_studio')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'ai_studio'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 mr-1.5 text-amber-300" /> AI Studio Dạy Học
-        </button>
-
-        {/* TEACHERS MANAGEMENT TAB - SUPER ADMIN ONLY */}
-        {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab('teachers')}
-            className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-              activeTab === 'teachers'
-                ? 'bg-rose-500 text-white shadow-2xs'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <UserCheck className="w-4 h-4 mr-1.5" /> Quản Lý Giáo Viên ({otherTeachersList.length})
-          </button>
-        )}
-
-        {/* REVENUE TAB - SUPER ADMIN ONLY */}
-        {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab('revenue')}
-            className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-              activeTab === 'revenue'
-                ? 'bg-rose-500 text-white shadow-2xs'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-          >
-            Doanh Thu Tháng
-          </button>
-        )}
-
-        <button
-          onClick={() => setActiveTab('classes')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'classes'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Tất Cả Lớp Học ({safeClasses.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('students')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'students'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Danh Sách Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length})
-        </button>
-
-        {/* INVOICE & TUITION MANAGEMENT TAB - SUPER ADMIN ONLY */}
-        {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab('invoices')}
-            className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-              activeTab === 'invoices'
-                ? 'bg-rose-500 text-white shadow-2xs'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-          >
-            Quản Lý Học Phí & VietQR
-          </button>
-        )}
-
-        <button
-          onClick={() => setActiveTab('audit_logs')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'audit_logs'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Nhật Ký Thao Tác (Audit Log)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('class_rules')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'class_rules'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 mr-1.5" /> Quản Lý Nội Quy Lớp Học
-        </button>
-      </div>
 
       {/* TAB 0: PENDING TASKS DASHBOARD ("CÔNG VIỆC CẦN XỬ LÝ") */}
       {activeTab === 'pending_tasks' && (
@@ -665,6 +544,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           students={safeStudents}
           sessions={sessions}
           allUsers={allSystemUsers}
+          currentUser={currentUser}
           onOpenAddSession={onOpenAddSession}
           onInspectClass={(classId) => setInspectedClassId(classId)}
         />
@@ -952,17 +832,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* SUPER ADMIN BATCH ADMIN REASSIGNMENT BAR */}
           {isSuperAdmin && (
-            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-              <div className="flex items-center space-x-2">
-                <span className="font-black text-purple-950 dark:text-purple-300">
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center space-x-2 min-w-0">
+                <span className="font-black text-purple-950 dark:text-purple-300 leading-relaxed">
                   👑 Gán Hàng Loạt Admin Phụ Trách Lớp Học ({selectedBatchClassIds.length} lớp đã chọn):
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={batchTargetAdminId}
                   onChange={(e) => setBatchTargetAdminId(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-purple-300 bg-white dark:bg-slate-900 font-extrabold text-xs text-purple-950 dark:text-white cursor-pointer"
+                  className="px-3 py-2 rounded-xl border border-purple-300 bg-white dark:bg-slate-900 font-extrabold text-xs text-purple-950 dark:text-white cursor-pointer max-w-full flex-1 sm:flex-none"
                 >
                   <option value="">-- Chọn Admin Phụ Trách --</option>
                   {adminUsersList.map((a) => (
@@ -1139,7 +1019,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setInspectedStudentId(std.id)}
                     className="px-3.5 py-1.5 rounded-xl bg-pink-200 text-pink-950 border border-pink-300 font-extrabold text-xs hover:bg-pink-300 transition shadow-xs flex items-center"
@@ -2019,4 +1899,4 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     </div>
   );
-};
+});
