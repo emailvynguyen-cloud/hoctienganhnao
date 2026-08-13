@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Book, Chapter, User } from '../../../types';
 import { LearningHubService } from '../../../lib/learningHubService';
+import { QuestionBankManager } from './QuestionBankManager';
 import { BookOpen, Plus, Sparkles, Layers, FileText, CheckCircle2, Mic, RefreshCw, BarChart2, ShieldAlert } from 'lucide-react';
 
 interface AdminLearningHubProps {
@@ -194,8 +195,13 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
         </div>
       )}
 
+      {/* QUESTION BANK TAB */}
+      {activeTab === 'bank' && (
+        <QuestionBankManager books={books} chapters={chapters} />
+      )}
+
       {/* OTHER TABS PLACEHOLDERS */}
-      {activeTab !== 'books' && (
+      {activeTab !== 'books' && activeTab !== 'bank' && (
         <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <Sparkles className="w-10 h-10 text-pink-500 mx-auto" />
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white">

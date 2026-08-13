@@ -232,24 +232,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     );
   }
 
-  if (isLearningHubOpen) {
-    return (
-      <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
-        <StudentLearningHub
-          currentStudent={currentStudent}
-          onExit={() => {
-            const params = new URLSearchParams(window.location.search);
-            params.delete('tab');
-            const newSearch = params.toString() ? `?${params.toString()}` : window.location.pathname;
-            window.history.pushState({}, '', newSearch);
-            window.dispatchEvent(new Event('navigation_tab_change'));
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Student's classes
+  // HELPER: RENDER SINGLE SESSION CARD WITH MOTIVATING MINI PROGRESS BAR STRIP
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
 
@@ -456,6 +439,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       reader.readAsDataURL(file);
     }
   };
+
+  if (isLearningHubOpen) {
+    return (
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
+        <StudentLearningHub
+          currentStudent={currentStudent}
+          onExit={() => {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('tab');
+            const newSearch = params.toString() ? `?${params.toString()}` : window.location.pathname;
+            window.history.pushState({}, '', newSearch);
+            window.dispatchEvent(new Event('navigation_tab_change'));
+          }}
+        />
+      </div>
+    );
+  }
 
   // HELPER: RENDER SINGLE SESSION CARD WITH MOTIVATING MINI PROGRESS BAR STRIP
   const renderSessionCard = (session: Session, isRecent: boolean = true) => {
