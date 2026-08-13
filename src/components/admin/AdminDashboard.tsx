@@ -157,6 +157,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   // Class Manager Assignment Modal State
   const [editingClassManagersModal, setEditingClassManagersModal] = useState<Class | null>(null);
 
+  // Expanded Teacher in Teachers Management Tab
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+
   // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact & Syncs 100% with Props)
   const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
   const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
