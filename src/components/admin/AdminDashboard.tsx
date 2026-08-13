@@ -82,7 +82,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   // Respect effectiveRole from Super Admin Quick Role Switcher bar
   const isSuperAdmin = currentUser?.role === 'super_admin' && effectiveRole !== 'admin';
 
-  const [activeTab, setActiveTab] = useState<'pending_tasks' | 'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules' | 'student_codes'>('pending_tasks');
+  const [activeTab, setActiveTab] = useState<'pending_tasks' | 'timetable' | 'grading' | 'ai_studio' | 'teachers' | 'revenue' | 'classes' | 'students' | 'invoices' | 'audit_logs' | 'class_rules' | 'student_codes' | 'learning_hub'>('pending_tasks');
 
   // CLASS RULES MANAGEMENT STATE
   const [isEditingClassRules, setIsEditingClassRules] = useState(false);
@@ -128,15 +128,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const handleSaveStudentCode = (stdId: string, codeToSave: string) => {
     const cleanCode = codeToSave.trim().toUpperCase();
     if (!cleanCode) {
-      alert('Vui lòng nhập mã học viên hợp lệ!');
+      alert('Vui lòng nhập mã học viên hợp lệ.');
       return;
     }
 
-    const existingOther = safeStudents.find(
-      (s) => s.id !== stdId && s.studentCode && s.studentCode.trim().toUpperCase() === cleanCode
-    );
-    if (existingOther) {
-      alert(`Mã học viên '${cleanCode}' đã tồn tại cho học viên ${existingOther.name}. Vui lòng nhập mã khác!`);
+    const isDuplicate = safeStudents.some((s) => s.id !== stdId && (s.studentCode || '').toUpperCase() === cleanCode);
+    if (isDuplicate) {
+      alert(`Mã học viên "${cleanCode}" đã tồn tại. Vui lòng nhập mã khác.`);
       return;
     }
 
@@ -145,7 +143,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
         ? {
             ...s,
             studentCode: cleanCode,
-            studentCodeStatus: s.studentCodeStatus || 'ACTIVE',
+            studentCodeStatus: (s.studentCodeStatus || 'ACTIVE') as 'ACTIVE' | 'DISABLED',
           }
         : s
     );
@@ -176,6 +174,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
     const syncTabFromUrl = () => {
       setInspectedClassId(null);
       setInspectedStudentId(null);
+      setEditingStudentCodeModal(null);
+      setEditingClassManagersModal(null);
+      setSelectedTeacherId(null);
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');

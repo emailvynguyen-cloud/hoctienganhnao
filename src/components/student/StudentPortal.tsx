@@ -944,6 +944,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </button>
 
               <button
+                onClick={() => {
+                  const searchParams = new URLSearchParams(window.location.search);
+                  searchParams.set('tab', 'learning_hub');
+                  window.history.pushState({}, '', `${window.location.pathname}?${searchParams.toString()}`);
+                  window.dispatchEvent(new Event('navigation_tab_change'));
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-pink-500 hover:bg-pink-600 text-white transition inline-flex items-center space-x-1.5 cursor-pointer shadow-2xs uppercase"
+                title="Bấm để mở Thư viện Ôn tập & Học tập"
+              >
+                <BookOpen className="w-4 h-4 mr-1 text-white" />
+                <span>📚 Ôn tập & Học tập</span>
+              </button>
+
+              <button
                 onClick={() => setIsClassRulesOpen(true)}
                 className="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 transition flex items-center cursor-pointer border border-transparent"
                 title="Bấm để xem Nội quy lớp học đầy đủ"

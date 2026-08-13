@@ -73,7 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'HỌC TẬP',
           items: [
             { id: 'std_home', title: 'Trang Chủ', path: '/student', icon: Home },
-            { id: 'std_sessions', title: 'Buổi Học', path: '/student', icon: BookOpen },
+            { id: 'std_learning_hub', title: 'Ôn Tập & Học Tập', path: '/student?tab=learning_hub', icon: BookOpen },
+            { id: 'std_sessions', title: 'Buổi Học', path: '/student', icon: Calendar },
             { id: 'std_homework', title: 'Bài Tập', path: '/student', icon: FileText },
           ],
         },
@@ -100,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'GIẢNG DẠY',
           items: [
             { id: 'tch_home', title: 'Dashboard', path: '/teacher', icon: Home },
+            { id: 'tch_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/teacher?tab=learning_hub', icon: BookOpen },
             { id: 'tch_classes', title: 'Lớp Học Phụ Trách', path: '/teacher', icon: BookOpen },
             { id: 'tch_sessions', title: 'Buổi Học', path: '/teacher', icon: Calendar },
             { id: 'tch_students', title: 'Danh Sách Học Viên', path: '/teacher/students', icon: GraduationCap },
@@ -126,6 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'QUẢN LÝ',
           items: [
             { id: 'adm_home', title: 'Dashboard Admin', path: '/admin?tab=pending_tasks', icon: Home },
+            { id: 'adm_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/admin?tab=learning_hub', icon: BookOpen },
             { id: 'adm_tasks', title: 'Công Việc Cần Xử Lý', path: '/admin?tab=pending_tasks', icon: CheckSquare },
             { id: 'adm_classes', title: 'Quản Lý Lớp Học', path: '/admin?tab=classes', icon: BookOpen },
             { id: 'adm_students', title: 'Quản Lý Học Viên', path: '/admin?tab=students', icon: GraduationCap },
@@ -153,6 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         groupTitle: 'QUẢN LÝ TRUNG TÂM',
         items: [
           { id: 'sa_home', title: 'Dashboard Super Admin', path: '/super-admin?tab=pending_tasks', icon: Home },
+          { id: 'sa_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/super-admin?tab=learning_hub', icon: BookOpen },
           { id: 'sa_tasks', title: 'Công Việc Cần Xử Lý', path: '/super-admin?tab=pending_tasks', icon: CheckSquare },
           { id: 'sa_classes', title: 'Quản Lý Lớp Học', path: '/super-admin?tab=classes', icon: BookOpen },
           { id: 'sa_students', title: 'Quản Lý Học Viên', path: '/super-admin?tab=students', icon: GraduationCap },

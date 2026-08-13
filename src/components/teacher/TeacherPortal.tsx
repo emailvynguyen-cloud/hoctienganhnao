@@ -57,7 +57,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onSetSubViewNavigation,
   targetSubmissionId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'today' | 'grading' | 'schedule' | 'all_classes' | 'revenue' | 'ai_studio'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'grading' | 'schedule' | 'all_classes' | 'revenue' | 'ai_studio' | 'learning_hub'>('today');
   const [selectedClassIdForRevenueDetails, setSelectedClassIdForRevenueDetails] = useState<string | null>(null);
   const selectedClassForRevenueDetails = selectedClassIdForRevenueDetails
     ? (classes || []).find((c) => c && c.id === selectedClassIdForRevenueDetails) || null

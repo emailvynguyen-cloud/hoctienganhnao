@@ -265,3 +265,182 @@ export interface MonthlyRevenueReport {
     monthlyRevenue: number;
   }[];
 }
+
+// ==========================================
+// LEARNING HUB TYPES
+// ==========================================
+
+export type LearningQuestionType =
+  // Listening
+  | 'listening_word'
+  | 'listening_sentence'
+  | 'listening_dictation'
+  | 'listening_choice'
+  | 'listening_true_false'
+  // Vocabulary
+  | 'vocab_vi_en'
+  | 'vocab_en_vi'
+  | 'vocab_audio_type'
+  | 'vocab_image_type'
+  | 'vocab_match_meaning'
+  | 'vocab_match_image'
+  | 'vocab_choice'
+  | 'vocab_gap_fill'
+  // Reading
+  | 'reading_true_false'
+  | 'reading_choice'
+  | 'reading_find_error'
+  | 'reading_qa'
+  | 'reading_gap_fill'
+  // Grammar
+  | 'grammar_choice'
+  | 'grammar_gap_fill'
+  | 'grammar_reorder'
+  | 'grammar_find_error'
+  | 'grammar_fix_error'
+  | 'grammar_correct_sentence'
+  | 'grammar_complete'
+  // Translation
+  | 'trans_vi_en'
+  | 'trans_en_vi'
+  | 'trans_hint_sentence'
+  | 'trans_free'
+  // Matching
+  | 'match_word_meaning'
+  | 'match_word_image'
+  | 'match_sentence_meaning';
+
+export interface Book {
+  id: string;
+  title: string;
+  description?: string;
+  level: string;
+  coverImage?: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface Chapter {
+  id: string;
+  bookId: string;
+  title: string;
+  chapterNumber: number;
+  description?: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface AudioAsset {
+  id: string;
+  sourceText: string;
+  language: string;
+  accent: string;
+  voice: string;
+  speed: number;
+  provider: string;
+  contentHash?: string;
+  audioUrl: string;
+  storagePath: string;
+  durationSeconds?: number;
+  status: 'draft' | 'approved' | 'failed';
+  createdAt: string;
+}
+
+export interface LearningQuestion {
+  id: string;
+  chapterId?: string;
+  questionType: LearningQuestionType;
+  prompt: string;
+  audioAssetId?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  passageText?: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: 'listening' | 'vocabulary' | 'reading' | 'grammar' | 'translation' | 'matching';
+  status: 'draft' | 'published' | 'archived';
+  createdAt: string;
+}
+
+export interface PracticeSet {
+  id: string;
+  chapterId: string;
+  title: string;
+  description?: string;
+  category: string;
+  isPublished: boolean;
+  questionIds: string[];
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface ChapterTest {
+  id: string;
+  chapterId: string;
+  title: string;
+  description?: string;
+  timeLimitMinutes: number;
+  passingScorePercent: number;
+  version: number;
+  status: 'draft' | 'published' | 'archived';
+  createdAt: string;
+}
+
+export interface ChapterTestQuestionSnapshot {
+  questionId: string;
+  questionType: LearningQuestionType;
+  prompt: string;
+  audioAssetId?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  passageText?: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+  points: number;
+}
+
+export interface ChapterTestQuestionItem {
+  id: string;
+  chapterTestId: string;
+  questionId: string;
+  displayOrder: number;
+  points: number;
+  testSnapshot: ChapterTestQuestionSnapshot;
+}
+
+export interface StudentPracticeAttempt {
+  id: string;
+  studentId: string;
+  studentName: string;
+  practiceSetId: string;
+  chapterId: string;
+  bookId: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  timeSpentSeconds: number;
+  completedAt: string;
+}
+
+export interface StudentTestAttempt {
+  id: string;
+  studentId: string;
+  studentName: string;
+  chapterTestId: string;
+  chapterId: string;
+  bookId: string;
+  testVersion: number;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  isPassed: boolean;
+  timeSpentSeconds: number;
+  status: 'completed' | 'reset';
+  resetBy?: string;
+  resetAt?: string;
+  resetReason?: string;
+  completedAt: string;
+}
