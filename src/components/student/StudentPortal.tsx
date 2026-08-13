@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig } from '../../types';
+import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig, getStudentQuizletUrl } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
@@ -7,9 +7,24 @@ import { StudentAiChatbotModal } from './StudentAiChatbotModal';
 import { ClassRulesModal } from '../common/ClassRulesModal';
 import { KAKAOTALK_AVATARS_LIST, KAKAOTALK_SVG_AVATARS, resolveAvatarUrl } from '../../lib/kakaotalkAvatars';
 import { formatSessionDate } from '../../lib/dateUtils';
-import { getStudentHonorBadge, SYSTEM_HONOR_BADGES_LIST, getEquippedTitleInfo } from '../../lib/rankingUtils';
+import {
+  getStudentHonorBadge,
+  SYSTEM_HONOR_BADGES_LIST,
+  getEquippedTitleInfo,
+  SYSTEM_BADGES_CATALOG,
+  SYSTEM_TITLES_CATALOG,
+  getStudentAvatarFrameInfo,
+} from '../../lib/rankingUtils';
 import { AchievementCenterModal } from '../common/AchievementCenterModal';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
+import {
+  notifySessionUpdated,
+  notifyQuizletAdded,
+  notifyBadgeUnlocked,
+  notifyTitleUnlocked,
+  requestWebPushPermission,
+  getWebPushPermissionState,
+} from '../../lib/webPush';
 import {
   Calendar,
   CheckCircle2,
@@ -55,6 +70,62 @@ interface StudentPortalProps {
   onRefreshData: () => void;
 }
 
+// ----------------------------------------------------------------------
+// HELPER: CHECK IF CLASS IS IMMINENT (30 MINS BEFORE START) OR ONGOING TODAY
+// ----------------------------------------------------------------------
+function checkIsClassImminentOrOngoing(scheduleStr: string = '') {
+  const now = new Date();
+  const todayDayIdx = now.getDay();
+
+  const dayPatterns: { idx: number; pattern: RegExp }[] = [
+    { idx: 1, pattern: /T2|THỨ 2|THỨ HAI/i },
+    { idx: 2, pattern: /T3|THỨ 3|THỨ BA/i },
+    { idx: 3, pattern: /T4|THỨ 4|THỨ TƯ/i },
+    { idx: 4, pattern: /T5|THỨ 5|THỨ NĂM/i },
+    { idx: 5, pattern: /T6|THỨ 6|THỨ SÁU/i },
+    { idx: 6, pattern: /T7|THỨ 7|THỨ BẢY/i },
+    { idx: 0, pattern: /CN|CHỦ NHẬT/i },
+  ];
+
+  const todayMatch = dayPatterns.find((p) => p.idx === todayDayIdx);
+  const isScheduledToday = todayMatch ? todayMatch.pattern.test(scheduleStr) : false;
+
+  if (!isScheduledToday) {
+    return { isImminentOrOngoing: false, timeText: '' };
+  }
+
+  const rangeMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  if (!rangeMatch) {
+    return { isImminentOrOngoing: false, timeText: '' };
+  }
+
+  const startTimeStr = rangeMatch[1].padStart(5, '0');
+  const endTimeStr = rangeMatch[2].padStart(5, '0');
+
+  const [startH, startM] = startTimeStr.split(':').map(Number);
+  const [endH, endM] = endTimeStr.split(':').map(Number);
+
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const isImminentOrOngoing = currentMinutes >= startMinutes - 30 && currentMinutes <= endMinutes;
+
+  let timeText = '';
+  if (currentMinutes < startMinutes && currentMinutes >= startMinutes - 30) {
+    timeText = `Lớp học sẽ bắt đầu lúc ${startTimeStr} (Còn ${startMinutes - currentMinutes} phút nữa)`;
+  } else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+    timeText = `Lớp học đang diễn ra (${startTimeStr} - ${endTimeStr})`;
+  } else {
+    timeText = `Lịch học: ${startTimeStr} - ${endTimeStr}`;
+  }
+
+  return {
+    isImminentOrOngoing,
+    timeText,
+  };
+}
+
 export const StudentPortal: React.FC<StudentPortalProps> = ({
   currentStudent,
   classes,
@@ -72,10 +143,32 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isClassRulesOpen, setIsClassRulesOpen] = useState(false);
   const [isHonorBadgesModalOpen, setIsHonorBadgesModalOpen] = useState(false);
+  const [achievementModalTab, setAchievementModalTab] = useState<'all' | 'badge' | 'title' | 'frame'>('all');
   const [isAbsenceDetailsModalOpen, setIsAbsenceDetailsModalOpen] = useState(false);
   const [viewingFeedbackSub, setViewingFeedbackSub] = useState<HomeworkSubmission | null>(null);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [copiedResId, setCopiedResId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handlePushClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      if (!detail) return;
+
+      if (detail.type === 'badge_unlocked') {
+        setAchievementModalTab('badge');
+        setIsHonorBadgesModalOpen(true);
+      } else if (detail.type === 'title_unlocked') {
+        setAchievementModalTab('title');
+        setIsHonorBadgesModalOpen(true);
+      } else if (detail.type === 'quizlet_added' && detail.targetData?.quizletUrl) {
+        window.open(detail.targetData.quizletUrl, '_blank');
+      }
+    };
+
+    window.addEventListener('msvy_push_click', handlePushClick);
+    return () => window.removeEventListener('msvy_push_click', handlePushClick);
+  }, []);
 
   const toggleExpandComment = (key: string) => {
     setExpandedComments((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -120,8 +213,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const studentClasses = (classes || []).filter((c) => c && currentStudent.classIds && currentStudent.classIds.includes(c.id));
   const primaryClass = studentClasses[0] || (classes || [])[0];
 
-  // Student's sessions sorted chronologically descending (newest date first, fallback to sessionNumber)
-  const studentSessions = (sessions || [])
+  // Student's raw sessions sorted chronologically descending (newest date first, fallback to sessionNumber)
+  const rawStudentSessions = (sessions || [])
     .filter((s) => s && primaryClass?.id && s.classId === primaryClass.id)
     .sort((a, b) => {
       if (!a || !b) return 0;
@@ -134,6 +227,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       const numB = Number(b.sessionNumber) || 0;
       return numB - numA;
     });
+
+  // TIMELINE SESSIONS: Strictly exclude isExcusedAbsenceSession from student main timeline!
+  const studentSessions = rawStudentSessions.filter((s) => !s.isExcusedAbsenceSession);
+
+  // EXCUSED ABSENCE SESSIONS: Store separately for "Tổng buổi nghỉ trong tháng"
+  const excusedAbsenceSessions = rawStudentSessions.filter((s) => {
+    if (s.isExcusedAbsenceSession) return true;
+    const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+    return att?.status === 'excused';
+  });
 
   // Split sessions: 2 Most Recent Sessions vs Older Sessions
   const recent2Sessions = studentSessions.slice(0, 2);
@@ -335,6 +438,38 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     ];
     const cardBgStyle = sessionPastelBgPalette[(session.sessionNumber - 1) % sessionPastelBgPalette.length];
 
+    if (session.isExcusedAbsenceSession) {
+      return (
+        <div
+          key={session.id}
+          className="rounded-2xl border border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-300"
+        >
+          <div className="flex items-center space-x-3">
+            <span className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200/60">
+              #{session.sessionNumber}
+            </span>
+            <div>
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Buổi Học #{session.sessionNumber} • Ngày {formatSessionDate(session.date)}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 uppercase flex items-center">
+                  🟢 Nghỉ có phép
+                </span>
+              </div>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-normal mt-0.5">
+                Buổi xin nghỉ có phép (Không tính phí • Không trừ số buổi học còn lại của gói).
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[11px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 px-3 py-1 rounded-xl border border-emerald-300 shrink-0 text-center">
+            ✨ Không tính phí & Không trừ số buổi
+          </span>
+        </div>
+      );
+    }
+
     if (session.isChargedAbsenceSession) {
       return (
         <div
@@ -398,16 +533,20 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {session.quizletUrl && (
-              <a
-                href={session.quizletUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-xs hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-md border border-indigo-200"
-              >
-                <BookOpen className="w-3.5 h-3.5 mr-1" /> 🎴 Học Từ Vựng Quizlet ↗
-              </a>
-            )}
+            {(() => {
+              const quizletLink = getStudentQuizletUrl(session, currentStudent.id);
+              if (!quizletLink) return null;
+              return (
+                <a
+                  href={quizletLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-xs hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-md border border-indigo-200"
+                >
+                  <BookOpen className="w-3.5 h-3.5 mr-1" /> 🎴 Học Từ Vựng Quizlet ↗
+                </a>
+              );
+            })()}
 
             {session.recordLink && (
               <a
@@ -707,6 +846,51 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
       )}
 
+      {/* 🔴 STICKY PINNED LIVE CLASS BANNER FOR IMMINENT / ONGOING CLASS (WITHIN 30 MINS OR DURING CLASS) */}
+      {(() => {
+        const activeClass = studentClasses.find((cls) => {
+          const check = checkIsClassImminentOrOngoing(cls.schedule);
+          return check.isImminentOrOngoing;
+        }) || primaryClass;
+
+        const checkResult = checkIsClassImminentOrOngoing(activeClass?.schedule);
+        if (!checkResult.isImminentOrOngoing || !activeClass) return null;
+
+        const classZoomLink = activeClass.zoomLink || '';
+
+        return (
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xl border-2 border-emerald-300 flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse sticky top-3 z-40">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl animate-bounce">🎥</span>
+              <div>
+                <h3 className="font-black text-base sm:text-lg flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-ping inline-block"></span>
+                  <span>LỚP HỌC SẮP DIỄN RA / ĐANG DIỄN RA: {activeClass.className}</span>
+                </h3>
+                <p className="text-xs text-emerald-100 font-extrabold mt-0.5">
+                  {checkResult.timeText} • Phòng: {activeClass.room || 'Online Zoom'}
+                </p>
+              </div>
+            </div>
+
+            {classZoomLink ? (
+              <a
+                href={classZoomLink}
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-3 rounded-2xl bg-white text-emerald-950 hover:bg-emerald-50 font-black text-sm shadow-md transition transform hover:scale-105 shrink-0 flex items-center border border-emerald-200 cursor-pointer"
+              >
+                🎥 Vào Lớp Ngay ↗
+              </a>
+            ) : (
+              <span className="text-xs font-bold bg-white/20 text-white px-4 py-2 rounded-2xl shrink-0 text-center border border-white/20">
+                Giáo viên sẽ cập nhật link lớp trước giờ học.
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
       {/* 1. STUDENT PROFILE HEADER CARD WITH RICH PASTEL HIGHLIGHT CONTAINER */}
       <div className="bg-gradient-to-r from-pink-100/95 via-rose-100/90 to-amber-100/95 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border-2 border-rose-200/90 dark:border-slate-700 p-6 sm:p-8 rounded-3xl flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
         
@@ -797,33 +981,116 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   {primaryClass?.schedule || 'Thứ 2 - Thứ 4 - Thứ 6'}
                 </span>
               </div>
+
+              {/* 🎥 LINK LỚP HỌC (ZOOM/MEET) ROW WITH HIGHLIGHT */}
+              <div className="flex flex-wrap items-center justify-between gap-2 col-span-1 sm:col-span-2 pt-2.5 border-t border-sky-200/80 dark:border-slate-700">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sky-900 dark:text-sky-300 font-black shrink-0">🎥 Link Lớp Học:</span>
+                  {primaryClass?.zoomLink ? (
+                    <a
+                      href={primaryClass.zoomLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center shadow-md cursor-pointer ${
+                        checkIsClassImminentOrOngoing(primaryClass.schedule).isImminentOrOngoing
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-400 animate-pulse'
+                          : 'bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white border border-sky-400'
+                      }`}
+                    >
+                      🎥 Vào Lớp Ngay ↗
+                    </a>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 italic">
+                      Giáo viên sẽ cập nhật link lớp trước giờ học.
+                    </span>
+                  )}
+                </div>
+
+                {/* WEB PUSH TOGGLE BUTTON */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const granted = await requestWebPushPermission();
+                    if (granted) {
+                      notifySessionUpdated('Hệ thống');
+                      alert('Đã bật Thông Báo Web Push (PWA) thành công!');
+                    } else {
+                      alert('Quyền thông báo chưa được cấp trong trình duyệt của bạn.');
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-100/80 hover:bg-indigo-200 text-indigo-950 dark:bg-indigo-950/60 dark:text-indigo-200 transition flex items-center shrink-0 border border-indigo-300 cursor-pointer"
+                  title="Cài đặt thông báo Web Push PWA"
+                >
+                  🔔 Web Push (PWA)
+                </button>
+              </div>
             </div>
           </div>
 
         </div>
 
-        {/* RIGHT: BALANCED MINI STATISTIC CARD (SỐ BUỔI CÒN LẠI - CLICKABLE MODAL TRIGGER) */}
-        <div
-          onClick={() => setIsPaymentHistoryOpen(true)}
-          className="bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white px-7 py-6 rounded-2xl border border-rose-200/80 dark:border-slate-700 shrink-0 flex flex-col items-center justify-center text-center gap-2 w-full lg:w-auto cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
-          title="Bấm vào để xem lịch sử đóng học phí chi tiết"
-        >
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
-            SỐ BUỔI CÒN LẠI <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition" />
-          </span>
-
-          <div className="flex items-baseline justify-center gap-1.5 py-1">
-            <span className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
-              {currentStudent.remainingSessions}
+        {/* RIGHT: STAT CARDS CONTAINER */}
+        <div className="flex flex-col sm:flex-row gap-3.5 w-full lg:w-auto shrink-0">
+          {/* STAT CARD 1: SỐ BUỔI CÒN LẠI */}
+          <div
+            onClick={() => setIsPaymentHistoryOpen(true)}
+            className="bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white px-6 py-5 rounded-2xl border border-rose-200/80 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-1.5 flex-1 lg:w-44 cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
+            title="Bấm vào để xem lịch sử đóng học phí chi tiết"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+              SỐ BUỔI CÒN LẠI <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition" />
             </span>
-            <span className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400 leading-none">
-              Buổi
+
+            <div className="flex items-baseline justify-center gap-1 py-0.5">
+              <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
+                {currentStudent.remainingSessions}
+              </span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-none">
+                Buổi
+              </span>
+            </div>
+
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline transition">
+              🔍 Học phí chi tiết →
             </span>
           </div>
 
-          <span className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline transition">
-            🔍 Bấm xem chi tiết đóng học phí →
-          </span>
+          {/* STAT CARD 2: TỔNG BUỔI NGHỈ THÁNG NÀY */}
+          {(() => {
+            const now = new Date();
+            const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const monthlyExcusedCount = sessions.filter((s) => {
+              if (!s.date.startsWith(currentMonthISO)) return false;
+              if (s.isExcusedAbsenceSession) return true;
+              const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+              return att?.status === 'excused';
+            }).length;
+
+            return (
+              <div
+                onClick={() => setIsAbsenceDetailsModalOpen(true)}
+                className="bg-emerald-50/90 dark:bg-emerald-950/40 text-slate-900 dark:text-white px-6 py-5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800 flex flex-col items-center justify-center text-center gap-1.5 flex-1 lg:w-48 cursor-pointer hover:shadow-md transition-all duration-180 group relative shadow-2xs"
+                title="Bấm để xem chi tiết danh sách các buổi xin nghỉ có phép trong tháng"
+              >
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1">
+                  🟢 NGHỈ THÁNG NÀY <ExternalLink className="w-3 h-3 text-emerald-600 opacity-60 group-hover:opacity-100 transition" />
+                </span>
+
+                <div className="flex items-baseline justify-center gap-1 py-0.5">
+                  <span className="text-3xl sm:text-4xl font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none tracking-tight">
+                    {monthlyExcusedCount}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 leading-none">
+                    Buổi
+                  </span>
+                </div>
+
+                <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 hover:underline transition">
+                  🔍 Xem buổi nghỉ phép →
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -872,43 +1139,81 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </button>
             </div>
 
-            {/* QUICK STATS GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs font-bold">
-              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 space-y-0.5">
-                <span className="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-extrabold">🏅 BADGE</span>
-                <span className="text-lg font-black text-amber-950 dark:text-amber-200">
-                  {completedHwNum > 0 ? Math.min(18, completedHwNum + 1) : 1} / 60
-                </span>
-              </div>
+            {/* QUICK STATS GRID - 100% DYNAMIC FROM REAL SYSTEM DATA */}
+            {(() => {
+              const realHonorBadge = getStudentHonorBadge(currentStudent.id, freshStudents, sessions, homeworkSubmissions);
+              const isTop1Week = realHonorBadge?.rank === 1;
+              const isTop5Week = !!realHonorBadge && realHonorBadge.rank <= 5;
+              const isTop10Week = !!realHonorBadge && realHonorBadge.rank <= 10;
 
-              <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 space-y-0.5">
-                <span className="text-[10px] text-purple-700 dark:text-purple-400 block uppercase font-extrabold">👑 DANH HIỆU</span>
-                <span className="text-lg font-black text-purple-950 dark:text-purple-200">
-                  {equippedTitle ? 6 : 1}
-                </span>
-              </div>
+              // 1. REAL BADGES UNLOCKED
+              const unlockedBadgesCount = SYSTEM_BADGES_CATALOG.filter((b) => {
+                if (b.category === 'study') return completedHwNum >= b.targetCount;
+                if (b.id.includes('top10_week')) return isTop10Week;
+                if (b.id.includes('top5_week')) return isTop5Week;
+                if (b.id.includes('top3_week')) return !!realHonorBadge && realHonorBadge.rank <= 3;
+                if (b.id.includes('top1_week')) return isTop1Week;
+                if (b.id.includes('top1_month')) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
+                return false;
+              }).length;
 
-              <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 space-y-0.5">
-                <span className="text-[10px] text-sky-700 dark:text-sky-400 block uppercase font-extrabold">🖼 KHUNG</span>
-                <span className="text-lg font-black text-sky-950 dark:text-sky-200">
-                  3
-                </span>
-              </div>
+              // 2. REAL TITLES UNLOCKED
+              const unlockedTitlesCount = SYSTEM_TITLES_CATALOG.filter((t) => {
+                if (t.targetCount === 0) return true; // Mặc định
+                if (t.id.includes('weekly_champion')) return isTop1Week || (currentStudent.weeklyWinsHistoryCount || 0) > 0;
+                if (t.id.includes('monthly_champion')) return (currentStudent.monthlyWinsHistoryCount || 0) > 0;
+                return completedHwNum >= t.targetCount;
+              }).length;
 
-              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block uppercase font-extrabold">🥇 TOP TUẦN</span>
-                <span className="text-lg font-black text-emerald-950 dark:text-emerald-200">
-                  5 lần
-                </span>
-              </div>
+              // 3. REAL AVATAR FRAMES UNLOCKED
+              const studentFrame = getStudentAvatarFrameInfo(currentStudent.id, freshStudents, sessions, homeworkSubmissions);
+              const unlockedFramesCount = studentFrame.frameId !== 'default' ? 2 : 1;
 
-              <div className="p-3 rounded-2xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 space-y-0.5 col-span-2 sm:col-span-1">
-                <span className="text-[10px] text-rose-700 dark:text-rose-400 block uppercase font-extrabold">🏆 TOP THÁNG</span>
-                <span className="text-lg font-black text-rose-950 dark:text-rose-200">
-                  2 lần
-                </span>
-              </div>
-            </div>
+              // 4. REAL WEEKLY WINS
+              const weeklyWinsCount = (isTop1Week ? 1 : 0) + (currentStudent.weeklyWinsHistoryCount || 0);
+
+              // 5. REAL MONTHLY WINS
+              const monthlyWinsCount = currentStudent.monthlyWinsHistoryCount || 0;
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs font-bold">
+                  <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 space-y-0.5">
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 block uppercase font-extrabold">🏅 BADGE</span>
+                    <span className="text-lg font-black text-amber-950 dark:text-amber-200">
+                      {unlockedBadgesCount} / {SYSTEM_BADGES_CATALOG.length}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 space-y-0.5">
+                    <span className="text-[10px] text-purple-700 dark:text-purple-400 block uppercase font-extrabold">👑 DANH HIỆU</span>
+                    <span className="text-lg font-black text-purple-950 dark:text-purple-200">
+                      {unlockedTitlesCount}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 space-y-0.5">
+                    <span className="text-[10px] text-sky-700 dark:text-sky-400 block uppercase font-extrabold">🖼 KHUNG</span>
+                    <span className="text-lg font-black text-sky-950 dark:text-sky-200">
+                      {unlockedFramesCount}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block uppercase font-extrabold">🥇 TOP TUẦN</span>
+                    <span className="text-lg font-black text-emerald-950 dark:text-emerald-200">
+                      {weeklyWinsCount} lần
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 space-y-0.5 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] text-rose-700 dark:text-rose-400 block uppercase font-extrabold">🏆 TOP THÁNG</span>
+                    <span className="text-lg font-black text-rose-950 dark:text-rose-200">
+                      {monthlyWinsCount} lần
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
@@ -1638,8 +1943,96 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         allStudents={freshStudents}
         allSessions={sessions}
         allSubmissions={homeworkSubmissions}
+        initialTab={achievementModalTab}
         onRefreshData={onRefreshData}
       />
+
+      {/* 🟢 EXCUSED ABSENCES DETAIL MODAL */}
+      {isAbsenceDetailsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border-2 border-emerald-300 dark:border-emerald-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-900 dark:text-white">
+            {/* Header */}
+            <div className="p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">🟢</span>
+                <div>
+                  <h3 className="font-black text-lg sm:text-xl tracking-tight">
+                    CHI TIẾT BUỔI NGHỈ CÓ PHÉP THÁNG {new Date().getMonth() + 1}/{new Date().getFullYear()}
+                  </h3>
+                  <p className="text-xs text-emerald-100 font-medium">
+                    Danh sách các buổi xin nghỉ có phép của học viên {currentStudent.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAbsenceDetailsModalOpen(false)}
+                className="p-2 rounded-full bg-slate-950/20 hover:bg-slate-950/40 text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Table */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {(() => {
+                const now = new Date();
+                const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const monthlyExcusedSessions = sessions.filter((s) => {
+                  if (!s.date.startsWith(currentMonthISO)) return false;
+                  if (s.isExcusedAbsenceSession) return true;
+                  const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
+                  return att?.status === 'excused';
+                });
+
+                if (monthlyExcusedSessions.length === 0) {
+                  return (
+                    <div className="p-8 text-center bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-dashed border-emerald-300 text-xs font-bold text-emerald-800 dark:text-emerald-300 space-y-1">
+                      <span>🎉 Học viên không có buổi nghỉ có phép nào trong tháng {now.getMonth() + 1}/{now.getFullYear()}!</span>
+                      <p className="font-normal opacity-80">Đi học rất đều đặn và chăm chỉ.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                      <span>Tổng cộng: {monthlyExcusedSessions.length} buổi xin nghỉ có phép</span>
+                      <span className="text-[11px] text-slate-500 font-normal">✨ Không tính phí & Không trừ số buổi</span>
+                    </div>
+
+                    <div className="divide-y divide-emerald-100 dark:divide-slate-800 rounded-2xl border border-emerald-200 dark:border-slate-800 overflow-hidden shadow-2xs">
+                      {monthlyExcusedSessions.map((ses) => (
+                        <div key={ses.id} className="p-4 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b last:border-b-0 border-emerald-100 dark:border-slate-800">
+                          <div className="space-y-1.5 flex-1">
+                            <div className="font-black text-slate-900 dark:text-white text-sm flex flex-wrap items-center gap-2">
+                              <span>🗓 Ngày nghỉ: {formatSessionDate(ses.date)}</span>
+                              <span className="text-slate-500 text-xs font-semibold">| ⏰ Giờ học: {ses.scheduleTimeStr || primaryClass?.schedule || 'Theo lịch cố định'}</span>
+                            </div>
+                            <div className="text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-3">
+                              <span>🎓 Lớp: <strong>{ses.className}</strong></span>
+                              <span>👩‍🏫 Giáo viên: <strong>{ses.teacherName || primaryClass?.teacherName || 'Ms. Vy'}</strong></span>
+                            </div>
+                            {(ses.absenceReason || ses.notes) && (
+                              <p className="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl border border-emerald-200/60 font-medium">
+                                📝 <strong>Lý do nghỉ:</strong> {ses.absenceReason || ses.notes}
+                              </p>
+                            )}
+                          </div>
+
+                          <span className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 font-black text-xs border border-emerald-300 shrink-0 self-start sm:self-center">
+                            🟢 Nghỉ có phép
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

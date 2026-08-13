@@ -132,11 +132,21 @@ export interface Session {
   homeworkItems?: HomeworkTaskItem[]; // Danh sách NỀN NỔI nhiều bài tập về nhà
   studentFeedbacks?: Record<string, StudentFeedback>; // Nhận xét riêng cho từng studentId
   recordLink?: string;
-  quizletUrl?: string; // Link Quizlet Học Từ Vựng Buổi Học
+  quizletUrl?: string; // Link Quizlet Học Từ Vựng Buổi Học (legacy hoặc 1 học viên)
+  studentQuizlets?: Record<string, string>; // Link Quizlet riêng cho từng studentId
   sessionMaterials?: ResourceLink[];
   isChargedAbsenceSession?: boolean; // Lớp nghỉ tính phí vì nghỉ quá số lần quy định hoặc học viên không vào lớp
+  isExcusedAbsenceSession?: boolean; // Lớp nghỉ có phép (không tính phí)
   hasNoHomework?: boolean; // Tùy chọn đánh dấu buổi học không có bài tập về nhà
   createdAt: string;
+}
+
+export function getStudentQuizletUrl(session: Partial<Session> | undefined | null, studentId: string): string {
+  if (!session) return '';
+  if (session.studentQuizlets) {
+    return session.studentQuizlets[studentId] || '';
+  }
+  return session.quizletUrl || '';
 }
 
 export interface HomeworkTask {

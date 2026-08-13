@@ -45,6 +45,7 @@ const STORAGE_KEYS = {
   CURRENT_USER: 'vy_current_user_v4',
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
   CLASS_RULES: 'vy_class_rules_v4',
+  DISMISSED_PENDING_TASKS: 'vy_dismissed_pending_tasks_v4',
 };
 
 export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
@@ -950,9 +951,11 @@ export const StorageEngine = {
     studentFeedbacks?: Record<string, StudentFeedback>;
     recordLink?: string;
     quizletUrl?: string;
+    studentQuizlets?: Record<string, string>;
     sessionMaterials?: ResourceLink[];
     attendanceList: AttendanceRecord[];
     isChargedAbsenceSession?: boolean;
+    isExcusedAbsenceSession?: boolean;
     hasNoHomework?: boolean;
   }): Session {
     const sessions = this.getSessions() || [];
@@ -977,8 +980,10 @@ export const StorageEngine = {
       studentFeedbacks: sessionData.studentFeedbacks || {},
       recordLink: sessionData.recordLink,
       quizletUrl: sessionData.quizletUrl,
+      studentQuizlets: sessionData.studentQuizlets || {},
       sessionMaterials: sessionData.sessionMaterials || [],
       isChargedAbsenceSession: sessionData.isChargedAbsenceSession || false,
+      isExcusedAbsenceSession: sessionData.isExcusedAbsenceSession || false,
       hasNoHomework: sessionData.hasNoHomework || false,
       createdAt: new Date().toISOString(),
     };
@@ -989,8 +994,13 @@ export const StorageEngine = {
     const students = this.getStudents() || [];
     let updated = false;
 
+    // Remaining sessions deduction: strictly SKIPPED if isExcusedAbsenceSession is true
     (sessionData.attendanceList || []).forEach((att) => {
-      if (att && (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)) {
+      if (
+        att &&
+        !sessionData.isExcusedAbsenceSession &&
+        (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)
+      ) {
         const std = students.find((s) => s && s.id === att.studentId);
         if (std && std.remainingSessions > 0) {
           std.remainingSessions -= 1;
@@ -1279,5 +1289,18 @@ export const StorageEngine = {
     if (!user || user.role === 'super_admin') return students;
     const allowedClassIds = new Set(this.getScopedClasses(user, classes).map((c) => c.id));
     return students.filter((s) => s && s.classIds && s.classIds.some((cid) => allowedClassIds.has(cid)));
+  },
+
+  getDismissedPendingTaskIds(): string[] {
+    return getItem<string[]>(STORAGE_KEYS.DISMISSED_PENDING_TASKS, []);
+  },
+
+  dismissPendingTaskId(taskId: string) {
+    const dismissed = this.getDismissedPendingTaskIds() || [];
+    if (!dismissed.includes(taskId)) {
+      dismissed.push(taskId);
+      setItem(STORAGE_KEYS.DISMISSED_PENDING_TASKS, dismissed);
+      this.syncAllToCloud();
+    }
   },
 };

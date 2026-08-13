@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Class, Student, Session, HomeworkSubmission, BankConfig, User } from '../../types';
+import { Class, Student, Session, HomeworkSubmission, BankConfig, User, getStudentQuizletUrl } from '../../types';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
 import { StorageEngine } from '../../lib/storage';
 import { StudentAvatarWithFrame } from '../common/StudentAvatarWithFrame';
@@ -85,7 +85,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
   const classStudents = (students || []).filter((s) => s && s.classIds && s.classIds.includes(selectedClass.id));
 
   // Filter & Sort sessions in this class chronologically descending (newest date first)
-  const classSessions = (sessions || [])
+  const rawClassSessions = (sessions || [])
     .filter((s) => s && s.classId === selectedClass.id)
     .sort((a, b) => {
       if (b.date && a.date && b.date !== a.date) {
@@ -93,6 +93,10 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
       }
       return b.sessionNumber - a.sessionNumber;
     });
+
+  // TIMELINE SESSIONS: Strictly exclude isExcusedAbsenceSession from main session timeline!
+  const classSessions = rawClassSessions.filter((s) => !s.isExcusedAbsenceSession);
+  const excusedAbsenceSessions = rawClassSessions.filter((s) => s.isExcusedAbsenceSession);
 
   // Extract all session materials (general session materials + student-specific materials + Quizlet + Record + Homework attachments)
   const allSessionMaterials = classSessions.flatMap((s) => {
@@ -180,7 +184,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
     <div className="space-y-6 max-w-6xl mx-auto animate-fadeIn">
       
       {/* Top Back Navigation Bar */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs">
         <button
           onClick={onBack}
           className="px-4 py-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-950 font-extrabold text-xs transition flex items-center border border-pink-200"
@@ -556,6 +560,29 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
         {classSessions.length > 0 ? (
           classSessions.map((session) => {
+            if (session.isExcusedAbsenceSession) {
+              return (
+                <div
+                  key={session.id}
+                  className="p-5 rounded-3xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-between text-xs font-black text-emerald-950 dark:text-emerald-300 shadow-2xs"
+                >
+                  <span className="truncate mr-2 flex items-center">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200 border border-emerald-300 mr-2 shrink-0">🟢 Nghỉ có phép</span>
+                    Buổi #{session.sessionNumber} - Ngày {formatSessionDate(session.date)} (Không tính phí • Không trừ số buổi)
+                  </span>
+
+                  {onOpenEditSession && (
+                    <button
+                      onClick={() => onOpenEditSession(session)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-200 hover:bg-emerald-300 text-emerald-950 border border-emerald-400 font-extrabold text-[11px] transition shrink-0 cursor-pointer"
+                    >
+                      ✏️ Chỉnh Sửa
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
             if (session.isChargedAbsenceSession) {
               return (
                 <div
@@ -614,17 +641,36 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                       </button>
                     )}
 
-                    {/* QUIZLET LINK BUTTON */}
-                    {session.quizletUrl && (
-                      <a
-                        href={session.quizletUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white border border-indigo-200 text-xs font-black hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-xs"
-                      >
-                        <BookOpen className="w-3.5 h-3.5 mr-1" /> 🎴 Link Quizlet ↗
-                      </a>
-                    )}
+                    {/* QUIZLET LINK BUTTONS */}
+                    {(() => {
+                      const quizletsToRender: { studentName?: string; url: string }[] = [];
+
+                      if (session.studentQuizlets && Object.keys(session.studentQuizlets).length > 0) {
+                        Object.entries(session.studentQuizlets).forEach(([stdId, url]) => {
+                          if (url && url.trim()) {
+                            const std = classStudents.find((s) => s.id === stdId);
+                            quizletsToRender.push({
+                              studentName: std ? std.name : undefined,
+                              url: url.trim(),
+                            });
+                          }
+                        });
+                      } else if (session.quizletUrl && session.quizletUrl.trim()) {
+                        quizletsToRender.push({ url: session.quizletUrl.trim() });
+                      }
+
+                      return quizletsToRender.map((q, qIdx) => (
+                        <a
+                          key={qIdx}
+                          href={q.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white border border-indigo-200 text-xs font-black hover:from-blue-600 hover:to-indigo-700 transition flex items-center shadow-xs"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 mr-1" /> {q.studentName ? `🎴 Quizlet (${q.studentName}) ↗` : '🎴 Link Quizlet ↗'}
+                        </a>
+                      ));
+                    })()}
 
                     {/* RECORD LINK BUTTON */}
                     {session.recordLink && (
