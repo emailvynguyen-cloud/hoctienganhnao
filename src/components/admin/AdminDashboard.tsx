@@ -157,11 +157,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   // Class Manager Assignment Modal State
   const [editingClassManagersModal, setEditingClassManagersModal] = useState<Class | null>(null);
 
-  // Expanded Teacher in Teachers Management Tab
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+  // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact & Syncs 100% with Props)
+  const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
+  const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
+
+  const activeInspectedStudent = inspectedStudentId
+    ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
+    : null;
+
+  const activeInspectedClass = inspectedClassId
+    ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
+    : null;
 
   useEffect(() => {
     const syncTabFromUrl = () => {
+      setInspectedClassId(null);
+      setInspectedStudentId(null);
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab');
@@ -186,18 +197,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
       setActiveTab('grading');
     }
   }, [targetSubmissionId]);
-
-  // Dedicated Inspection Sub-Views (Keeps Manager Portal Context Intact & Syncs 100% with Props)
-  const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
-  const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
-
-  const activeInspectedStudent = inspectedStudentId
-    ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
-    : null;
-
-  const activeInspectedClass = inspectedClassId
-    ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
-    : null;
 
   // Selected Student for Receipt Generator Tool
   const [selectedStudentForReceipt, setSelectedStudentForReceipt] = useState<Student | null>(null);

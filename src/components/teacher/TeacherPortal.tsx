@@ -82,6 +82,31 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
     : null;
 
+  useEffect(() => {
+    const syncTabFromUrl = () => {
+      setInspectedClassId(null);
+      setInspectedStudentId(null);
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam) {
+          setActiveTab(tabParam as any);
+        } else if (window.location.pathname === '/teacher/students') {
+          setActiveTab('all_classes');
+        }
+      }
+    };
+
+    syncTabFromUrl();
+
+    window.addEventListener('popstate', syncTabFromUrl);
+    window.addEventListener('navigation_tab_change', syncTabFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncTabFromUrl);
+      window.removeEventListener('navigation_tab_change', syncTabFromUrl);
+    };
+  }, []);
+
   const isSuperOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
   // HELPER: Month calculation for Teacher Revenue (Current month & Previous month ONLY)

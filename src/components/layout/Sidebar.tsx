@@ -200,8 +200,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       item.onClick();
     } else if (item.path) {
       navigate(item.path);
-      window.dispatchEvent(new Event('navigation_tab_change'));
     }
+    window.dispatchEvent(new Event('navigation_tab_change'));
     setIsMobileOpen(false);
   }, [navigate, setIsMobileOpen]);
 
