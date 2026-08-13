@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Book, Chapter, Student } from '../../../types';
+import { Book, Chapter, Student, PracticeSet, LearningQuestion, ChapterTest, ChapterTestQuestionSnapshot } from '../../../types';
 import { LearningHubService } from '../../../lib/learningHubService';
+import { InteractivePracticePlayer } from './InteractivePracticePlayer';
+import { InteractiveTestPlayer } from './InteractiveTestPlayer';
 import { BookOpen, Award, Trophy, ChevronRight, ArrowLeft, Sparkles, CheckCircle2, FileText, Clock, PlayCircle, Flame } from 'lucide-react';
 
 interface StudentLearningHubProps {
@@ -15,6 +17,12 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [activeTab, setActiveTab] = useState<'practice' | 'test' | 'results' | 'leaderboard'>('practice');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Active Practice & Test State
+  const [activePracticeSet, setActivePracticeSet] = useState<PracticeSet | null>(null);
+  const [activeQuestions, setActiveQuestions] = useState<LearningQuestion[]>([]);
+  const [activeChapterTest, setActiveChapterTest] = useState<ChapterTest | null>(null);
+  const [activeTestSnapshots, setActiveTestSnapshots] = useState<ChapterTestQuestionSnapshot[]>([]);
 
   useEffect(() => {
     loadLearningData();
@@ -32,6 +40,138 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
   const filteredChapters = selectedBook
     ? chapters.filter((c) => c.bookId === selectedBook.id)
     : chapters;
+
+  const handleLaunchChapterTest = (ch: Chapter) => {
+    const mockTest: ChapterTest = {
+      id: 'ct_ch1_v1',
+      chapterId: ch.id,
+      title: `📝 ${ch.title} – Official Chapter Test`,
+      version: 1,
+      status: 'published',
+      timeLimitMinutes: 30,
+      passingScorePercent: 70,
+      testSnapshot: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    const mockSnapshots: ChapterTestQuestionSnapshot[] = [
+      {
+        questionId: 'q_test_01',
+        questionType: 'vocab_vi_en',
+        prompt: 'Từ nào có nghĩa là "Xin chào"?',
+        options: ['Hello', 'Goodbye', 'Thank you', 'Sorry'],
+        correctAnswer: 'Hello',
+        explanation: '"Hello" là câu chào hỏi cơ bản.',
+        points: 1,
+      },
+      {
+        questionId: 'q_test_02',
+        questionType: 'grammar_choice',
+        prompt: 'Hoàn thành câu: They _____ students.',
+        options: ['am', 'is', 'are', 'be'],
+        correctAnswer: 'are',
+        explanation: 'Ngôi thứ 3 số nhiều "They" đi với "are".',
+        points: 1,
+      },
+    ];
+
+    setActiveChapterTest(mockTest);
+    setActiveTestSnapshots(mockSnapshots);
+  };
+
+  if (activePracticeSet) {
+    return (
+      <InteractivePracticePlayer
+        practiceSet={activePracticeSet}
+        questions={activeQuestions}
+        currentStudent={currentStudent}
+        onClose={() => setActivePracticeSet(null)}
+      />
+    );
+  }
+
+  if (activeChapterTest) {
+    return (
+      <InteractiveTestPlayer
+        chapterTest={activeChapterTest}
+        testQuestions={activeTestSnapshots}
+        currentStudent={currentStudent}
+        onClose={() => setActiveChapterTest(null)}
+      />
+    );
+  }
+
+  const samplePracticeSets: PracticeSet[] = selectedChapter
+    ? [
+        {
+          id: 'ps_vocab_01',
+          chapterId: selectedChapter.id,
+          title: `🧠 ${selectedChapter.title} – Vocabulary Practice 01`,
+          description: 'Ôn tập từ vựng chủ đề chính của Chapter (Không giới hạn lượt làm bài)',
+          category: 'vocabulary',
+          isPublished: true,
+          questionIds: ['q_01', 'q_02'],
+          displayOrder: 1,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'ps_grammar_01',
+          chapterId: selectedChapter.id,
+          title: `📐 ${selectedChapter.title} – Grammar Practice 01`,
+          description: 'Luyện tập cấu trúc ngữ pháp & chia động từ',
+          category: 'grammar',
+          isPublished: true,
+          questionIds: ['q_02'],
+          displayOrder: 2,
+          createdAt: new Date().toISOString(),
+        },
+      ]
+    : [];
+
+  const handleLaunchPractice = (ps: PracticeSet) => {
+    const mockPracticeQuestions: LearningQuestion[] = [
+      {
+        id: 'q_01',
+        chapterId: ps.chapterId,
+        questionType: 'vocab_vi_en',
+        prompt: 'Từ nào trong tiếng Anh có nghĩa là "Xin chào"?',
+        options: ['Hello', 'Goodbye', 'Thank you', 'Sorry'],
+        correctAnswer: 'Hello',
+        explanation: '"Hello" là từ chào hỏi cơ bản nhất trong tiếng Anh.',
+        difficulty: 'easy',
+        category: 'vocabulary',
+        status: 'published',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'q_02',
+        chapterId: ps.chapterId,
+        questionType: 'grammar_choice',
+        prompt: 'Chọn từ đúng để hoàn thành câu: She _____ a student.',
+        options: ['am', 'is', 'are', 'be'],
+        correctAnswer: 'is',
+        explanation: 'Chủ ngữ ngôi thứ 3 số ít "She" đi với động từ to be "is".',
+        difficulty: 'easy',
+        category: 'grammar',
+        status: 'published',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    setActivePracticeSet(ps);
+    setActiveQuestions(mockPracticeQuestions);
+  };
+
+  if (activePracticeSet) {
+    return (
+      <InteractivePracticePlayer
+        practiceSet={activePracticeSet}
+        questions={activeQuestions}
+        currentStudent={currentStudent}
+        onClose={() => setActivePracticeSet(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -238,14 +378,29 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
                 </div>
               </div>
 
-              <div className="p-8 rounded-2xl bg-pink-50/50 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-700 text-center space-y-3">
-                <Sparkles className="w-10 h-10 text-pink-500 mx-auto" />
-                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  Danh Sách Bài Luyện Tập Cho {selectedChapter.title}
-                </h4>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Các bộ bài tập Ôn Tập Từ Vựng, Ngữ Pháp & Luyện Nghe đang được khởi tạo.
-                </p>
+              <div className="grid grid-cols-1 gap-3">
+                {samplePracticeSets.map((ps) => (
+                  <div
+                    key={ps.id}
+                    className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-pink-300 transition"
+                  >
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                        {ps.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {ps.description}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleLaunchPractice(ps)}
+                      className="px-4 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-extrabold text-xs transition shadow-md shrink-0 flex items-center justify-center cursor-pointer"
+                    >
+                      <PlayCircle className="w-4 h-4 mr-1.5" /> Luyện Tập Ngay
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -272,6 +427,13 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   Thời gian làm bài: 30 phút • Điểm đạt: 70%. Hệ thống sẽ tự động tính điểm an toàn phía Server.
                 </p>
+                <button
+                  onClick={() => selectedChapter && handleLaunchChapterTest(selectedChapter)}
+                  className="mt-3 px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition shadow-md cursor-pointer inline-flex items-center space-x-2"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Bắt Đầu Làm Bài Kiểm Tra</span>
+                </button>
               </div>
             </div>
           )}

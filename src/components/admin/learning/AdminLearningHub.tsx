@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Book, Chapter, User } from '../../../types';
+import { Book, Chapter, User, LearningQuestion } from '../../../types';
 import { LearningHubService } from '../../../lib/learningHubService';
 import { QuestionBankManager } from './QuestionBankManager';
+import { AiLearningStudio } from './AiLearningStudio';
 import { BookOpen, Plus, Sparkles, Layers, FileText, CheckCircle2, Mic, RefreshCw, BarChart2, ShieldAlert } from 'lucide-react';
 
 interface AdminLearningHubProps {
@@ -200,8 +201,19 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
         <QuestionBankManager books={books} chapters={chapters} />
       )}
 
+      {/* AI STUDIO & TTS AUDIO TAB */}
+      {activeTab === 'audio' && (
+        <AiLearningStudio
+          books={books}
+          chapters={chapters}
+          onAddGeneratedQuestions={(newQs) => {
+            alert(`Đã lưu ${newQs.length} câu hỏi AI vào Ngân hàng câu hỏi!`);
+          }}
+        />
+      )}
+
       {/* OTHER TABS PLACEHOLDERS */}
-      {activeTab !== 'books' && activeTab !== 'bank' && (
+      {activeTab !== 'books' && activeTab !== 'bank' && activeTab !== 'audio' && (
         <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <Sparkles className="w-10 h-10 text-pink-500 mx-auto" />
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
