@@ -28,7 +28,7 @@ export const PublicStudentPortal: React.FC<PublicStudentPortalProps> = ({
   onRefreshData,
   onExit,
 }) => {
-  const matchedStudent = students.find((s) => s.publicHash === publicHash);
+  const matchedStudent = students.find((s) => s && (s.publicHash === publicHash || s.id === publicHash));
 
   if (!matchedStudent) {
     return (

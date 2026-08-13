@@ -45,9 +45,39 @@ const LoadingFallback = () => (
   </div>
 );
 
+function extractHashFromUrl(urlStr: string): string | null {
+  try {
+    const parsed = new URL(urlStr, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const searchParams = parsed.searchParams;
+    const paramHash = searchParams.get('hash') || searchParams.get('student');
+    if (paramHash) return paramHash;
+    if (parsed.pathname.startsWith('/s/')) return parsed.pathname.replace('/s/', '');
+    if (parsed.pathname.startsWith('/student/')) {
+      const path = parsed.pathname.replace('/student/', '');
+      if (path && path !== 'achievement' && !path.startsWith('session/') && !path.startsWith('settings')) {
+        return path;
+      }
+    }
+  } catch (e) {
+    // Ignore invalid URL
+  }
+  return null;
+}
+
 // Role Redirection Helper
-const RoleRedirect: React.FC<{ currentUser: User | null }> = ({ currentUser }) => {
-  if (!currentUser) return <Navigate to="/login" replace />;
+const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> = ({ currentUser, students }) => {
+  if (!currentUser) {
+    const savedStudentUrl = StorageEngine.getLastStudentPortalUrl();
+    if (savedStudentUrl) {
+      const candidateHash = extractHashFromUrl(savedStudentUrl);
+      if (candidateHash && students.some((s) => s && (s.publicHash === candidateHash || s.id === candidateHash))) {
+        return <Navigate to={savedStudentUrl} replace />;
+      } else {
+        StorageEngine.setLastStudentPortalUrl(null);
+      }
+    }
+    return <Navigate to="/login" replace />;
+  }
   if (currentUser.role === 'student') return <Navigate to="/student" replace />;
   if (currentUser.role === 'teacher') return <Navigate to="/teacher" replace />;
   if (currentUser.role === 'admin') return <Navigate to="/admin" replace />;
@@ -135,6 +165,7 @@ const StudentPrivateLayout: React.FC<{
           bankConfig={props.bankConfig}
           onRefreshData={props.loadData}
           onExit={() => {
+            StorageEngine.setLastStudentPortalUrl(null);
             if (props.currentUser) {
               if (props.currentUser.role === 'super_admin') window.location.href = '/super-admin';
               else if (props.currentUser.role === 'admin') window.location.href = '/admin';
@@ -153,8 +184,9 @@ const StudentPrivateLayout: React.FC<{
 // Root Route Handler (Fallback for path="/" if no student secret link is in search params)
 const RootRouteHandler: React.FC<{
   currentUser: User | null;
+  students: Student[];
 }> = (props) => {
-  return <RoleRedirect currentUser={props.currentUser} />;
+  return <RoleRedirect currentUser={props.currentUser} students={props.students} />;
 };
 
 // Secret Link Handler (/s/:hash and ?hash=...)
@@ -277,6 +309,7 @@ export default function App() {
 
   const handleLogout = () => {
     StorageEngine.setCurrentUser(null);
+    StorageEngine.setLastStudentPortalUrl(null);
     setCurrentUser(null);
     navigate('/login');
   };
@@ -300,12 +333,28 @@ export default function App() {
     );
   }
 
-  // CHECK IF CURRENT URL IS A STUDENT SECRET/PRIVATE LINK
+  // CHECK IF CURRENT URL IS A STUDENT SECRET/PRIVATE LINK (/s/:hash, /student/:hash, or ?student=:hash)
   const searchParams = new URLSearchParams(location.search);
   const studentHashParam = searchParams.get('hash') || searchParams.get('student');
   const isSecretPath = location.pathname.startsWith('/s/');
   const secretPathHash = isSecretPath ? location.pathname.replace('/s/', '') : null;
-  const activeStudentSecretHash = secretPathHash || (location.pathname === '/' ? studentHashParam : null);
+  const isStudentIdPath = location.pathname.startsWith('/student/') &&
+    location.pathname !== '/student/achievement' &&
+    !location.pathname.startsWith('/student/session/') &&
+    !location.pathname.startsWith('/student/settings');
+  const studentIdPathHash = isStudentIdPath ? location.pathname.replace('/student/', '') : null;
+
+  const activeStudentSecretHash = secretPathHash || studentIdPathHash || (location.pathname === '/' ? studentHashParam : null);
+
+  useEffect(() => {
+    if (activeStudentSecretHash) {
+      const matchedStd = students.find((s) => s && (s.publicHash === activeStudentSecretHash || s.id === activeStudentSecretHash));
+      if (matchedStd) {
+        const currentUrl = location.pathname + location.search;
+        StorageEngine.setLastStudentPortalUrl(currentUrl);
+      }
+    }
+  }, [activeStudentSecretHash, location.pathname, location.search, students]);
 
   if (activeStudentSecretHash) {
     return (
@@ -349,7 +398,7 @@ export default function App() {
             }
           >
             {/* PUBLIC ROUTE: ROOT & ROLE REDIRECT */}
-            <Route path="/" element={<RootRouteHandler currentUser={currentUser} />} />
+            <Route path="/" element={<RootRouteHandler currentUser={currentUser} students={students} />} />
 
             {/* PUBLIC ROUTE: LOGIN */}
             <Route
@@ -380,9 +429,24 @@ export default function App() {
               }
             />
 
-            {/* PUBLIC ROUTE: SECRET LINK (/s/:hash) */}
+            {/* PUBLIC ROUTE: SECRET LINK (/s/:hash and /student/:hash) */}
             <Route
               path="/s/:hash"
+              element={
+                <SecretLinkWrapper
+                  students={students}
+                  classes={classes}
+                  sessions={sessions}
+                  homeworkTasks={homeworkTasks}
+                  homeworkSubmissions={homeworkSubmissions}
+                  invoices={invoices}
+                  bankConfig={bankConfig}
+                  onRefreshData={loadData}
+                />
+              }
+            />
+            <Route
+              path="/student/:hash"
               element={
                 <SecretLinkWrapper
                   students={students}

@@ -46,6 +46,7 @@ const STORAGE_KEYS = {
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
   CLASS_RULES: 'vy_class_rules_v4',
   DISMISSED_PENDING_TASKS: 'vy_dismissed_pending_tasks_v4',
+  LAST_STUDENT_PORTAL_URL: 'vy_last_student_portal_url_v4',
 };
 
 export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
@@ -1301,6 +1302,18 @@ export const StorageEngine = {
       dismissed.push(taskId);
       setItem(STORAGE_KEYS.DISMISSED_PENDING_TASKS, dismissed);
       this.syncAllToCloud();
+    }
+  },
+
+  getLastStudentPortalUrl(): string | null {
+    return getItem<string | null>(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, null);
+  },
+
+  setLastStudentPortalUrl(url: string | null) {
+    if (url) {
+      setItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, url);
+    } else {
+      removeItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL);
     }
   },
 };
