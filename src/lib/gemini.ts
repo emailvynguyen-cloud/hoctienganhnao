@@ -193,12 +193,13 @@ export const GeminiEngine = {
 
     // 3. Check import.meta.env
     try {
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const metaEnv = (import.meta as any)?.env;
+      if (metaEnv) {
         const envKey =
-          import.meta.env.VITE_GEMINI_API_KEY ||
-          import.meta.env.GEMINI_API_KEY ||
-          import.meta.env.VITE_API_KEY ||
-          import.meta.env.API_KEY;
+          metaEnv.VITE_GEMINI_API_KEY ||
+          metaEnv.GEMINI_API_KEY ||
+          metaEnv.VITE_API_KEY ||
+          metaEnv.API_KEY;
 
         if (envKey) {
           const sanitized = String(envKey).trim().replace(/^["']|["']$/g, '');

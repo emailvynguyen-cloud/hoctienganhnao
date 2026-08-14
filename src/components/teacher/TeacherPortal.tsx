@@ -1058,7 +1058,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
             <div className="space-y-2.5">
               {(() => {
-                const teacherClassesMap = new Map(assignedClasses.map((c) => [c.id, c]));
+                const teacherClassesMap = new Map<string, Class>(assignedClasses.map((c) => [c.id, c]));
                 const teacherSessions = (sessions || []).filter(
                   (s) => s && s.date && s.date.startsWith(teacherSelectedMonth) && teacherClassesMap.has(s.classId)
                 );

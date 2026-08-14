@@ -14,14 +14,12 @@ const subscribers: Set<DataUpdateCallback> = new Set();
 let lastSyncedTimestamp = '';
 let realtimeChannel: any = null;
 
-const FALLBACK_CLOUD_URL = 'https://jsonblob.com/api/jsonBlob/019fb25c-afce-73f1-a29f-f624cb1e9cd6';
-
 export const CloudSyncEngine = {
   // Subscribe to real-time updates across devices via Official Supabase SDK Channel
   subscribeToCloudData(callback: DataUpdateCallback) {
     subscribers.add(callback);
 
-    // 1. Cross-Tab Broadcast Channel (Same browser instance)
+    // 1. Cross-Tab Broadcast Channel (Same browser instance UI optimization)
     const handleBroadcastMessage = (event: MessageEvent) => {
       if (event.data === 'SYNC_DATA') {
         callback();
@@ -34,6 +32,7 @@ export const CloudSyncEngine = {
 
     // 2. Official Supabase Realtime Subscription Channel
     if (!realtimeChannel) {
+      console.log('[SYNC] Realtime subscribed');
       realtimeChannel = supabase
         .channel('database-changes')
         .on(
@@ -42,24 +41,30 @@ export const CloudSyncEngine = {
             event: '*',
             schema: 'public',
           },
-          (payload: any) => {
-            console.log("SUPER ADMIN RECEIVED REALTIME", payload);
+          async (payload: any) => {
+            console.log('[SYNC] Realtime event received', payload);
 
-            // 1. Immediately extract and write payload from payload.new.payload if available
+            // 1. Write payload directly if inline in payload.new.payload
             const cloudPayload = payload?.new?.payload || payload?.record?.payload;
             if (cloudPayload) {
               Object.keys(cloudPayload).forEach((key) => {
                 updateLiveMemoryStore(key, cloudPayload[key]);
               });
               subscribers.forEach((cb) => cb(cloudPayload));
+              console.log('[SYNC] Pending tasks recalculated from inline payload');
             }
 
             // 2. Always pull latest payload from Supabase DB to guarantee 100% fresh data sync
-            this.pullInitialCloudData();
+            await this.pullInitialCloudData();
+            console.log('[SYNC] Pending tasks recalculated from cloud pull');
           }
         )
         .subscribe((status: string) => {
           console.log('[SUPABASE REALTIME SUBSCRIPTION STATUS]:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('[SYNC] Realtime reconnect detected -> Triggering full resync');
+            this.pullInitialCloudData();
+          }
         });
     }
 
@@ -93,8 +98,6 @@ export const CloudSyncEngine = {
     }
 
     // 2. Write DIRECTLY to Supabase PostgreSQL Database over Official Supabase SDK / REST API
-    console.log("PAYLOAD", allStorageData);
-
     try {
       const result = await supabase
         .from('master_store')
@@ -107,10 +110,8 @@ export const CloudSyncEngine = {
           { onConflict: 'id' }
         );
 
-      console.log(result);
-
       if (result.error) {
-        console.error(result.error);
+        console.error('[SYNC WARNING] Supabase Upsert error:', result.error);
         // Fallback REST endpoint upsert
         await fetch(`${SUPABASE_URL}/rest/v1/master_store`, {
           method: 'POST',
@@ -127,15 +128,16 @@ export const CloudSyncEngine = {
           }),
         });
       } else {
-        console.log("UPSERT OK");
+        console.log('[SYNC] Push to Supabase successful');
       }
     } catch (e: any) {
-      console.error("Supabase Direct Push exception:", e);
+      console.error('[SYNC ERROR] Supabase Direct Push exception:', e);
     }
   },
 
   // Pull initial cloud data from Supabase (Single Source of Truth)
   async pullInitialCloudData(): Promise<boolean> {
+    console.log('[SYNC] Initial cloud fetch started');
     try {
       // 1. Pull directly from Supabase Database using official SDK
       const { data, error } = await supabase
@@ -151,15 +153,22 @@ export const CloudSyncEngine = {
         cloudPayload = record.payload;
         cloudTimestamp = record.last_updated || record.lastUpdated || '';
       } else {
-        // Fallback fetch if PostgREST table is initializing
-        const fbRes = await fetch(`${FALLBACK_CLOUD_URL}?_t=${Date.now()}`, {
-          headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' },
+        // Direct REST fetch fallback if PostgREST cache is updating
+        const restRes = await fetch(`${SUPABASE_URL}/rest/v1/master_store?id=eq.master`, {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
           cache: 'no-store',
         });
-        if (fbRes.ok) {
-          const fbData = await fbRes.json();
-          cloudPayload = fbData.payload;
-          cloudTimestamp = fbData.lastUpdated || '';
+        if (restRes.ok) {
+          const restData = await restRes.json();
+          if (restData && restData.length > 0) {
+            cloudPayload = restData[0].payload;
+            cloudTimestamp = restData[0].last_updated || '';
+          }
         }
       }
 
@@ -174,10 +183,11 @@ export const CloudSyncEngine = {
         });
 
         subscribers.forEach((cb) => cb(cloudPayload));
+        console.log('[SYNC] Initial cloud fetch completed');
         return true;
       }
     } catch (e) {
-      console.warn('Supabase Cloud Data pull notice:', e);
+      console.warn('[SYNC WARNING] Supabase Cloud Data pull notice:', e);
     }
     return false;
   },

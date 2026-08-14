@@ -119,7 +119,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
 
     // 2. Student-specific material links
     if (s.studentFeedbacks) {
-      Object.entries(s.studentFeedbacks).forEach(([studentId, fb]) => {
+      Object.entries(s.studentFeedbacks).forEach(([studentId, fb]: [string, any]) => {
         if (fb && fb.materialUrl) {
           const std = classStudents.find((st) => st.id === studentId);
           const stdName = std ? ` - Học viên: ${std.name}` : '';
@@ -646,7 +646,7 @@ export const ClassDetailsView: React.FC<ClassDetailsViewProps> = ({
                       const quizletsToRender: { studentName?: string; url: string }[] = [];
 
                       if (session.studentQuizlets && Object.keys(session.studentQuizlets).length > 0) {
-                        Object.entries(session.studentQuizlets).forEach(([stdId, url]) => {
+                        Object.entries(session.studentQuizlets).forEach(([stdId, url]: [string, any]) => {
                           if (url && url.trim()) {
                             const std = classStudents.find((s) => s.id === stdId);
                             quizletsToRender.push({

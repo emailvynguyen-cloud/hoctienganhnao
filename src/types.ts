@@ -61,20 +61,21 @@ export interface Student {
   totalPaidSessions: number;
   tuitionPackagePrice?: number;
   packageSessionCount?: number;
-  status: 'active' | 'soft_deleted';
+  status?: 'active' | 'soft_deleted';
   stars: number;
-  badges: string[];
+  badges?: string[];
   avatar: string;
   notes?: string;
-  internalNotes?: string; // Ghi chú nội bộ học viên (chỉ dành riêng cho Admin/Super Admin/Giáo viên)
+  internalNotes?: string;
   internalNotesHistory?: InternalNoteEntry[];
   honorNickname?: string;
-  equippedTitleId?: string; // ID danh hiệu đang được học viên trang bị
-  completedHomeworkTaskIds?: string[]; // IDs các homework item mà học viên đã check xong
+  equippedTitleId?: string;
+  completedHomeworkTaskIds?: string[];
   resourceLinks?: ResourceLink[];
-  studentCode?: string; // Mã học viên dùng để đăng nhập (Ví dụ: HV7K29, VE2026A7)
-  studentCodeStatus?: 'ACTIVE' | 'DISABLED'; // Trạng thái hoạt động của mã học viên
-  createdAt: string;
+  studentCode?: string;
+  studentCodeStatus?: 'ACTIVE' | 'DISABLED';
+  joinedDate?: string;
+  createdAt?: string;
 }
 
 export interface Class {
@@ -87,10 +88,10 @@ export interface Class {
   adminId?: string; // Admin quản lý phụ trách trực tiếp lớp học
   adminName?: string;
   schedule: string;
-  room: string;
+  room?: string;
   courseName: string;
-  totalStudents: number;
-  status: 'active' | 'completed' | 'paused' | 'archived';
+  totalStudents?: number;
+  status?: 'active' | 'completed' | 'paused' | 'archived';
   startSessionNumber?: number; // Số thứ tự buổi học bắt đầu khi tạo lớp (mặc định 1)
   zoomLink?: string;
   resourceLinks?: ResourceLink[];
@@ -124,12 +125,12 @@ export interface AttendanceRecord {
 export interface Session {
   id: string;
   classId: string;
-  className: string;
+  className?: string;
   sessionNumber: number;
   date: string; // YYYY-MM-DD
   teacherId: string;
   teacherName?: string;
-  attendance: AttendanceRecord[];
+  attendance?: AttendanceRecord[];
   lessonContent: string;
   homeworkItems?: HomeworkTaskItem[]; // Danh sách NỀN NỔI nhiều bài tập về nhà
   studentFeedbacks?: Record<string, StudentFeedback>; // Nhận xét riêng cho từng studentId
@@ -140,7 +141,7 @@ export interface Session {
   isChargedAbsenceSession?: boolean; // Lớp nghỉ tính phí vì nghỉ quá số lần quy định hoặc học viên không vào lớp
   isExcusedAbsenceSession?: boolean; // Lớp nghỉ có phép (không tính phí)
   hasNoHomework?: boolean; // Tùy chọn đánh dấu buổi học không có bài tập về nhà
-  createdAt: string;
+  createdAt?: string;
 }
 
 export function getStudentQuizletUrl(session: Partial<Session> | undefined | null, studentId: string): string {
@@ -209,6 +210,58 @@ export interface AppNotification {
   completionTime: string;
   createdAt: string;
   isRead: boolean;
+  recipientId?: string;
+}
+
+export interface StudentAbsenceRecord {
+  id: string;
+  studentId?: string;
+  studentName?: string;
+  classId?: string;
+  className?: string;
+  absenceDate?: string;
+  date?: string;
+  reason?: string;
+  isExcused?: boolean;
+  isMakeupCompleted?: boolean;
+  createdByUserName?: string;
+  createdAt?: string;
+}
+
+export interface ChapterTest {
+  id: string;
+  chapterId: string;
+  title: string;
+  description?: string;
+  timeLimitMinutes: number;
+  passingScorePercent: number;
+  version: number;
+  status: 'draft' | 'published' | 'archived';
+  testSnapshot?: ChapterTestQuestionSnapshot[];
+  testSnapshots?: ChapterTestQuestionSnapshot[];
+  createdAt: string;
+}
+
+export interface StudentTestAttempt {
+  id: string;
+  studentId: string;
+  studentCode?: string;
+  studentName: string;
+  chapterTestId: string;
+  chapterId?: string;
+  bookId?: string;
+  testVersion: number;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  isPassed: boolean;
+  timeSpentSeconds: number;
+  status: 'completed' | 'reset';
+  resetBy?: string;
+  resetAt?: string;
+  resetReason?: string;
+  submittedAt?: string;
+  completedAt?: string;
 }
 
 export interface Invoice {
@@ -422,25 +475,5 @@ export interface StudentPracticeAttempt {
   maxScore: number;
   percentage: number;
   timeSpentSeconds: number;
-  completedAt: string;
-}
-
-export interface StudentTestAttempt {
-  id: string;
-  studentId: string;
-  studentName: string;
-  chapterTestId: string;
-  chapterId: string;
-  bookId: string;
-  testVersion: number;
-  score: number;
-  maxScore: number;
-  percentage: number;
-  isPassed: boolean;
-  timeSpentSeconds: number;
-  status: 'completed' | 'reset';
-  resetBy?: string;
-  resetAt?: string;
-  resetReason?: string;
   completedAt: string;
 }

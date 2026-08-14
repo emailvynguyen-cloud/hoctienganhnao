@@ -142,14 +142,13 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
   onInspectClass,
 }) => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
-  const [dismissedTaskIds, setDismissedTaskIds] = useState<string[]>(() => StorageEngine.getDismissedPendingTaskIds());
+  const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
   const [filterType, setFilterType] = useState<'all' | 'unrecorded' | 'missing_quizlet' | 'overdue' | 'today'>('all');
   const [selectedTeacherFilter, setSelectedTeacherFilter] = useState<string>('all');
 
   const handleDismissTask = (taskId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
       StorageEngine.dismissPendingTaskId(taskId);
-      setDismissedTaskIds((prev) => [...prev, taskId]);
     }
   };
 

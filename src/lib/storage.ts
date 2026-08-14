@@ -30,6 +30,7 @@ import {
 import { generatePublicHash } from './obfuscate';
 import { db } from './firebase';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import { KAKAOTALK_SVG_AVATARS } from './kakaotalkAvatars';
 
 const STORAGE_KEYS = {
   STUDENTS: 'vy_students_v4',
@@ -158,6 +159,7 @@ export const StorageEngine = {
       [STORAGE_KEYS.USERS]: this.getUsers(),
       [STORAGE_KEYS.BANK_CONFIG]: this.getBankConfig(),
       [STORAGE_KEYS.CLASS_RULES]: this.getClassRules(),
+      [STORAGE_KEYS.DISMISSED_PENDING_TASKS]: this.getDismissedPendingTaskIds(),
     };
   },
 
@@ -1182,7 +1184,7 @@ export const StorageEngine = {
 
   saveAuditLogs(logs: AuditLogRecord[]) {
     updateLiveMemoryStore(STORAGE_KEYS.AUDIT_LOGS, logs);
-    triggerCloudSyncPush();
+    this.syncAllToCloud();
   },
 
   addAuditLog(
@@ -1373,7 +1375,7 @@ export const StorageEngine = {
     if (url) {
       setItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, url);
     } else {
-      removeItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL);
+      localStorage.removeItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL);
     }
   },
 
@@ -1385,7 +1387,7 @@ export const StorageEngine = {
     if (studentId) {
       setItem(STORAGE_KEYS.CURRENT_STUDENT_SESSION, studentId);
     } else {
-      removeItem(STORAGE_KEYS.CURRENT_STUDENT_SESSION);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_STUDENT_SESSION);
     }
   },
 };

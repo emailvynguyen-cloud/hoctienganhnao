@@ -16,6 +16,7 @@ import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvat
 import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 import { EditClassModal } from './EditClassModal';
 import { EditStudentModal } from './EditStudentModal';
+import confetti from 'canvas-confetti';
 import {
   Users,
   BookOpen,
@@ -30,6 +31,7 @@ import {
   PlusCircle,
   ExternalLink,
   ShieldAlert,
+  ShieldCheck,
   Crown,
   Search,
   MessageSquare,
@@ -858,7 +860,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
 
                               <div className="pt-2 border-t border-sky-100 flex items-center justify-between gap-1.5">
                                 <button
-                                  onClick={() => setInspectedClass(cls)}
+                                  onClick={() => setInspectedClassId(cls.id)}
                                   className="text-xs font-extrabold text-sky-700 hover:underline flex items-center"
                                 >
                                   <Eye className="w-3.5 h-3.5 mr-1" /> Chi Tiết Lớp →
