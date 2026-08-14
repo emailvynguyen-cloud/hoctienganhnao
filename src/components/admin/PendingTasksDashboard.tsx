@@ -334,52 +334,49 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* HEADER BANNER */}
-      <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white rounded-3xl p-6 sm:p-7 shadow-md space-y-4 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
+      <div className="bg-slate-900 dark:bg-slate-950 text-white rounded-3xl p-6 sm:p-7 shadow-xs space-y-4 relative overflow-hidden border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center font-black text-2xl shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-2xl shadow-2xs">
               📋
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                CÔNG VIỆC CẦN XỬ LÝ (BACKLOG TRACKING)
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                CÔNG VIỆC CẦN XỬ LÝ
               </h2>
-              <p className="text-xs text-rose-100 font-medium">
-                Theo dõi tồn đọng liên tục • Không tự xóa theo ngày • Cập nhật Realtime khi hoàn thành
-              </p>
             </div>
           </div>
 
-          <div className="px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-xs border border-white/20 text-xs font-bold shrink-0 self-start sm:self-center">
+          <div className="px-4 py-2 rounded-2xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 shrink-0 self-start sm:self-center">
             📅 Hôm nay: {todayFormatted}
           </div>
         </div>
 
         {/* SUMMARY STAT CARDS */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
-          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
-            <span className="text-[10px] font-bold text-rose-100 block uppercase">Tổng Việc Tồn</span>
+          <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-0.5">
+            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Tổng Việc Tồn</span>
             <span className="text-2xl font-black text-white block">{totalTasksCount} việc</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
-            <span className="text-[10px] font-bold text-rose-200 block uppercase">🔴 Chưa Nhập Buổi</span>
-            <span className="text-2xl font-black text-rose-100 block">{unrecordedCount} buổi</span>
+          <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-0.5">
+            <span className="text-[10px] font-bold text-rose-300 block uppercase tracking-wider">🔴 Chưa Nhập Buổi</span>
+            <span className="text-2xl font-black text-rose-200 block">{unrecordedCount} buổi</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
-            <span className="text-[10px] font-bold text-amber-200 block uppercase">🟠 Chưa Thêm Quizlet</span>
-            <span className="text-2xl font-black text-amber-100 block">{quizletCount} ca</span>
+          <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-0.5">
+            <span className="text-[10px] font-bold text-amber-300 block uppercase tracking-wider">🟠 Chưa Thêm Quizlet</span>
+            <span className="text-2xl font-black text-amber-200 block">{quizletCount} ca</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
-            <span className="text-[10px] font-bold text-rose-200 block uppercase">⏰ Vi Phạm Quá Hạn</span>
+          <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-0.5">
+            <span className="text-[10px] font-bold text-rose-300 block uppercase tracking-wider">⏰ Vi Phạm Quá Hạn</span>
             <span className="text-2xl font-black text-rose-200 block">{overdueCount} việc</span>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs p-3.5 rounded-2xl border border-white/20 space-y-0.5">
-            <span className="text-[10px] font-bold text-emerald-200 block uppercase">📅 Phát Sinh Hôm Nay</span>
-            <span className="text-2xl font-black text-emerald-100 block">{todayCount} việc</span>
+          <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 space-y-0.5">
+            <span className="text-[10px] font-bold text-emerald-300 block uppercase tracking-wider">📅 Phát Sinh Hôm Nay</span>
+            <span className="text-2xl font-black text-emerald-200 block">{todayCount} việc</span>
           </div>
         </div>
       </div>
