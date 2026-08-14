@@ -16,6 +16,7 @@ import {
   AuditLogRecord,
   InternalNoteEntry,
   StudentAbsenceRecord,
+  isBillableStudentSession,
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -1062,7 +1063,7 @@ export const StorageEngine = {
       if (
         att &&
         !sessionData.isExcusedAbsenceSession &&
-        (att.status === 'present' || att.status === 'late' || sessionData.isChargedAbsenceSession)
+        (att.status === 'present' || att.status === 'late' || att.status === 'unexcused' || sessionData.isChargedAbsenceSession)
       ) {
         const std = students.find((s) => s && s.id === att.studentId);
         if (std && std.remainingSessions > 0) {
@@ -1118,9 +1119,8 @@ export const StorageEngine = {
 
       let countInMonth = 0;
       monthSessions.forEach((ses) => {
-        if (ses && ses.attendance && Array.isArray(ses.attendance)) {
-          const att = ses.attendance.find((a) => a && a.studentId === std.id);
-          if (att && (att.status === 'present' || att.status === 'late')) {
+        if (ses && std.classIds && std.classIds.includes(ses.classId)) {
+          if (isBillableStudentSession(ses, std.id)) {
             countInMonth += 1;
           }
         }

@@ -152,6 +152,34 @@ export function getStudentQuizletUrl(session: Partial<Session> | undefined | nul
   return session.quizletUrl || '';
 }
 
+/**
+ * OFFICIAL REVENUE & BILLABLE SESSION HELPER
+ * 
+ * Rules:
+ * - Recorded Session + Student Not Excused Absence -> BILLABLE (revenue = 1 session fee).
+ * - Excused Absence (`status === 'excused'`) -> NOT BILLABLE (revenue = 0).
+ * - Charged Absence (`status === 'unexcused'` or `isChargedAbsenceSession = true`) -> BILLABLE.
+ * - Recorded Session with no explicit attendance record -> "Có nhập buổi là có tính" -> Default BILLABLE.
+ * - Unrecorded Session -> NOT BILLABLE.
+ */
+export function isBillableStudentSession(session: Partial<Session> | undefined | null, studentId: string): boolean {
+  if (!session || !session.date) return false;
+  if (session.isExcusedAbsenceSession) return false;
+  if (session.isChargedAbsenceSession) return true;
+
+  if (session.attendance && Array.isArray(session.attendance)) {
+    const attRecord = session.attendance.find((a) => a && a.studentId === studentId);
+    if (attRecord) {
+      if (attRecord.status === 'excused') {
+        return false; // Nghỉ có phép -> KHÔNG TÍNH
+      }
+      return true; // present, late, unexcused -> TÍNH
+    }
+  }
+
+  return true; // Có nhập buổi là có tính
+}
+
 export interface HomeworkTask {
   id: string;
   classId: string;

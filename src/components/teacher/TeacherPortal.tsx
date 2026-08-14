@@ -826,15 +826,15 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
           {/* KPI Summary Cards */}
           {(() => {
-            const teacherClassesMap = new Map(assignedClasses.map((c) => [c.id, c]));
+            const teacherClassesMap = new Map<string, Class>(assignedClasses.map((c) => [c.id, c]));
             const monthTeacherSessions = (sessions || []).filter(
-              (s) => s && s.date && s.date.startsWith(teacherSelectedMonth) && teacherClassesMap.has(s.classId)
+              (s) => s && s.date && s.date.startsWith(teacherSelectedMonth) && teacherClassesMap.has(s.classId) && !s.isExcusedAbsenceSession
             );
             
             let totalSalary = 0;
             const classSalaryList = assignedClasses.map((cls) => {
               const clsMonthSessions = (sessions || []).filter(
-                (s) => s && s.classId === cls.id && s.date && s.date.startsWith(teacherSelectedMonth)
+                (s) => s && s.classId === cls.id && s.date && s.date.startsWith(teacherSelectedMonth) && !s.isExcusedAbsenceSession
               );
               const rate = typeof cls.teacherPayRatePerSession === 'number' ? cls.teacherPayRatePerSession : 150000;
               const salary = clsMonthSessions.length * rate;

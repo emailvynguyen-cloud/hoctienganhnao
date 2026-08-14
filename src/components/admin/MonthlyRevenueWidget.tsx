@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StorageEngine } from '../../lib/storage';
+import { isBillableStudentSession } from '../../types';
 import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2, Flame, Sparkles, UserCheck, Award } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
 
@@ -56,13 +57,15 @@ export const MonthlyRevenueWidget: React.FC = () => {
     const classStudents = students.filter(
       (s) => s && s.status !== 'soft_deleted' && s.classIds?.includes(sess.classId)
     );
-    todayStudentCount += classStudents.length;
 
     classStudents.forEach((std) => {
-      const pkgPrice = std.tuitionPackagePrice || 2000000;
-      const pkgSessions = std.packageSessionCount || 8;
-      const perSession = pkgPrice / pkgSessions;
-      todayRevenue += perSession;
+      if (isBillableStudentSession(sess, std.id)) {
+        const pkgPrice = std.tuitionPackagePrice || 2000000;
+        const pkgSessions = std.packageSessionCount || 8;
+        const perSession = pkgPrice / pkgSessions;
+        todayRevenue += perSession;
+        todayStudentCount += 1;
+      }
     });
   });
 
@@ -94,12 +97,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
     let countInMonth = 0;
     msVyMonthSessions.forEach((ses) => {
       if (ses && stdMsVyClasses.includes(ses.classId)) {
-        if (ses.attendance && Array.isArray(ses.attendance)) {
-          const att = ses.attendance.find((a) => a && a.studentId === std.id);
-          if (att && (att.status === 'present' || att.status === 'late')) {
-            countInMonth += 1;
-          }
-        } else {
+        if (isBillableStudentSession(ses, std.id)) {
           countInMonth += 1;
         }
       }
@@ -132,15 +130,19 @@ export const MonthlyRevenueWidget: React.FC = () => {
     const classStudents = students.filter((s) => s && s.status !== 'soft_deleted' && s.classIds?.includes(sess.classId));
 
     let sessionRev = 0;
+    let billableCount = 0;
     classStudents.forEach((std) => {
-      const pkgPrice = std.tuitionPackagePrice || 2000000;
-      const pkgSessions = std.packageSessionCount || 8;
-      const perSession = pkgPrice / pkgSessions;
-      sessionRev += perSession;
+      if (isBillableStudentSession(sess, std.id)) {
+        const pkgPrice = std.tuitionPackagePrice || 2000000;
+        const pkgSessions = std.packageSessionCount || 8;
+        const perSession = pkgPrice / pkgSessions;
+        sessionRev += perSession;
+        billableCount += 1;
+      }
     });
 
     dailyMap[dateStr].revenue += sessionRev;
-    dailyMap[dateStr].details.push(`Buổi #${sess.sessionNumber} (${classStudents.length} học viên)`);
+    dailyMap[dateStr].details.push(`Buổi #${sess.sessionNumber} (${billableCount} học viên tính phí)`);
   });
 
   const dailyList = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
