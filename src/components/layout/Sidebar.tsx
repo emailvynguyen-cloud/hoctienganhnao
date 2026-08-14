@@ -101,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'GIẢNG DẠY',
           items: [
             { id: 'tch_home', title: 'Dashboard', path: '/teacher', icon: Home },
+            { id: 'tch_grading', title: 'Chấm Bài Tập (Feedback)', path: '/teacher?tab=grading', icon: CheckSquare },
             { id: 'tch_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/teacher?tab=learning_hub', icon: BookOpen },
             { id: 'tch_classes', title: 'Lớp Học Phụ Trách', path: '/teacher', icon: BookOpen },
             { id: 'tch_sessions', title: 'Buổi Học', path: '/teacher', icon: Calendar },
@@ -128,6 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'QUẢN LÝ',
           items: [
             { id: 'adm_home', title: 'Dashboard Admin', path: '/admin?tab=pending_tasks', icon: Home },
+            { id: 'adm_grading', title: 'Chấm Bài Tập (Feedback)', path: '/admin?tab=grading', icon: CheckSquare },
             { id: 'adm_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/admin?tab=learning_hub', icon: BookOpen },
             { id: 'adm_tasks', title: 'Công Việc Cần Xử Lý', path: '/admin?tab=pending_tasks', icon: CheckSquare },
             { id: 'adm_classes', title: 'Quản Lý Lớp Học', path: '/admin?tab=classes', icon: BookOpen },
@@ -156,6 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         groupTitle: 'QUẢN LÝ TRUNG TÂM',
         items: [
           { id: 'sa_home', title: 'Dashboard Super Admin', path: '/super-admin?tab=pending_tasks', icon: Home },
+          { id: 'sa_grading', title: 'Chấm Bài Tập (Feedback)', path: '/super-admin?tab=grading', icon: CheckSquare },
           { id: 'sa_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/super-admin?tab=learning_hub', icon: BookOpen },
           { id: 'sa_tasks', title: 'Công Việc Cần Xử Lý', path: '/super-admin?tab=pending_tasks', icon: CheckSquare },
           { id: 'sa_classes', title: 'Quản Lý Lớp Học', path: '/super-admin?tab=classes', icon: BookOpen },
