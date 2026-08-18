@@ -201,7 +201,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
                   <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Giá Tiền Gói (VNĐ)</label>
                   <input
                     type="number"
-                    step="100000"
+                    step="any"
                     value={tuitionPackagePrice}
                     onChange={(e) => setTuitionPackagePrice(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"

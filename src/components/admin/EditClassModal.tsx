@@ -285,7 +285,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
               <input
                 type="number"
                 min="0"
-                step="10000"
+                step="any"
                 required
                 value={teacherPayRatePerSession}
                 onChange={(e) => setTeacherPayRatePerSession(e.target.value === '' ? 0 : Number(e.target.value))}

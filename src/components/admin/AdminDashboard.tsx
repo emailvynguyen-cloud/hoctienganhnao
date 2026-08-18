@@ -2026,7 +2026,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                   <input
                     type="number"
                     min="0"
-                    step="10000"
+                    step="any"
                     required
                     value={newTeacherPayRate}
                     onChange={(e) => setNewTeacherPayRate(e.target.value === '' ? 0 : Number(e.target.value))}
@@ -2181,7 +2181,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                     <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tổng Học Phí Gói (VNĐ)</label>
                     <input
                       type="number"
-                      step="100000"
+                      step="any"
                       value={newTuitionPrice}
                       onChange={(e) => setNewTuitionPrice(Number(e.target.value))}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold"
