@@ -254,7 +254,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
     // =========================================================================
     sessions.forEach((session) => {
       if (!session || !session.classId) return;
-      if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession) return;
+      if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession || session.hasNoQuizlet) return;
 
       const cls = classes.find((c) => c.id === session.classId);
       const className = session.className || cls?.className || 'Lớp Học';

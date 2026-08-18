@@ -430,6 +430,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   const [isChargedAbsenceSession, setIsChargedAbsenceSession] = useState<boolean>(editingSession?.isChargedAbsenceSession || false);
   const [isExcusedAbsenceSession, setIsExcusedAbsenceSession] = useState<boolean>(editingSession?.isExcusedAbsenceSession || false);
   const [hasNoHomework, setHasNoHomework] = useState<boolean>(editingSession?.hasNoHomework || false);
+  const [hasNoQuizlet, setHasNoQuizlet] = useState<boolean>(editingSession?.hasNoQuizlet || false);
 
   const draftKey = editingSession ? `session_edit_${editingSession.id}` : `session_add_${selectedClassId || 'new'}`;
 
@@ -446,6 +447,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       setIsChargedAbsenceSession(editingSession.isChargedAbsenceSession || false);
       setIsExcusedAbsenceSession(editingSession.isExcusedAbsenceSession || false);
       setHasNoHomework(editingSession.hasNoHomework || false);
+      setHasNoQuizlet(editingSession.hasNoQuizlet || false);
       setHomeworkItems(editingSession.homeworkItems || [
         { id: `hw_${Date.now()}_1`, title: 'Bài 1: Làm bài tập nói/viết', content: '', attachmentUrl: '' }
       ]);
@@ -676,13 +678,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         homeworkItems: (hasNoHomework || isExcusedAbsenceSession) ? [] : homeworkItems,
         studentFeedbacks: isExcusedAbsenceSession ? {} : studentFeedbacks,
         recordLink: isExcusedAbsenceSession ? '' : recordLink,
-        quizletUrl: isExcusedAbsenceSession ? '' : finalQuizletUrl,
-        studentQuizlets: isExcusedAbsenceSession ? {} : finalStudentQuizlets,
+        quizletUrl: (hasNoQuizlet || isExcusedAbsenceSession) ? '' : finalQuizletUrl,
+        studentQuizlets: (hasNoQuizlet || isExcusedAbsenceSession) ? {} : finalStudentQuizlets,
         sessionMaterials: isExcusedAbsenceSession ? [] : materials,
         attendance: attendanceList,
         isChargedAbsenceSession,
         isExcusedAbsenceSession,
         hasNoHomework,
+        hasNoQuizlet,
       });
       alert(`Đã cập nhật chỉnh sửa Buổi học #${editingSession.sessionNumber} thành công!`);
     } else {
@@ -696,13 +699,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         homeworkItems: (hasNoHomework || isExcusedAbsenceSession) ? [] : homeworkItems,
         studentFeedbacks: isExcusedAbsenceSession ? {} : studentFeedbacks,
         recordLink: isExcusedAbsenceSession ? '' : recordLink,
-        quizletUrl: isExcusedAbsenceSession ? '' : finalQuizletUrl,
-        studentQuizlets: isExcusedAbsenceSession ? {} : finalStudentQuizlets,
+        quizletUrl: (hasNoQuizlet || isExcusedAbsenceSession) ? '' : finalQuizletUrl,
+        studentQuizlets: (hasNoQuizlet || isExcusedAbsenceSession) ? {} : finalStudentQuizlets,
         sessionMaterials: isExcusedAbsenceSession ? [] : materials,
         attendanceList,
         isChargedAbsenceSession,
         isExcusedAbsenceSession,
         hasNoHomework,
+        hasNoQuizlet,
       });
       alert(isExcusedAbsenceSession ? 'Đã lưu ghi nhận buổi Nghỉ có phép thành công!' : 'Đã tạo buổi học mới thành công!');
     }
@@ -887,7 +891,34 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   />
                 </div>
 
-                {classStudents.length <= 1 ? (
+                {/* NO QUIZLET TOGGLE CHECKBOX */}
+                <div className="p-3.5 rounded-2xl bg-purple-50/80 dark:bg-slate-800 border border-purple-200 dark:border-purple-900/60 flex items-center justify-between col-span-1 sm:col-span-2">
+                  <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-black text-purple-950 dark:text-purple-200">
+                    <input
+                      type="checkbox"
+                      checked={hasNoQuizlet}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setHasNoQuizlet(checked);
+                        if (checked) {
+                          setQuizletUrl('');
+                          setStudentQuizlets({});
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-400 cursor-pointer"
+                    />
+                    <span>🚫 Buổi học này KHÔNG CÓ BÀI TẬP QUIZLET</span>
+                  </label>
+                  <span className="text-[10px] text-purple-700 dark:text-purple-300 font-medium">
+                    (Tích chọn nếu không dùng Quizlet — Tự động hủy/xóa task nhắc nhở)
+                  </span>
+                </div>
+
+                {hasNoQuizlet ? (
+                  <div className="p-3.5 rounded-2xl bg-purple-100/70 dark:bg-slate-800 border border-purple-200 text-purple-900 dark:text-purple-300 text-xs font-bold col-span-1 sm:col-span-2">
+                    <span>🚫 Đã đánh dấu buổi học không sử dụng Quizlet. Hệ thống sẽ KHÔNG tạo cảnh báo "Chưa thêm Quizlet" cho buổi này trong Công việc cần xử lý.</span>
+                  </div>
+                ) : classStudents.length <= 1 ? (
                   <div>
                     <label className="block font-black text-purple-900 dark:text-purple-300 uppercase mb-1 flex items-center">
                       🎴 Link Quizlet Từ Vựng Buổi Học {classStudents[0]?.name ? `(${classStudents[0].name})` : ''}

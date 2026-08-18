@@ -1082,6 +1082,7 @@ export const StorageEngine = {
     isChargedAbsenceSession?: boolean;
     isExcusedAbsenceSession?: boolean;
     hasNoHomework?: boolean;
+    hasNoQuizlet?: boolean;
   }): Session {
     const sessions = this.getSessions() || [];
     const classes = this.getClasses() || [];
@@ -1104,12 +1105,13 @@ export const StorageEngine = {
       homeworkItems: sessionData.hasNoHomework ? [] : (sessionData.homeworkItems || []),
       studentFeedbacks: sessionData.studentFeedbacks || {},
       recordLink: sessionData.recordLink,
-      quizletUrl: sessionData.quizletUrl,
-      studentQuizlets: sessionData.studentQuizlets || {},
+      quizletUrl: sessionData.hasNoQuizlet ? '' : sessionData.quizletUrl,
+      studentQuizlets: sessionData.hasNoQuizlet ? {} : (sessionData.studentQuizlets || {}),
       sessionMaterials: sessionData.sessionMaterials || [],
       isChargedAbsenceSession: sessionData.isChargedAbsenceSession || false,
       isExcusedAbsenceSession: sessionData.isExcusedAbsenceSession || false,
       hasNoHomework: sessionData.hasNoHomework || false,
+      hasNoQuizlet: sessionData.hasNoQuizlet || false,
       createdAt: new Date().toISOString(),
     };
 
