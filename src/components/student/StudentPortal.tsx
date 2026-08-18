@@ -1071,26 +1071,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     </span>
                   )}
                 </div>
-
-                {/* WEB PUSH TOGGLE BUTTON */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const granted = await requestWebPushPermission();
-                    if (granted) {
-                      notifySessionUpdated('Hệ thống');
-                      alert('Đã bật Thông Báo Web Push (PWA) thành công!');
-                    } else {
-                      alert('Quyền thông báo chưa được cấp trong trình duyệt của bạn.');
-                    }
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-100/80 hover:bg-indigo-200 text-indigo-950 dark:bg-indigo-950/60 dark:text-indigo-200 transition flex items-center shrink-0 border border-indigo-300 cursor-pointer"
-                  title="Cài đặt thông báo Web Push PWA"
-                >
-                  🔔 Web Push (PWA)
-                </button>
               </div>
             </div>
+
           </div>
 
         </div>
