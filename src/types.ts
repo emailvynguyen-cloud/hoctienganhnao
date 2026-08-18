@@ -78,6 +78,13 @@ export interface Student {
   createdAt?: string;
 }
 
+export interface ClassSchedulePeriod {
+  id: string;
+  schedule: string;
+  effectiveFrom: string; // YYYY-MM-DD
+  effectiveUntil?: string | null; // YYYY-MM-DD
+}
+
 export interface Class {
   id: string;
   className: string;
@@ -96,6 +103,10 @@ export interface Class {
   zoomLink?: string;
   resourceLinks?: ResourceLink[];
   teacherPayRatePerSession?: number; // Bậc lương từng buổi dạy (VNĐ / buổi học), ví dụ: 150.000đ
+  startDate?: string; // Ngày bắt đầu học thực tế của lớp (YYYY-MM-DD)
+  createdAt?: string; // Ngày tạo lớp trên hệ thống (YYYY-MM-DD)
+  scheduleEffectiveFrom?: string; // Mốc thời gian bắt đầu có hiệu lực của lịch dạy hiện tại (YYYY-MM-DD)
+  scheduleHistory?: ClassSchedulePeriod[]; // Lịch sử các đợt đổi lịch dạy trước đó
 }
 
 export interface AuditLogRecord {

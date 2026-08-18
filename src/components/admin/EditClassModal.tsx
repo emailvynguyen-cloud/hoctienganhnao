@@ -108,7 +108,12 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [courseName, setCourseName] = useState(targetClass.courseName || '');
   const [zoomLink, setZoomLink] = useState(targetClass.zoomLink || '');
   const [startSessionNumber, setStartSessionNumber] = useState(targetClass.startSessionNumber || 1);
-  const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(typeof targetClass.teacherPayRatePerSession === 'number' ? targetClass.teacherPayRatePerSession : 150000);
+  const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(
+    typeof targetClass.teacherPayRatePerSession === 'number' ? targetClass.teacherPayRatePerSession : 150000
+  );
+  const [scheduleEffectiveFrom, setScheduleEffectiveFrom] = useState<string>(
+    targetClass.scheduleEffectiveFrom || targetClass.startDate || new Date().toISOString().split('T')[0]
+  );
 
   const draftKey = `edit_class_${targetClass.id}`;
 
@@ -121,6 +126,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
         adminId,
         teacherName,
         schedule,
+        scheduleEffectiveFrom,
         courseName,
         zoomLink,
         startSessionNumber,
@@ -128,7 +134,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [isOpen, draftKey, className, code, adminId, teacherName, schedule, courseName, zoomLink, startSessionNumber, teacherPayRatePerSession]);
+  }, [isOpen, draftKey, className, code, adminId, teacherName, schedule, scheduleEffectiveFrom, courseName, zoomLink, startSessionNumber, teacherPayRatePerSession]);
 
   const handleRestoreDraft = (data: any) => {
     if (!data) return;
@@ -137,6 +143,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
     if (data.adminId) setAdminId(data.adminId);
     if (data.teacherName) setTeacherName(data.teacherName);
     if (data.schedule) setSchedule(data.schedule);
+    if (data.scheduleEffectiveFrom) setScheduleEffectiveFrom(data.scheduleEffectiveFrom);
     if (data.courseName) setCourseName(data.courseName);
     if (data.zoomLink !== undefined) setZoomLink(data.zoomLink);
     if (data.startSessionNumber) setStartSessionNumber(data.startSessionNumber);
@@ -166,6 +173,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       teacherName,
       teacherId,
       schedule,
+      scheduleEffectiveFrom,
       courseName,
       zoomLink,
       startSessionNumber: Number(startSessionNumber) || 1,

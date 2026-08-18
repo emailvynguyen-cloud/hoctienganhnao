@@ -532,6 +532,10 @@ export const StorageEngine = {
   addClass(classData: Partial<Class>): Class {
     const classes = this.getClasses() || [];
     const newId = classData.id || `cls_${Date.now()}`;
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const effectiveStart = classData.scheduleEffectiveFrom || classData.startDate || todayISO;
+
     const newClass: Class = {
       id: newId,
       className: classData.className || 'Lớp Mới',
@@ -545,6 +549,16 @@ export const StorageEngine = {
       startSessionNumber: Number(classData.startSessionNumber) || 1,
       teacherPayRatePerSession: typeof classData.teacherPayRatePerSession === 'number' && !isNaN(classData.teacherPayRatePerSession) ? classData.teacherPayRatePerSession : 150000,
       resourceLinks: classData.resourceLinks || [],
+      createdAt: classData.createdAt || todayISO,
+      startDate: effectiveStart,
+      scheduleEffectiveFrom: effectiveStart,
+      scheduleHistory: classData.scheduleHistory || [
+        {
+          id: `sp_${Date.now()}`,
+          schedule: classData.schedule || 'Thứ 2 - Thứ 4 - Thứ 6 (18:00 - 19:30)',
+          effectiveFrom: effectiveStart,
+        },
+      ],
     };
     classes.push(newClass);
     this.saveClasses(classes);
@@ -554,8 +568,55 @@ export const StorageEngine = {
     const classes = this.getClasses() || [];
     const idx = classes.findIndex((c) => c && c.id === cls.id);
     if (idx !== -1) {
+      const existingClass = classes[idx];
+      const now = new Date();
+      const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      let updatedHistory = cls.scheduleHistory || existingClass.scheduleHistory || [];
+      let updatedEffectiveFrom = cls.scheduleEffectiveFrom || existingClass.scheduleEffectiveFrom || existingClass.startDate || (existingClass.createdAt ? existingClass.createdAt.split('T')[0] : '2026-08-01');
+
+      // If the schedule string is changing:
+      if (cls.schedule && cls.schedule !== existingClass.schedule) {
+        const newEffectiveFrom = cls.scheduleEffectiveFrom || todayISO;
+
+        if (updatedHistory.length === 0) {
+          updatedHistory = [
+            {
+              id: `sp_${Date.now()}_initial`,
+              schedule: existingClass.schedule,
+              effectiveFrom: updatedEffectiveFrom,
+            },
+          ];
+        }
+
+        // Close previous active period
+        const yesterdayDate = new Date(newEffectiveFrom);
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayISO = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
+
+        updatedHistory = updatedHistory.map((sp) => {
+          if (!sp.effectiveUntil) {
+            return { ...sp, effectiveUntil: yesterdayISO };
+          }
+          return sp;
+        });
+
+        updatedHistory.push({
+          id: `sp_${Date.now()}`,
+          schedule: cls.schedule,
+          effectiveFrom: newEffectiveFrom,
+        });
+
+        updatedEffectiveFrom = newEffectiveFrom;
+      }
+
       const updated = [...classes];
-      updated[idx] = { ...updated[idx], ...cls };
+      updated[idx] = {
+        ...existingClass,
+        ...cls,
+        scheduleEffectiveFrom: updatedEffectiveFrom,
+        scheduleHistory: updatedHistory,
+      };
       this.saveClasses(updated);
     }
   },

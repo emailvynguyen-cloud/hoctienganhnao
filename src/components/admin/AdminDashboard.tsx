@@ -257,6 +257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const [newZoomLink, setNewZoomLink] = useState('');
   const [newStartSessionNumber, setNewStartSessionNumber] = useState(1);
   const [newTeacherPayRate, setNewTeacherPayRate] = useState(150000);
+  const [newStartDate, setNewStartDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // New Student Form State
   const [newStudentName, setNewStudentName] = useState('');
@@ -405,6 +406,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
       startSessionNumber: Number(newStartSessionNumber) || 1,
       teacherPayRatePerSession: typeof newTeacherPayRate === 'number' && !isNaN(newTeacherPayRate) ? newTeacherPayRate : 0,
       resourceLinks: [],
+      startDate: newStartDate,
+      scheduleEffectiveFrom: newStartDate,
     });
 
     alert(`Đã tạo lớp học thành công! Các buổi học sẽ bắt đầu tính từ Buổi #${newStartSessionNumber || 1}`);

@@ -87,11 +87,15 @@ function calculateOverdueInfo(todayISO: string, dateISO: string) {
   };
 }
 
-// Helper to extract past scheduled dates for a class (up to past 45 days)
+// Helper to extract past scheduled dates for a class strictly within its effective schedule period
 function getPastScheduledDates(cls: Class, daysBack: number = 45): string[] {
+  if (!cls || cls.status === 'paused' || cls.status === 'completed' || cls.status === 'archived') {
+    return [];
+  }
+
   const result: string[] = [];
-  const scheduleStr = cls.schedule || '';
   const now = new Date();
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   const dayPatterns: { idx: number; pattern: RegExp }[] = [
     { idx: 1, pattern: /T2|THỨ 2|THỨ HAI/i },
@@ -103,16 +107,56 @@ function getPastScheduledDates(cls: Class, daysBack: number = 45): string[] {
     { idx: 0, pattern: /CN|CHỦ NHẬT/i },
   ];
 
+  // Determine raw minimum date for current schedule
+  const rawMinDate = cls.scheduleEffectiveFrom || cls.startDate || (cls.createdAt ? cls.createdAt.split('T')[0] : '');
+
+  // For legacy classes created before effective dates were tracked:
+  // If no rawMinDate exists, fallback to earliest recorded session date or todayISO
+  let minAllowedDateISO = rawMinDate;
+  if (!minAllowedDateISO) {
+    const existingSessions = StorageEngine.getSessions().filter((s) => s && s.classId === cls.id && s.date);
+    if (existingSessions.length > 0) {
+      const sortedDates = existingSessions.map((s) => s.date).sort();
+      minAllowedDateISO = sortedDates[0];
+    } else {
+      minAllowedDateISO = todayISO; // For brand new classes with no sessions, don't generate past tasks before today
+    }
+  }
+
   for (let i = 0; i <= daysBack; i++) {
     const d = new Date();
     d.setDate(now.getDate() - i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    // RULE 1: Do not generate tasks for current schedule if date is before minAllowedDateISO
+    if (iso < minAllowedDateISO) {
+      // Check if this past date falls inside a past schedule period in cls.scheduleHistory
+      if (cls.scheduleHistory && cls.scheduleHistory.length > 0) {
+        const matchingPastPeriod = cls.scheduleHistory.find((sp) => {
+          if (iso < sp.effectiveFrom) return false;
+          if (sp.effectiveUntil && iso > sp.effectiveUntil) return false;
+          return true;
+        });
+
+        if (matchingPastPeriod) {
+          const dayIdx = d.getDay();
+          const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
+          if (matchPattern && matchPattern.pattern.test(matchingPastPeriod.schedule)) {
+            result.push(iso);
+          }
+        }
+      }
+      continue;
+    }
+
+    // RULE 2: For dates >= minAllowedDateISO, evaluate against current schedule
     const dayIdx = d.getDay();
     const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
-    if (matchPattern && matchPattern.pattern.test(scheduleStr)) {
-      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (matchPattern && matchPattern.pattern.test(cls.schedule || '')) {
       result.push(iso);
     }
   }
+
   return result;
 }
 
