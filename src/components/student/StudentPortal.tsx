@@ -1126,7 +1126,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             const now = new Date();
             const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             const monthlyExcusedCount = sessions.filter((s) => {
-              if (!s.date.startsWith(currentMonthISO)) return false;
+              if (!s || !s.date || !s.date.startsWith(currentMonthISO)) return false;
+              if (!currentStudent.classIds?.includes(s.classId)) return false;
               if (s.isExcusedAbsenceSession) return true;
               const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
               return att?.status === 'excused';
@@ -2045,7 +2046,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 const now = new Date();
                 const currentMonthISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const monthlyExcusedSessions = sessions.filter((s) => {
-                  if (!s.date.startsWith(currentMonthISO)) return false;
+                  if (!s || !s.date || !s.date.startsWith(currentMonthISO)) return false;
+                  if (!currentStudent.classIds?.includes(s.classId)) return false;
                   if (s.isExcusedAbsenceSession) return true;
                   const att = (s.attendance || []).find((a) => a.studentId === currentStudent.id);
                   return att?.status === 'excused';

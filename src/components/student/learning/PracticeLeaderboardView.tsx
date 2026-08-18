@@ -1,19 +1,38 @@
 import React from 'react';
 import { Student } from '../../../types';
-import { Trophy, Award, Flame, Crown, Sparkles } from 'lucide-react';
+import { StorageEngine } from '../../../lib/storage';
+import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../../lib/kakaotalkAvatars';
 
 interface PracticeLeaderboardViewProps {
   currentStudent?: Student | null;
 }
 
 export const PracticeLeaderboardView: React.FC<PracticeLeaderboardViewProps> = ({ currentStudent }) => {
-  const leaderboardData = [
-    { rank: 1, name: 'Phạm Minh Anh', score: '98%', attempts: 18, badge: '🥇 Top 1 Champion' },
-    { rank: 2, name: 'Nguyễn Hoàng Nam', score: '95%', attempts: 15, badge: '🥈 Top 2 Master' },
-    { rank: 3, name: 'Lê Bảo Ngọc', score: '92%', attempts: 14, badge: '🥉 Top 3 Elite' },
-    { rank: 4, name: 'Trần Đăng Khoa', score: '90%', attempts: 12, badge: '⭐ Top 4' },
-    { rank: 5, name: 'Đỗ Thảo Nguyên', score: '88%', attempts: 10, badge: '⭐ Top 5' },
-  ];
+  const allStudents = StorageEngine.getStudents() || [];
+  const allSubmissions = StorageEngine.getHomeworkSubmissions() || [];
+
+  const activeStudents = allStudents.filter((s) => s && s.status !== 'soft_deleted');
+
+  const rankedData = activeStudents
+    .map((std) => {
+      const completedHwCount = (std.completedHomeworkTaskIds || []).length;
+      const subs = allSubmissions.filter(
+        (s) => s && s.studentId === std.id && (s.isStudentChecked || s.completionStatus === 'COMPLETED')
+      );
+      const attempts = completedHwCount || subs.length || 0;
+
+      return {
+        studentId: std.id,
+        name: std.name || 'Học viên',
+        avatar: std.avatar || '',
+        stars: std.stars || 0,
+        attempts,
+      };
+    })
+    .sort((a, b) => {
+      if (b.stars !== a.stars) return b.stars - a.stars;
+      return b.attempts - a.attempts;
+    });
 
   return (
     <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-purple-100 dark:border-slate-800 space-y-6 shadow-xs">
@@ -29,11 +48,22 @@ export const PracticeLeaderboardView: React.FC<PracticeLeaderboardViewProps> = (
       </div>
 
       <div className="space-y-3">
-        {leaderboardData.map((item) => {
-          const isCurrentStudent = currentStudent && currentStudent.name === item.name;
+        {rankedData.slice(0, 10).map((item, idx) => {
+          const rank = idx + 1;
+          const isCurrentStudent =
+            currentStudent && (currentStudent.id === item.studentId || currentStudent.name === item.name);
+          const badgeText =
+            rank === 1
+              ? '🥇 Top 1 Champion'
+              : rank === 2
+              ? '🥈 Top 2 Master'
+              : rank === 3
+              ? '🥉 Top 3 Elite'
+              : `⭐ Top ${rank}`;
+
           return (
             <div
-              key={item.rank}
+              key={item.studentId}
               className={`p-4 rounded-2xl border flex items-center justify-between transition ${
                 isCurrentStudent
                   ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-300 ring-2 ring-purple-500'
@@ -41,9 +71,17 @@ export const PracticeLeaderboardView: React.FC<PracticeLeaderboardViewProps> = (
               }`}
             >
               <div className="flex items-center space-x-3">
-                <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-slate-800 text-purple-700 font-black text-xs flex items-center justify-center shrink-0">
-                  #{item.rank}
+                <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-purple-300 font-black text-xs flex items-center justify-center shrink-0">
+                  #{rank}
                 </span>
+                <img
+                  src={resolveAvatarUrl(item.avatar)}
+                  alt={item.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = KAKAOTALK_SVG_AVATARS.ryan;
+                  }}
+                  className="w-9 h-9 rounded-xl object-cover border border-purple-200"
+                />
                 <div>
                   <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center space-x-2">
                     <span>{item.name}</span>
@@ -53,13 +91,13 @@ export const PracticeLeaderboardView: React.FC<PracticeLeaderboardViewProps> = (
                       </span>
                     )}
                   </h4>
-                  <span className="text-[11px] font-bold text-slate-400">{item.badge}</span>
+                  <span className="text-[11px] font-bold text-slate-400">{badgeText}</span>
                 </div>
               </div>
 
               <div className="text-right">
                 <div className="text-base font-black text-purple-600 dark:text-purple-400">
-                  {item.score}
+                  ⭐ {item.stars} sao
                 </div>
                 <div className="text-[11px] font-bold text-slate-400">
                   {item.attempts} bài hoàn thành
