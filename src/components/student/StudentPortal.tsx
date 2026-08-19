@@ -155,7 +155,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     const syncLearningHubFromUrl = () => {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('tab') === 'learning_hub') {
+        const isStudentRoute = window.location.pathname.startsWith('/student');
+        if (isStudentRoute && params.get('tab') === 'learning_hub') {
           setIsLearningHubOpen(true);
         } else {
           setIsLearningHubOpen(false);
@@ -171,6 +172,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       window.removeEventListener('navigation_tab_change', syncLearningHubFromUrl);
     };
   }, []);
+
+  React.useEffect(() => {
+    // When currentStudent changes or when inspecting a student from Admin/Teacher Portal, default to Student Main View
+    if (currentStudent) {
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/student')) {
+        setIsLearningHubOpen(false);
+      }
+    }
+  }, [currentStudent]);
 
   React.useEffect(() => {
     const handlePushClick = (e: Event) => {
