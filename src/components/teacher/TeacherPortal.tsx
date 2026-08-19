@@ -188,7 +188,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
     return globalTasks
       .filter((task) => {
-        // Teachers see ALL tasks assigned to their classes, teacherId, or teacherName
+        // RULE: Teacher ONLY sees unrecorded_session AND missing_record_link tasks (NO Quizlet tasks)
+        if (task.type === 'missing_quizlet') return false;
+
         const matchesClass = assignedClasses.some((c) => String(c.id) === String(task.classId));
         const matchesUid = task.teacherId === teacherUid;
         const tNameLower = (task.teacherName || '').toLowerCase().trim();
@@ -210,7 +212,6 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
         isOverdue: item.overdueDays > 0,
         sessionId: item.sessionId,
-        missingStudents: item.missingStudents,
       }));
   }, [currentUser, assignedClasses, classes, sessions, students]);
 

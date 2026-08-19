@@ -90,6 +90,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       const assignedClassIds = new Set(assignedClasses.map((c) => String(c.id)));
 
       return tasks.filter((t) => {
+        if (t.type === 'missing_quizlet') return false;
+
         const matchesClass = assignedClassIds.has(String(t.classId));
         const matchesUid = t.teacherId === teacherUid;
         const tNameLower = (t.teacherName || '').toLowerCase().trim();
