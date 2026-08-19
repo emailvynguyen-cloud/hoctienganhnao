@@ -153,6 +153,7 @@ export interface Session {
   isExcusedAbsenceSession?: boolean; // Lớp nghỉ có phép (không tính phí)
   hasNoHomework?: boolean; // Tùy chọn đánh dấu buổi học không có bài tập về nhà
   hasNoQuizlet?: boolean; // Tùy chọn đánh dấu buổi học không sử dụng/không có link Quizlet
+  hasNoRecordLink?: boolean; // Tùy chọn đánh dấu buổi học không cần/không có link Record
   createdAt?: string;
 }
 

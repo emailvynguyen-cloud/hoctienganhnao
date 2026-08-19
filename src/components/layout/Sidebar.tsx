@@ -22,8 +22,11 @@ import {
   Sparkles,
   Shield,
   CreditCard,
-  Key
+  Key,
+  AlertTriangle
 } from 'lucide-react';
+import { StorageEngine } from '../../lib/storage';
+import { calculateGlobalPendingTasks } from '../../lib/pendingTasksEngine';
 
 interface SidebarProps {
   currentUser: User | null;
@@ -65,6 +68,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
   const role = currentUser?.role || 'student';
 
+  const teacherPendingTasksCount = React.useMemo(() => {
+    if (role !== 'teacher') return 0;
+    try {
+      const classes = StorageEngine.getClasses();
+      const sessions = StorageEngine.getSessions();
+      const students = StorageEngine.getStudents();
+      const dismissed = StorageEngine.getDismissedPendingTaskIds();
+      const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissed);
+      const teacherUid = currentUser?.uid || '';
+      const teacherName = (currentUser?.displayName || '').toLowerCase();
+
+      return tasks.filter((t) => {
+        if (t.type === 'missing_quizlet') return false;
+        const matchesUid = t.teacherId === teacherUid;
+        const matchesName = t.teacherName.toLowerCase() === teacherName || (teacherName && t.teacherName.toLowerCase().includes(teacherName));
+        return matchesUid || matchesName;
+      }).length;
+    } catch {
+      return 0;
+    }
+  }, [role, currentUser]);
+
   // BUILD ROLE-SPECIFIC MENU GROUPS (MEMOIZED)
   const menuGroups = React.useMemo((): MenuGroup[] => {
     if (role === 'student') {
@@ -101,6 +126,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           groupTitle: 'GIẢNG DẠY',
           items: [
             { id: 'tch_home', title: 'Dashboard', path: '/teacher?tab=today', icon: Home },
+            {
+              id: 'tch_pending_tasks',
+              title: 'Công Việc Cần Xử Lý',
+              path: '/teacher?tab=pending_tasks',
+              icon: AlertTriangle,
+              badge: teacherPendingTasksCount,
+            },
             { id: 'tch_grading', title: 'Chấm Bài Tập (Feedback)', path: '/teacher?tab=grading', icon: CheckSquare },
             { id: 'tch_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/teacher?tab=learning_hub', icon: BookOpen },
             { id: 'tch_classes', title: 'Lớp Học Phụ Trách', path: '/teacher?tab=all_classes', icon: Users },
@@ -308,6 +340,18 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     {(!isCollapsed || isMobileOpen) && (
                       <span className="truncate flex-1 text-left tracking-tight">
                         {item.title}
+                      </span>
+                    )}
+
+                    {item.badge !== undefined && (!isCollapsed || isMobileOpen) && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 transition-colors ${
+                          Number(item.badge) > 0
+                            ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        {item.badge}
                       </span>
                     )}
 

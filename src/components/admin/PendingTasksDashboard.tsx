@@ -53,7 +53,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
 }) => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
-  const [filterType, setFilterType] = useState<'all' | 'unrecorded' | 'missing_quizlet' | 'overdue' | 'today'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'unrecorded' | 'missing_quizlet' | 'missing_record_link' | 'overdue' | 'today'>('all');
   const [selectedTeacherFilter, setSelectedTeacherFilter] = useState<string>('all');
 
   const handleDismissTask = (taskId: string) => {
@@ -107,6 +107,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
 
       if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;
       if (filterType === 'missing_quizlet' && task.type !== 'missing_quizlet') return false;
+      if (filterType === 'missing_record_link' && task.type !== 'missing_record_link') return false;
       if (filterType === 'overdue' && task.overdueDays === 0) return false;
       if (filterType === 'today' && task.overdueDays !== 0) return false;
 
@@ -351,9 +352,19 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
                       {/* TASK HEADER & OVERDUE BADGE */}
                       <div className="flex flex-wrap items-center justify-between gap-2 font-black">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm">{task.type === 'unrecorded_session' ? '🔴' : '🟠'}</span>
+                          <span className="text-sm">
+                            {task.type === 'unrecorded_session'
+                              ? '🔴'
+                              : task.type === 'missing_record_link'
+                              ? '🎥'
+                              : '🟠'}
+                          </span>
                           <span className="uppercase tracking-wider font-extrabold text-[#3F4146] dark:text-white">
-                            {task.type === 'unrecorded_session' ? 'Chưa Nhập Buổi Học' : 'Chưa Thêm Quizlet'}
+                            {task.type === 'unrecorded_session'
+                              ? 'Chưa Nhập Buổi Học'
+                              : task.type === 'missing_record_link'
+                              ? 'Chưa Có Link Record'
+                              : 'Chưa Thêm Quizlet'}
                           </span>
 
                           <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold border uppercase shadow-2xs ${priorityBg}`}>
@@ -370,6 +381,19 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
                               className="px-3 py-1.5 rounded-xl bg-[#B8CEE0] hover:bg-[#A3BFD5] text-[#2C3B49] font-extrabold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0 border border-[#A5C3DA]"
                             >
                               + Nhập Buổi Ngay ↗
+                            </button>
+                          )}
+
+                          {task.type === 'missing_record_link' && onOpenAddSession && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetSession = sessions.find((s) => String(s.id) === String(task.sessionId));
+                                onOpenAddSession(task.classId, targetSession);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0 border border-purple-300"
+                            >
+                              + Thêm Link Record ↗
                             </button>
                           )}
 

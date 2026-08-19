@@ -2,8 +2,8 @@ import { Class, Session, Student, User, getStudentQuizletUrl } from '../types';
 import { StorageEngine } from './storage';
 
 export interface PendingTaskItem {
-  id: string; // Stable canonical ID: unrecorded_${classId}_${dateISO} OR quizlet_${sessionId}
-  type: 'unrecorded_session' | 'missing_quizlet';
+  id: string; // Stable canonical ID: unrecorded_${classId}_${dateISO} OR quizlet_${sessionId} OR record_link_${sessionId}
+  type: 'unrecorded_session' | 'missing_quizlet' | 'missing_record_link';
   classId: string;
   className: string;
   teacherId: string;
@@ -279,12 +279,49 @@ export function calculateGlobalPendingTasks(
     }
   });
 
+  // -------------------------------------------------------------------------
+  // SOURCE C: MISSING RECORD LINK (🎥 CHƯA CÓ LINK RECORD BUỔI HỌC)
+  // -------------------------------------------------------------------------
+  (sessions || []).forEach((session) => {
+    if (!session || !session.classId) return;
+    if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession || session.hasNoRecordLink) return;
+
+    // Check if recordLink is missing or empty
+    const hasRecordLink = !!session.recordLink && session.recordLink.trim().length > 0;
+    if (hasRecordLink) return;
+
+    const recordLinkTaskId = `record_link_${session.id}`;
+    if (dismissedSet.has(recordLinkTaskId)) return;
+
+    const cls = (classes || []).find((c) => String(c.id) === String(session.classId));
+    const className = session.className || cls?.className || 'Lớp Học';
+    const teacherId = session.teacherId || cls?.teacherId || 'u_teacher';
+    const teacherName = session.teacherName || cls?.teacherName || 'Giáo viên';
+
+    const overdueInfo = calculateOverdueInfo(todayISO, session.date);
+    tasks.push({
+      id: recordLinkTaskId,
+      type: 'missing_record_link',
+      classId: session.classId,
+      className,
+      teacherId,
+      teacherName,
+      dateISO: session.date,
+      scheduleTimeStr: `Buổi #${session.sessionNumber} • Ngày ${formatSessionDate(session.date)}`,
+      sessionId: session.id,
+      ...overdueInfo,
+    });
+  });
+
   tasks.sort((a, b) => {
     if (b.overdueDays !== a.overdueDays) {
       return b.overdueDays - a.overdueDays;
     }
     if (a.type !== b.type) {
-      return a.type === 'unrecorded_session' ? -1 : 1;
+      if (a.type === 'unrecorded_session') return -1;
+      if (b.type === 'unrecorded_session') return 1;
+      if (a.type === 'missing_record_link') return -1;
+      if (b.type === 'missing_record_link') return 1;
     }
     return b.dateISO.localeCompare(a.dateISO);
   });
