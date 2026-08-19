@@ -179,27 +179,26 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     );
   });
 
-  // SINGLE SOURCE OF TRUTH: TEACHER PENDING UNRECORDED SESSIONS (READ-ONLY VIEW FROM CANONICAL ENGINE)
+  // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM CANONICAL ENGINE)
   const teacherPendingTasks = React.useMemo(() => {
     const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
     const globalTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
     const teacherUid = currentUser?.uid || '';
-    const teacherName = (currentUser?.displayName || '').toLowerCase();
+    const teacherName = (currentUser?.displayName || '').toLowerCase().trim();
 
     return globalTasks
       .filter((task) => {
-        // 1. Teachers ONLY handle unrecorded_session tasks in Pending Tasks
-        if (task.type !== 'unrecorded_session') return false;
-
-        // 2. Teachers ONLY see tasks of their assigned classes / teacherId / teacherName
+        // Teachers see ALL tasks assigned to their classes, teacherId, or teacherName
         const matchesClass = assignedClasses.some((c) => String(c.id) === String(task.classId));
         const matchesUid = task.teacherId === teacherUid;
-        const matchesName = task.teacherName.toLowerCase() === teacherName || (teacherName && task.teacherName.toLowerCase().includes(teacherName));
+        const tNameLower = (task.teacherName || '').toLowerCase().trim();
+        const matchesName = tNameLower === teacherName || (teacherName && tNameLower.includes(teacherName)) || (teacherName && teacherName.includes(tNameLower));
 
         return matchesClass || matchesUid || matchesName;
       })
       .map((item) => ({
         id: item.id,
+        type: item.type,
         classId: item.classId,
         className: item.className,
         teacherId: item.teacherId,
@@ -210,6 +209,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         overdueDays: item.overdueDays,
         penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
         isOverdue: item.overdueDays > 0,
+        sessionId: item.sessionId,
+        missingStudents: item.missingStudents,
       }));
   }, [currentUser, assignedClasses, classes, sessions, students]);
 
@@ -544,7 +545,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {teacherPendingTasks.map((task) => {
                 const isRecordLinkTask = task.type === 'missing_record_link';
-                const targetSession = isRecordLinkTask
+                const isQuizletTask = task.type === 'missing_quizlet';
+                const targetSession = (isRecordLinkTask || isQuizletTask)
                   ? (sessions || []).find((s) => String(s.id) === String(task.sessionId))
                   : undefined;
 
@@ -554,6 +556,8 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                     className={`p-5 rounded-3xl border transition space-y-3 shadow-2xs relative ${
                       isRecordLinkTask
                         ? 'bg-purple-50/30 dark:bg-slate-800/80 border-purple-200 dark:border-purple-900/50'
+                        : isQuizletTask
+                        ? 'bg-amber-50/30 dark:bg-slate-800/80 border-amber-200 dark:border-amber-900/50'
                         : task.isOverdue
                         ? 'bg-[#D9AEB0]/15 dark:bg-slate-800/80 border-[#D9AEB0]'
                         : 'bg-[#E4C3A8]/15 dark:bg-slate-800/80 border-[#E4C3A8]'
@@ -567,6 +571,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                       {isRecordLinkTask ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-200 uppercase tracking-wider flex items-center">
                           <Video className="w-3 h-3 mr-1" /> 🎥 Chưa có link Record
+                        </span>
+                      ) : isQuizletTask ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 uppercase tracking-wider flex items-center">
+                          <BookOpen className="w-3 h-3 mr-1" /> 🟠 Chưa thêm Quizlet
                         </span>
                       ) : task.isOverdue ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#D9AEB0]/40 text-[#5A2C2F] dark:text-rose-200 border border-[#D9AEB0] uppercase tracking-wider flex items-center">
@@ -593,13 +601,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                         <div className="text-purple-700 dark:text-purple-300 font-medium">
                           Nội dung: <strong>Bổ sung link Video Record cho buổi học</strong>
                         </div>
+                      ) : isQuizletTask ? (
+                        <div className="text-amber-800 dark:text-amber-300 font-medium">
+                          Chưa thêm Quizlet cho: <strong>{(task.missingStudents || []).join(', ') || 'Học viên'}</strong>
+                        </div>
                       ) : (
                         <div className="text-[#6F7278] font-medium">
                           Hạn nhập buổi: <strong className="text-[#3F4146] dark:text-slate-200 font-mono">{task.dueDeadlineStr}</strong>
                         </div>
                       )}
 
-                      {task.isOverdue && !isRecordLinkTask && (
+                      {task.isOverdue && !isRecordLinkTask && !isQuizletTask && (
                         <div className="pt-1 text-[#5A2C2F] dark:text-rose-300 font-bold border-t border-dashed border-[#E3E0DA] dark:border-slate-800 flex items-center justify-between">
                           <span>⚠️ Quá hạn: {task.overdueDays} ngày</span>
                           <span className="font-mono text-[#5A2C2F] font-black">-{formatVND(task.penaltyAmount)}</span>
@@ -613,6 +625,13 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                         className="w-full py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition shadow-2xs flex items-center justify-center cursor-pointer"
                       >
                         <Video className="w-4 h-4 mr-1.5" /> [Thêm Link Record]
+                      </button>
+                    ) : isQuizletTask ? (
+                      <button
+                        onClick={() => onOpenAddSession(task.classId, targetSession)}
+                        className="w-full py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs transition shadow-2xs flex items-center justify-center cursor-pointer"
+                      >
+                        <BookOpen className="w-4 h-4 mr-1.5" /> [Bổ Sung Quizlet]
                       </button>
                     ) : (
                       <button

@@ -77,13 +77,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       const dismissed = StorageEngine.getDismissedPendingTaskIds();
       const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissed);
       const teacherUid = currentUser?.uid || '';
-      const teacherName = (currentUser?.displayName || '').toLowerCase();
+      const teacherName = (currentUser?.displayName || '').toLowerCase().trim();
+
+      const assignedClasses = (classes || []).filter((c) => {
+        if (!c || c.status === 'archived') return false;
+        return (
+          c.teacherId === teacherUid ||
+          (c.teacherName && c.teacherName.toLowerCase().trim() === teacherName) ||
+          (teacherName && (c.teacherName || '').toLowerCase().includes(teacherName))
+        );
+      });
+      const assignedClassIds = new Set(assignedClasses.map((c) => String(c.id)));
 
       return tasks.filter((t) => {
-        if (t.type === 'missing_quizlet') return false;
+        const matchesClass = assignedClassIds.has(String(t.classId));
         const matchesUid = t.teacherId === teacherUid;
-        const matchesName = t.teacherName.toLowerCase() === teacherName || (teacherName && t.teacherName.toLowerCase().includes(teacherName));
-        return matchesUid || matchesName;
+        const tNameLower = (t.teacherName || '').toLowerCase().trim();
+        const matchesName =
+          tNameLower === teacherName ||
+          (teacherName && tNameLower.includes(teacherName)) ||
+          (teacherName && teacherName.includes(tNameLower));
+
+        return matchesClass || matchesUid || matchesName;
       }).length;
     } catch {
       return 0;
