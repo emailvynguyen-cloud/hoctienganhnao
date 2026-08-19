@@ -110,35 +110,47 @@ export const ClassRulesModal: React.FC<ClassRulesModalProps> = ({
           </div>
         )}
 
-        {/* Modal Body: Rules Content */}
+        {/* Modal Body: Structured Rules Content */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 leading-relaxed text-xs sm:text-sm font-medium">
-          {isEditing ? (
-            <div className="space-y-2">
-              <label className="block font-black text-pink-900 dark:text-pink-300 text-xs">
-                Chỉnh sửa văn bản Nội quy (Hỗ trợ xuống dòng và đánh số thứ tự):
-              </label>
-              <textarea
-                rows={14}
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="w-full p-4 rounded-2xl border-2 border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-400 bg-pink-50/20 dark:bg-slate-800 text-xs font-mono leading-relaxed"
-                placeholder="Nhập nội quy lớp học tại đây..."
-              />
-            </div>
-          ) : !rulesText || !rulesText.trim() ? (
-            <div className="p-8 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 text-center space-y-2">
-              <p className="text-sm font-black text-slate-700 dark:text-slate-200">
-                Trung tâm chưa cập nhật nội quy.
-              </p>
-              <p className="text-xs text-slate-400 font-medium">
-                Vui lòng quay lại sau hoặc liên hệ giáo viên phụ trách để biết thêm thông tin chi tiết.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-pink-50/40 dark:bg-slate-800/50 p-5 rounded-3xl border border-pink-100 dark:border-slate-800 whitespace-pre-wrap font-sans space-y-2 text-slate-800 dark:text-slate-100">
-              {rulesText}
-            </div>
-          )}
+          {(() => {
+            const classRules = StorageEngine.getSystemRules().filter(
+              (r) => r.type === 'class_rule' && r.isActive
+            );
+
+            if (classRules.length === 0) {
+              return (
+                <div className="p-8 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 text-center space-y-2">
+                  <p className="text-sm font-black text-slate-700 dark:text-slate-200">
+                    Trung tâm chưa cập nhật nội quy lớp học.
+                  </p>
+                  <p className="text-xs text-slate-400 font-medium">
+                    Vui lòng quay lại sau hoặc liên hệ giáo viên phụ trách để biết thêm thông tin chi tiết.
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {classRules.map((rule, idx) => (
+                  <div
+                    key={rule.id}
+                    className="bg-pink-50/40 dark:bg-slate-800/50 p-4 rounded-2xl border border-pink-100 dark:border-slate-800 space-y-1 text-slate-800 dark:text-slate-100"
+                  >
+                    <h4 className="font-extrabold text-xs text-pink-950 dark:text-pink-200 flex items-center">
+                      <span className="w-5 h-5 rounded-full bg-pink-200 text-pink-900 text-[10px] font-black flex items-center justify-center mr-2 shrink-0">
+                        {rule.order || idx + 1}
+                      </span>
+                      {rule.title}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 pl-7 leading-relaxed font-normal whitespace-pre-wrap">
+                      {rule.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Modal Footer */}

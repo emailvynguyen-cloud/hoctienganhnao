@@ -518,3 +518,14 @@ export interface StudentPracticeAttempt {
   timeSpentSeconds: number;
   completedAt: string;
 }
+
+export interface SystemRule {
+  id: string;
+  type: 'class_rule' | 'teacher_rule';
+  title: string;
+  content: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -9,6 +9,7 @@ import { ClassDetailsView } from './ClassDetailsView';
 import { AiStudioPortal } from './AiStudioPortal';
 import { StudentPortal } from '../student/StudentPortal';
 import { AdminLearningHub } from './learning/AdminLearningHub';
+import { AdminRulesManagement } from './AdminRulesManagement';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
 import { StorageEngine, generateStudentCode } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
@@ -1608,117 +1609,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
         </div>
       )}
 
-      {/* TAB: CLASS RULES MANAGEMENT */}
+      {/* TAB: RULES MANAGEMENT (SUPER ADMIN & ADMIN) */}
       {activeTab === 'class_rules' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-pink-200 dark:border-slate-800 space-y-6 shadow-xs text-slate-800 dark:text-white">
-          
-          {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 dark:border-slate-800 pb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-amber-400 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
-                📋
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-slate-900 dark:text-white">
-                  Quản Lý Nội Quy Lớp Học Trung Tâm
-                </h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  {isSuperAdmin
-                    ? 'SUPER ADMIN có thể tạo, chỉnh sửa và cập nhật nội quy lớp học. Tự động đồng bộ thời gian thực đến tất cả học viên & giáo viên.'
-                    : 'Xem nội quy lớp học hiện tại của trung tâm Ms. Vy English.'}
-                </p>
-              </div>
-            </div>
-
-            {isSuperAdmin && (
-              <div className="flex items-center space-x-2 shrink-0">
-                {isEditingClassRules ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        setIsEditingClassRules(false);
-                        setClassRulesEditValue(StorageEngine.getClassRules());
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-extrabold text-xs transition cursor-pointer"
-                    >
-                      Hủy Bỏ
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!classRulesEditValue || !classRulesEditValue.trim()) {
-                          alert('Nội quy không được để rỗng!');
-                          return;
-                        }
-                        StorageEngine.saveClassRules(classRulesEditValue.trim(), currentUser);
-                        setIsEditingClassRules(false);
-                        alert('Đã lưu và cập nhật Nội quy lớp học thành công! Dữ liệu đã được đồng bộ thời gian thực đến tất cả học viên.');
-                      }}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4 mr-1.5 hidden" /> 💾 Lưu Cập Nhật Nội Quy
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setClassRulesEditValue(StorageEngine.getClassRules());
-                      setIsEditingClassRules(true);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-black text-xs shadow-md transition flex items-center cursor-pointer"
-                  >
-                    <Edit2 className="w-4 h-4 mr-1.5" /> ✏️ Chỉnh Sửa Nội Quy
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Rules Editor or Display View */}
-          {isEditingClassRules && isSuperAdmin ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-black text-pink-900 dark:text-pink-300 uppercase tracking-wider">
-                  Nội dung văn bản nội quy (Hỗ trợ xuống dòng, gạch đầu dòng - và đánh số thứ tự 1., 2.):
-                </label>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  💡 Sử dụng phím Enter xuống dòng để phân đoạn rõ ràng
-                </span>
-              </div>
-              <textarea
-                rows={14}
-                value={classRulesEditValue}
-                onChange={(e) => setClassRulesEditValue(e.target.value)}
-                className="w-full p-4 rounded-2xl border-2 border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-400 bg-pink-50/20 dark:bg-slate-800 text-xs font-mono leading-relaxed text-slate-900 dark:text-white font-semibold"
-                placeholder="Nhập nội quy lớp học tại đây..."
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {(() => {
-                const currentRules = StorageEngine.getClassRules();
-                if (!currentRules || !currentRules.trim()) {
-                  return (
-                    <div className="p-8 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 text-center space-y-2">
-                      <p className="text-sm font-black text-slate-700 dark:text-slate-200">
-                        Trung tâm chưa cập nhật nội quy.
-                      </p>
-                      <p className="text-xs text-slate-400 font-medium">
-                        {isSuperAdmin ? 'Hãy nhấn nút "✏️ Chỉnh Sửa Nội Quy" ở trên để tạo nội quy đầu tiên.' : 'Vui lòng quay lại sau!'}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="p-6 rounded-3xl bg-pink-50/40 dark:bg-slate-800/50 border border-pink-100 dark:border-slate-800 whitespace-pre-wrap font-sans space-y-3 leading-relaxed text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-medium">
-                    {currentRules}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-        </div>
+        <AdminRulesManagement currentUser={currentUser} />
       )}
 
       {/* TAB: QUẢN LÝ MÃ HỌC VIÊN (SUPER ADMIN & ADMIN) */}

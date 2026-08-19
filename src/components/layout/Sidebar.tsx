@@ -157,9 +157,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           ],
         },
         {
-          groupTitle: 'THỐNG KÊ & BÁO CÁO',
+          groupTitle: 'THỐNG KÊ & NỘI QUY',
           items: [
             { id: 'tch_revenue', title: 'Doanh Thu Lương Dạy', path: '/teacher?tab=revenue', icon: DollarSign },
+            { id: 'tch_rules', title: 'Nội Quy Giáo Viên', path: '/teacher?tab=rules', icon: BookOpen },
           ],
         },
       ];

@@ -17,6 +17,7 @@ import {
   InternalNoteEntry,
   StudentAbsenceRecord,
   isBillableStudentSession,
+  SystemRule,
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -51,6 +52,7 @@ const STORAGE_KEYS = {
   WAIVED_PENALTIES: 'vy_waived_penalties_v4',
   LAST_STUDENT_PORTAL_URL: 'vy_last_student_portal_url_v4',
   CURRENT_STUDENT_SESSION: 'vy_current_student_session_v4',
+  SYSTEM_RULES: 'vy_system_rules_v1',
 };
 
 export function generateStudentCode(existingCodes: string[] = []): string {
@@ -72,6 +74,79 @@ export function generateStudentCode(existingCodes: string[] = []): string {
   }
   return code;
 }
+
+export const INITIAL_SYSTEM_RULES: SystemRule[] = [
+  {
+    id: 'rule_class_01',
+    type: 'class_rule',
+    title: 'Đi học đúng giờ và chuẩn bị thiết bị',
+    content: 'Học viên cần tham gia lớp học trước 5-10 phút để kiểm tra micro, camera và mạng internet. Đi trễ quá 15 phút không có lý do hợp lệ sẽ tính nghỉ không phép.',
+    order: 1,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_class_02',
+    type: 'class_rule',
+    title: 'Hoàn thành bài tập về nhà đúng hạn',
+    content: 'Hoàn thành và nộp bài tập về nhà trên Học Viên Portal trước buổi học kế tiếp để giáo viên nhận xét và cộng sao tích lũy.',
+    order: 2,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_class_03',
+    type: 'class_rule',
+    title: 'Tương tác tích cực và tôn trọng lớp học',
+    content: 'Bật camera trong suốt buổi học online, chủ động giơ tay phát biểu và tôn trọng giáo viên cùng các bạn học.',
+    order: 3,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_teacher_01',
+    type: 'teacher_rule',
+    title: 'Hoàn thành lesson record sau mỗi buổi học',
+    content: 'Giáo viên cần nhập đầy đủ nội dung bài dạy, nhận xét học viên và điểm danh ngay sau khi kết thúc buổi học.',
+    order: 1,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_teacher_02',
+    type: 'teacher_rule',
+    title: 'Cập nhật Video Record buổi học',
+    content: 'Bổ sung đường dẫn Video Record cho buổi học trên hệ thống trong vòng 24 giờ kể từ khi lớp kết thúc.',
+    order: 2,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_teacher_03',
+    type: 'teacher_rule',
+    title: 'Cập nhật Quizlet và tài nguyên học tập',
+    content: 'Gán các bộ từ vựng Quizlet và tài liệu học tập phù hợp theo đúng chương trình dạy của trung tâm.',
+    order: 3,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    id: 'rule_teacher_04',
+    type: 'teacher_rule',
+    title: 'Thông báo trước khi thay đổi lịch dạy',
+    content: 'Báo trước tối thiểu 12 - 24 giờ cho Ban Quản Lý nếu có nhu cầu thay đổi lịch học hoặc xin nghỉ dạy đột xuất.',
+    order: 4,
+    isActive: true,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+];
 
 export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
 
@@ -161,11 +236,98 @@ export const StorageEngine = {
       [STORAGE_KEYS.USERS]: this.getUsers(),
       [STORAGE_KEYS.BANK_CONFIG]: this.getBankConfig(),
       [STORAGE_KEYS.CLASS_RULES]: this.getClassRules(),
+      [STORAGE_KEYS.SYSTEM_RULES]: this.getSystemRules(),
       [STORAGE_KEYS.DISMISSED_PENDING_TASKS]: this.getDismissedPendingTaskIds(),
     };
   },
 
+  getSystemRules(): SystemRule[] {
+    const raw = getItem<SystemRule[]>(STORAGE_KEYS.SYSTEM_RULES, INITIAL_SYSTEM_RULES) || [];
+    return raw.sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+  saveSystemRules(rules: SystemRule[]) {
+    setItem(STORAGE_KEYS.SYSTEM_RULES, [...rules]);
+    this.syncAllToCloud();
+  },
+  addSystemRule(ruleData: Omit<SystemRule, 'id' | 'createdAt' | 'updatedAt'>, actorUser?: User | null): SystemRule {
+    const rules = this.getSystemRules();
+    const todayISO = new Date().toISOString().split('T')[0];
+    const newRule: SystemRule = {
+      ...ruleData,
+      id: `rule_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      createdAt: todayISO,
+      updatedAt: todayISO,
+    };
+    rules.push(newRule);
+    this.saveSystemRules(rules);
+    this.addAuditLog(
+      actorUser || null,
+      'ADD_SYSTEM_RULE',
+      ruleData.type === 'class_rule' ? 'student' : 'teacher',
+      newRule.id,
+      newRule.title,
+      undefined,
+      undefined,
+      `Thêm nội quy mới (${ruleData.type === 'class_rule' ? 'Lớp học' : 'Giáo viên'}): ${newRule.title}`
+    );
+    return newRule;
+  },
+  updateSystemRule(rule: SystemRule, actorUser?: User | null) {
+    const rules = this.getSystemRules();
+    const idx = rules.findIndex((r) => r.id === rule.id);
+    if (idx !== -1) {
+      rules[idx] = {
+        ...rule,
+        updatedAt: new Date().toISOString().split('T')[0],
+      };
+      this.saveSystemRules(rules);
+      this.addAuditLog(
+        actorUser || null,
+        'UPDATE_SYSTEM_RULE',
+        rule.type === 'class_rule' ? 'student' : 'teacher',
+        rule.id,
+        rule.title,
+        undefined,
+        undefined,
+        `Cập nhật nội quy: ${rule.title}`
+      );
+    }
+  },
+  deleteSystemRule(ruleId: string, actorUser?: User | null) {
+    const rules = this.getSystemRules();
+    const target = rules.find((r) => r.id === ruleId);
+    const updated = rules.filter((r) => r.id !== ruleId);
+    this.saveSystemRules(updated);
+    if (target) {
+      this.addAuditLog(
+        actorUser || null,
+        'DELETE_SYSTEM_RULE',
+        target.type === 'class_rule' ? 'student' : 'teacher',
+        target.id,
+        target.title,
+        undefined,
+        undefined,
+        `Xóa nội quy: ${target.title}`
+      );
+    }
+  },
+  toggleSystemRuleActive(ruleId: string, actorUser?: User | null) {
+    const rules = this.getSystemRules();
+    const target = rules.find((r) => r.id === ruleId);
+    if (target) {
+      target.isActive = !target.isActive;
+      target.updatedAt = new Date().toISOString().split('T')[0];
+      this.saveSystemRules(rules);
+    }
+  },
+
   getClassRules(): string {
+    const activeClassRules = this.getSystemRules().filter((r) => r.type === 'class_rule' && r.isActive);
+    if (activeClassRules.length > 0) {
+      return activeClassRules
+        .map((r, idx) => `${idx + 1}. ${r.title.toUpperCase()}\n${r.content}`)
+        .join('\n\n');
+    }
     return getItem<string>(STORAGE_KEYS.CLASS_RULES, INITIAL_CLASS_RULES);
   },
   saveClassRules(rules: string, authorUser?: User | null) {

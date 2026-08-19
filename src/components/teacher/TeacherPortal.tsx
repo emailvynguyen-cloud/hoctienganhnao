@@ -64,7 +64,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onSetSubViewNavigation,
   targetSubmissionId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'today' | 'pending_tasks' | 'grading' | 'schedule' | 'all_classes' | 'revenue' | 'ai_studio' | 'learning_hub'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'pending_tasks' | 'grading' | 'schedule' | 'all_classes' | 'revenue' | 'ai_studio' | 'learning_hub' | 'rules'>('today');
   const [selectedClassIdForRevenueDetails, setSelectedClassIdForRevenueDetails] = useState<string | null>(null);
   const selectedClassForRevenueDetails = selectedClassIdForRevenueDetails
     ? (classes || []).find((c) => c && c.id === selectedClassIdForRevenueDetails) || null
@@ -1413,6 +1413,68 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* TAB 6: AI STUDIO PORTAL FOR TEACHERS */}
       {activeTab === 'ai_studio' && (
         <AiStudioPortal currentUser={currentUser} />
+      )}
+
+      {/* TAB 7: NỘI QUY GIÁO VIÊN */}
+      {activeTab === 'rules' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-[#E4C3A8]/40 via-amber-50/50 to-[#B8CEE0]/30 border border-[#E4C3A8] dark:border-slate-800 space-y-2">
+            <div className="flex items-center space-x-3">
+              <span className="p-2.5 rounded-2xl bg-[#E4C3A8] text-[#5C3F29] font-black text-xl shadow-2xs">
+                📋
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-[#3F4146] dark:text-white">
+                  Nội Quy Giáo Viên Trung Tâm Ms. Vy English
+                </h2>
+                <p className="text-xs font-semibold text-[#6F7278] dark:text-slate-300">
+                  Quy định giảng dạy, cập nhật lesson record, điểm danh và văn hóa làm việc chính thức tại trung tâm. (Chỉ đọc)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {(() => {
+            const teacherRules = StorageEngine.getSystemRules().filter(
+              (r) => r.type === 'teacher_rule' && r.isActive
+            );
+            if (teacherRules.length === 0) {
+              return (
+                <div className="p-10 text-center bg-white dark:bg-slate-800 rounded-3xl border border-[#E3E0DA] dark:border-slate-800 text-slate-500 space-y-2">
+                  <p className="text-sm font-extrabold text-[#3F4146] dark:text-white">
+                    Chưa có nội quy giáo viên nào được ban hành.
+                  </p>
+                  <p className="text-xs font-medium text-[#6F7278]">
+                    Vui lòng liên hệ Super Admin (Ms. Vy) để biết thêm thông tin chi tiết.
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 gap-4">
+                {teacherRules.map((rule, idx) => (
+                  <div
+                    key={rule.id}
+                    className="p-5 rounded-3xl bg-white dark:bg-slate-800 border border-[#E4C3A8] dark:border-slate-800 space-y-3 shadow-2xs"
+                  >
+                    <div className="flex items-center space-x-3 border-b border-[#E3E0DA] dark:border-slate-800 pb-2">
+                      <span className="w-8 h-8 rounded-2xl bg-[#E4C3A8]/40 text-[#5C3F29] font-black text-xs flex items-center justify-center">
+                        #{rule.order || idx + 1}
+                      </span>
+                      <h3 className="font-extrabold text-sm text-[#3F4146] dark:text-white">
+                        {rule.title}
+                      </h3>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-[#F8F7F5] dark:bg-slate-900 border border-[#E3E0DA] dark:border-slate-800 text-xs font-medium text-[#3F4146] dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+                      {rule.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* MODAL: CHI TIẾT BUỔI DẠY & LƯƠNG BUỔI HỌC */}
