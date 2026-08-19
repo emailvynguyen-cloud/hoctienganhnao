@@ -7,6 +7,7 @@ import { HomeworkGradingWidget } from '../admin/HomeworkGradingWidget';
 import { AiStudioPortal } from '../admin/AiStudioPortal';
 import { AdminLearningHub } from '../admin/learning/AdminLearningHub';
 import { StorageEngine } from '../../lib/storage';
+import { calculateGlobalPendingTasks } from '../../lib/pendingTasksEngine';
 import {
   Calendar,
   Clock,
@@ -178,17 +179,25 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     );
   });
 
-  // SINGLE SOURCE OF TRUTH: TEACHER PENDING UNRECORDED SESSIONS (NO OTHER TEACHER DATA, NO QUIZLET)
+  // SINGLE SOURCE OF TRUTH: TEACHER PENDING UNRECORDED SESSIONS (READ-ONLY VIEW FROM CANONICAL ENGINE)
   const teacherPendingTasks = React.useMemo(() => {
-    const currentTeacherId = currentUser?.uid || currentUser?.displayName || 'u_teacher';
-    const summary = calculateTeacherPenaltiesAndRevenue(
-      currentTeacherId,
-      assignedClasses,
-      sessions
-    );
+    const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
+    const globalTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
+    const teacherUid = currentUser?.uid || '';
+    const teacherName = (currentUser?.displayName || '').toLowerCase();
 
-    return summary.penalties
-      .filter((item) => !item.isRecorded)
+    return globalTasks
+      .filter((task) => {
+        // 1. Teachers ONLY handle unrecorded_session tasks in Pending Tasks
+        if (task.type !== 'unrecorded_session') return false;
+
+        // 2. Teachers ONLY see tasks of their assigned classes / teacherId / teacherName
+        const matchesClass = assignedClasses.some((c) => String(c.id) === String(task.classId));
+        const matchesUid = task.teacherId === teacherUid;
+        const matchesName = task.teacherName.toLowerCase() === teacherName || (teacherName && task.teacherName.toLowerCase().includes(teacherName));
+
+        return matchesClass || matchesUid || matchesName;
+      })
       .map((item) => ({
         id: item.id,
         classId: item.classId,
@@ -199,10 +208,10 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         scheduleTimeStr: item.scheduleTimeStr,
         dueDeadlineStr: item.dueDeadlineStr,
         overdueDays: item.overdueDays,
-        penaltyAmount: item.penaltyAmount,
+        penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
         isOverdue: item.overdueDays > 0,
       }));
-  }, [currentUser, assignedClasses, sessions]);
+  }, [currentUser, assignedClasses, classes, sessions, students]);
 
   // REAL-TIME VIETNAM TIME (ICT / GMT+7) CALCULATION
   const getCurrentVietnamTime = () => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Class, Student, Session, User, getStudentQuizletUrl } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { calculateGlobalPendingTasks, PendingTaskItem } from '../../lib/pendingTasksEngine';
 import {
   Bell,
   Clock,
@@ -29,23 +30,9 @@ interface PendingTasksDashboardProps {
   onInspectClass?: (classId: string) => void;
 }
 
-export interface PendingTaskItem {
-  id: string;
-  type: 'unrecorded_session' | 'missing_quizlet';
-  classId: string;
-  className: string;
-  teacherId: string;
-  teacherName: string;
-  teacherAvatar?: string;
-  dateISO: string;
-  scheduleTimeStr: string;
-  overdueDays: number;
-  overdueBadgeText: string;
-  priorityColor: 'yellow' | 'orange' | 'red';
-  missingStudents?: string[];
-  sessionId?: string;
-}
 
+
+// Helper interface for Teacher Pending Groups
 export interface TeacherPendingGroup {
   teacherId: string;
   teacherName: string;
@@ -53,139 +40,7 @@ export interface TeacherPendingGroup {
   tasks: PendingTaskItem[];
 }
 
-function normalizeDateStr(dStr?: string): string {
-  if (!dStr) return '';
-  const clean = dStr.split('T')[0].trim();
-  const parts = clean.split(/[-/]/);
-  if (parts.length === 3) {
-    if (parts[0].length === 4) {
-      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    } else if (parts[2].length === 4) {
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    }
-  }
-  return clean;
-}
 
-function formatSessionDate(dateStr?: string): string {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  }
-  return dateStr;
-}
-
-function calculateOverdueInfo(todayISO: string, dateISO: string) {
-  const t = new Date(todayISO);
-  const d = new Date(dateISO);
-  const diffTime = t.getTime() - d.getTime();
-  const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 3600 * 24)));
-
-  let priorityColor: 'yellow' | 'orange' | 'red' = 'yellow';
-  if (diffDays >= 4) {
-    priorityColor = 'red';
-  } else if (diffDays >= 2) {
-    priorityColor = 'orange';
-  }
-
-  const overdueBadgeText = diffDays === 0 ? 'Hôm nay' : `Quá hạn ${diffDays} ngày`;
-
-  return {
-    overdueDays: diffDays,
-    overdueBadgeText,
-    priorityColor,
-  };
-}
-
-// Helper to extract past scheduled dates for a class strictly within its effective schedule period
-function getPastScheduledDates(cls: Class, daysBack: number = 45): string[] {
-  if (!cls || cls.status === 'paused' || cls.status === 'completed' || cls.status === 'archived') {
-    return [];
-  }
-
-  const result: string[] = [];
-  const now = new Date();
-  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-  const dayPatterns: { idx: number; pattern: RegExp }[] = [
-    { idx: 1, pattern: /T2|THỨ 2|THỨ HAI/i },
-    { idx: 2, pattern: /T3|THỨ 3|THỨ BA/i },
-    { idx: 3, pattern: /T4|THỨ 4|THỨ TƯ/i },
-    { idx: 4, pattern: /T5|THỨ 5|THỨ NĂM/i },
-    { idx: 5, pattern: /T6|THỨ 6|THỨ SÁU/i },
-    { idx: 6, pattern: /T7|THỨ 7|THỨ BẢY/i },
-    { idx: 0, pattern: /CN|CHỦ NHẬT/i },
-  ];
-
-  // Determine raw minimum date for current schedule
-  const rawMinDate = cls.scheduleEffectiveFrom || cls.startDate || (cls.createdAt ? cls.createdAt.split('T')[0] : '');
-
-  // For legacy classes created before effective dates were tracked:
-  // If no rawMinDate exists, fallback to earliest recorded session date or todayISO
-  let minAllowedDateISO = rawMinDate;
-  if (!minAllowedDateISO) {
-    const existingSessions = StorageEngine.getSessions().filter((s) => s && s.classId === cls.id && s.date);
-    if (existingSessions.length > 0) {
-      const sortedDates = existingSessions.map((s) => s.date).sort();
-      minAllowedDateISO = sortedDates[0];
-    } else {
-      minAllowedDateISO = todayISO; // For brand new classes with no sessions, don't generate past tasks before today
-    }
-  }
-
-  for (let i = 0; i <= daysBack; i++) {
-    const d = new Date();
-    d.setDate(now.getDate() - i);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-    // RULE 1: Do not generate tasks for current schedule if date is before minAllowedDateISO
-    if (iso < minAllowedDateISO) {
-      // Check if this past date falls inside a past schedule period in cls.scheduleHistory
-      if (cls.scheduleHistory && cls.scheduleHistory.length > 0) {
-        const matchingPastPeriod = cls.scheduleHistory.find((sp) => {
-          if (iso < sp.effectiveFrom) return false;
-          if (sp.effectiveUntil && iso > sp.effectiveUntil) return false;
-          return true;
-        });
-
-        if (matchingPastPeriod) {
-          const dayIdx = d.getDay();
-          const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
-          if (matchPattern && matchPattern.pattern.test(matchingPastPeriod.schedule)) {
-            result.push(iso);
-          }
-        }
-      }
-      continue;
-    }
-
-    // RULE 2: For dates >= minAllowedDateISO, evaluate against current schedule
-    const dayIdx = d.getDay();
-    const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
-    if (matchPattern && matchPattern.pattern.test(cls.schedule || '')) {
-      result.push(iso);
-    }
-  }
-
-  return result;
-}
-
-function getScheduleTimeStr(scheduleStr: string = '') {
-  const rangeMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-  const startTimeStr = rangeMatch ? rangeMatch[1].padStart(5, '0') : '18:00';
-  const endTimeStr = rangeMatch ? rangeMatch[2].padStart(5, '0') : '19:30';
-  return { startTimeStr, endTimeStr };
-}
-
-function isTodayEndTimePassed(scheduleStr: string = '') {
-  const now = new Date();
-  const { endTimeStr } = getScheduleTimeStr(scheduleStr);
-  const currentHH = String(now.getHours()).padStart(2, '0');
-  const currentMM = String(now.getMinutes()).padStart(2, '0');
-  const currentTimeStr = `${currentHH}:${currentMM}`;
-  return currentTimeStr >= endTimeStr;
-}
 
 export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React.memo(({
   classes = [],
@@ -223,120 +78,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
     const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const todayFmt = now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const tasks: PendingTaskItem[] = [];
-
-    // =========================================================================
-    // SOURCE A: THEO LỊCH HỌC CỐ ĐỊNH (🔴 CHƯA NHẬP BUỔI HỌC)
-    // =========================================================================
-    classes.forEach((cls) => {
-      if (!cls || !cls.id) return;
-      const pastDates = getPastScheduledDates(cls, 45);
-
-      pastDates.forEach((dateISO) => {
-        const isToday = dateISO === todayISO;
-        const isTimePassed = !isToday || isTodayEndTimePassed(cls.schedule);
-
-        if (isTimePassed) {
-          const targetDateNorm = normalizeDateStr(dateISO);
-          const recordedSession = sessions.find((s) => {
-            if (!s || !s.classId || !s.date) return false;
-            const isSameClass = String(s.classId) === String(cls.id);
-            const isSameDate = normalizeDateStr(s.date) === targetDateNorm;
-            return isSameClass && isSameDate;
-          });
-          const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
-          const penaltyTaskId = `penalty_${cls.id}_${dateISO}`;
-
-          if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId) && !dismissedTaskIds.includes(penaltyTaskId)) {
-            const overdueInfo = calculateOverdueInfo(todayISO, dateISO);
-            const { startTimeStr, endTimeStr } = getScheduleTimeStr(cls.schedule);
-
-            tasks.push({
-              id: unrecordedTaskId,
-              type: 'unrecorded_session',
-              classId: cls.id,
-              className: cls.className,
-              teacherId: cls.teacherId || cls.teacherName || 'u_teacher',
-              teacherName: cls.teacherName || 'Giáo viên',
-              dateISO,
-              scheduleTimeStr: `Lịch cố định (${startTimeStr} - ${endTimeStr}) • Ngày ${formatSessionDate(dateISO)}`,
-              ...overdueInfo,
-            });
-          }
-        }
-      });
-    });
-
-    // =========================================================================
-    // SOURCE B: THEO BUỔI HỌC ĐÃ ĐƯỢC TẠO (🟠 CHƯA THÊM QUIZLET)
-    // =========================================================================
-    sessions.forEach((session) => {
-      if (!session || !session.classId) return;
-      if (session.isExcusedAbsenceSession || session.isChargedAbsenceSession || session.hasNoQuizlet) return;
-
-      const cls = classes.find((c) => c.id === session.classId);
-      const className = session.className || cls?.className || 'Lớp Học';
-      const teacherId = session.teacherId || cls?.teacherId || 'u_teacher';
-      const teacherName = session.teacherName || cls?.teacherName || 'Giáo viên';
-
-      const quizletTaskId = `quizlet_${session.id}`;
-      if (dismissedTaskIds.includes(quizletTaskId)) return;
-
-      const classStudents = students.filter((s) => s && s.classIds && s.classIds.includes(session.classId));
-      const missingQuizletStudentNames: string[] = [];
-
-      classStudents.forEach((std) => {
-        const attRecord = (session.attendance || []).find((a) => a.studentId === std.id);
-        if (attRecord?.status === 'excused') return;
-
-        const sessionQuizlet = getStudentQuizletUrl(session, std.id);
-        const fbObj = session.studentFeedbacks?.[std.id];
-        const studentFbUrl = fbObj?.materialUrl;
-        const studentFbMaterials = fbObj?.materials || [];
-
-        const hasSessionQuizlet = !!sessionQuizlet && sessionQuizlet.trim().length > 0;
-        const hasFbUrlQuizlet = !!studentFbUrl && studentFbUrl.toLowerCase().includes('quizlet');
-        const hasFbMaterialsQuizlet = studentFbMaterials.some(
-          (m) => (m.url && m.url.toLowerCase().includes('quizlet')) || (m.title && m.title.toLowerCase().includes('quizlet'))
-        );
-        const hasStudentResourceQuizlet = (std.resourceLinks || []).some(
-          (r) => (r.url && r.url.toLowerCase().includes('quizlet')) || (r.title && r.title.toLowerCase().includes('quizlet'))
-        );
-
-        const isQuizletCompleted = hasSessionQuizlet || hasFbUrlQuizlet || hasFbMaterialsQuizlet || hasStudentResourceQuizlet;
-
-        if (!isQuizletCompleted) {
-          missingQuizletStudentNames.push(std.name);
-        }
-      });
-
-      if (missingQuizletStudentNames.length > 0) {
-        const overdueInfo = calculateOverdueInfo(todayISO, session.date);
-        tasks.push({
-          id: quizletTaskId,
-          type: 'missing_quizlet',
-          classId: session.classId,
-          className,
-          teacherId,
-          teacherName,
-          dateISO: session.date,
-          scheduleTimeStr: `Buổi #${session.sessionNumber} • Ngày ${formatSessionDate(session.date)}`,
-          missingStudents: missingQuizletStudentNames,
-          sessionId: session.id,
-          ...overdueInfo,
-        });
-      }
-    });
-
-    tasks.sort((a, b) => {
-      if (b.overdueDays !== a.overdueDays) {
-        return b.overdueDays - a.overdueDays;
-      }
-      if (a.type !== b.type) {
-        return a.type === 'unrecorded_session' ? -1 : 1;
-      }
-      return b.dateISO.localeCompare(a.dateISO);
-    });
+    const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissedTaskIds);
 
     const totalCount = tasks.length;
     const unrecCount = tasks.filter((t) => t.type === 'unrecorded_session').length;
