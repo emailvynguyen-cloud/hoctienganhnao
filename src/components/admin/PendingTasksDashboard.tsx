@@ -245,8 +245,9 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
             return isSameClass && isSameDate;
           });
           const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
+          const penaltyTaskId = `penalty_${cls.id}_${dateISO}`;
 
-          if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId)) {
+          if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId) && !dismissedTaskIds.includes(penaltyTaskId)) {
             const overdueInfo = calculateOverdueInfo(todayISO, dateISO);
             const { startTimeStr, endTimeStr } = getScheduleTimeStr(cls.schedule);
 

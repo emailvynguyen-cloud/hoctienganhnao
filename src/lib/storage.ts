@@ -1424,8 +1424,23 @@ export const StorageEngine = {
 
   dismissPendingTaskId(taskId: string) {
     const dismissed = this.getDismissedPendingTaskIds() || [];
-    if (!dismissed.includes(taskId)) {
-      dismissed.push(taskId);
+    const idsToAdd: string[] = [taskId];
+
+    if (taskId.startsWith('unrecorded_')) {
+      idsToAdd.push(taskId.replace('unrecorded_', 'penalty_'));
+    } else if (taskId.startsWith('penalty_')) {
+      idsToAdd.push(taskId.replace('penalty_', 'unrecorded_'));
+    }
+
+    let changed = false;
+    idsToAdd.forEach((id) => {
+      if (!dismissed.includes(id)) {
+        dismissed.push(id);
+        changed = true;
+      }
+    });
+
+    if (changed) {
       setItem(STORAGE_KEYS.DISMISSED_PENDING_TASKS, dismissed);
       this.syncAllToCloud();
     }

@@ -66,6 +66,7 @@ export function calculateTeacherPenaltiesAndRevenue(
   endDateISO?: string
 ): TeacherRevenueSummary {
   const waivedKeys = new Set(StorageEngine.getWaivedPenaltyKeys() || []);
+  const dismissedTaskIds = new Set(StorageEngine.getDismissedPendingTaskIds() || []);
   const now = new Date();
 
   // 1. Filter classes assigned to teacher
@@ -159,6 +160,12 @@ export function calculateTeacherPenaltiesAndRevenue(
       });
 
       const penaltyKey = `penalty_${cls.id}_${iso}`;
+      const unrecordedTaskId = `unrecorded_${cls.id}_${iso}`;
+
+      if (dismissedTaskIds.has(penaltyKey) || dismissedTaskIds.has(unrecordedTaskId)) {
+        continue;
+      }
+
       const isWaived = waivedKeys.has(penaltyKey);
 
       if (recordedSession) {
