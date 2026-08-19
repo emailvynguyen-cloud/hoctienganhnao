@@ -111,6 +111,9 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
   const [teacherPayRatePerSession, setTeacherPayRatePerSession] = useState<number>(
     typeof targetClass.teacherPayRatePerSession === 'number' ? targetClass.teacherPayRatePerSession : 150000
   );
+  const [status, setStatus] = useState<'active' | 'archived' | 'completed' | 'paused'>(
+    targetClass.status || 'active'
+  );
   const [scheduleEffectiveFrom, setScheduleEffectiveFrom] = useState<string>(
     targetClass.scheduleEffectiveFrom || targetClass.startDate || new Date().toISOString().split('T')[0]
   );
@@ -123,6 +126,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       DraftStorage.saveDraft(draftKey, {
         className,
         code,
+        status,
         adminId,
         teacherName,
         schedule,
@@ -134,12 +138,13 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [isOpen, draftKey, className, code, adminId, teacherName, schedule, scheduleEffectiveFrom, courseName, zoomLink, startSessionNumber, teacherPayRatePerSession]);
+  }, [isOpen, draftKey, className, code, status, adminId, teacherName, schedule, scheduleEffectiveFrom, courseName, zoomLink, startSessionNumber, teacherPayRatePerSession]);
 
   const handleRestoreDraft = (data: any) => {
     if (!data) return;
     if (data.className) setClassName(data.className);
     if (data.code) setCode(data.code);
+    if (data.status) setStatus(data.status);
     if (data.adminId) setAdminId(data.adminId);
     if (data.teacherName) setTeacherName(data.teacherName);
     if (data.schedule) setSchedule(data.schedule);
@@ -166,6 +171,7 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
 
     StorageEngine.updateClass({
       ...targetClass,
+      status,
       className,
       code,
       adminId,
@@ -239,23 +245,39 @@ export const EditClassModal: React.FC<EditClassModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp Học (*)</label>
-              <select
-                value={adminId}
-                onChange={(e) => {
-                  setAdminId(e.target.value);
-                  const selectedObj = adminUsers.find((a) => a.uid === e.target.value);
-                  if (selectedObj) setAdminName(selectedObj.displayName);
-                }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold cursor-pointer"
-              >
-                {adminUsers.map((a) => (
-                  <option key={a.uid} value={a.uid}>
-                    👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">👑 Admin Phụ Trách Lớp Học (*)</label>
+                <select
+                  value={adminId}
+                  onChange={(e) => {
+                    setAdminId(e.target.value);
+                    const selectedObj = adminUsers.find((a) => a.uid === e.target.value);
+                    if (selectedObj) setAdminName(selectedObj.displayName);
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold cursor-pointer"
+                >
+                  {adminUsers.map((a) => (
+                    <option key={a.uid} value={a.uid}>
+                      👑 {a.displayName} ({a.email}) - {a.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-extrabold block">📦 Trạng Thái Lớp Học</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold cursor-pointer"
+                >
+                  <option value="active">🟢 Đang Hoạt Động (Active)</option>
+                  <option value="archived">📦 Đã Lưu Trữ / Bảo Lưu (Archived)</option>
+                  <option value="paused">⏸️ Tạm Ngưng (Paused)</option>
+                  <option value="completed">✅ Đã Hoàn Thành (Completed)</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

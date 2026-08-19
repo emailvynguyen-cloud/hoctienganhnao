@@ -540,6 +540,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
               setInspectedStudentId(foundStd.id);
             }
           }}
+          onArchiveClass={(classId) => {
+            StorageEngine.archiveClass(classId);
+            onUpdateClasses();
+            onUpdateStudents();
+            setInspectedClassId(null);
+          }}
+          onRestoreClass={(classId) => {
+            StorageEngine.restoreClass(classId);
+            onUpdateClasses();
+            onUpdateStudents();
+          }}
           onDeleteClass={(classId) => {
             StorageEngine.deleteClass(classId);
             onUpdateClasses();
@@ -1091,16 +1102,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
 
                       <div className="flex items-center space-x-1">
                         {isSuperAdmin && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingClassModal(cls);
-                            }}
-                            className="px-2.5 py-1.5 rounded-xl bg-sky-100 text-sky-900 hover:bg-sky-200 transition text-xs font-bold flex items-center cursor-pointer"
-                            title="Quyền Super Admin: Chỉnh sửa thông tin lớp học & gán Admin"
-                          >
-                            <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Lớp
-                          </button>
+                          <>
+                            {cls.status === 'archived' ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  StorageEngine.restoreClass(cls.id);
+                                  onUpdateClasses();
+                                  onUpdateStudents();
+                                }}
+                                className="px-2 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 hover:bg-emerald-200 transition text-xs font-bold flex items-center cursor-pointer border border-emerald-300 shrink-0"
+                                title="Khôi phục lớp học về trạng thái hoạt động"
+                              >
+                                🔄 Khôi Phục
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Bạn có chắc chắn muốn LƯU TRỮ lớp học "${cls.className}"? Lớp sẽ được chuyển sang mục Lớp Học Đã Lưu Trữ.`)) {
+                                    StorageEngine.archiveClass(cls.id);
+                                    onUpdateClasses();
+                                    onUpdateStudents();
+                                  }
+                                }}
+                                className="px-2 py-1.5 rounded-xl bg-amber-100 text-amber-900 hover:bg-amber-200 transition text-xs font-bold flex items-center cursor-pointer border border-amber-300 shrink-0"
+                                title="Chuyển lớp học vào mục lưu trữ / bảo lưu"
+                              >
+                                📦 Lưu Trữ
+                              </button>
+                            )}
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingClassModal(cls);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-sky-100 text-sky-900 hover:bg-sky-200 transition text-xs font-bold flex items-center cursor-pointer shrink-0"
+                              title="Quyền Super Admin: Chỉnh sửa thông tin lớp học & gán Admin"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 mr-1 text-sky-700" /> Sửa Lớp
+                            </button>
+                          </>
                         )}
 
                         <button
