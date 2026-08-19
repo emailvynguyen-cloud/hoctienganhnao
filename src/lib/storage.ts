@@ -196,7 +196,22 @@ export const StorageEngine = {
   },
 
   getUsers(): User[] {
-    return getItem<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+    const rawUsers = getItem<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS) || [];
+    const sanitized = rawUsers.filter((u) => {
+      if (!u) return false;
+      const name = (u.displayName || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const uid = u.uid || '';
+      if (name.includes('alex') || name.includes('smith') || email.includes('alex.smith') || uid === 'u_teacher_01') {
+        return false;
+      }
+      return true;
+    });
+    if (sanitized.length !== rawUsers.length) {
+      setItem(STORAGE_KEYS.USERS, sanitized);
+      this.syncAllToCloud();
+    }
+    return sanitized;
   },
   saveUsers(users: User[]) {
     setItem(STORAGE_KEYS.USERS, users);
@@ -524,7 +539,33 @@ export const StorageEngine = {
   },
 
   getClasses(): Class[] {
-    return getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
+    const rawClasses = getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES) || [];
+    let modified = false;
+    const sanitized = rawClasses.map((c) => {
+      if (!c) return c;
+      const tName = (c.teacherName || '').toLowerCase();
+      const tId = c.teacherId || '';
+      if (
+        tName.includes('alex') ||
+        tName.includes('smith') ||
+        tId === 'u_teacher_01' ||
+        tId === 'u_teacher_02'
+      ) {
+        modified = true;
+        return {
+          ...c,
+          teacherId: 'u_super_admin',
+          teacherName: 'Ms. Vy',
+        };
+      }
+      return c;
+    });
+
+    if (modified) {
+      setItem(STORAGE_KEYS.CLASSES, sanitized);
+      this.syncAllToCloud();
+    }
+    return sanitized;
   },
   saveClasses(classes: Class[]) {
     setItem(STORAGE_KEYS.CLASSES, [...classes]);
@@ -727,8 +768,33 @@ export const StorageEngine = {
   },
 
   getSessions(): Session[] {
-    const rawSessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS);
-    return this.sortAndReindexSessions(rawSessions);
+    const rawSessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS) || [];
+    let modified = false;
+    const sanitized = rawSessions.map((s) => {
+      if (!s) return s;
+      const tName = (s.teacherName || '').toLowerCase();
+      const tId = s.teacherId || '';
+      if (
+        tName.includes('alex') ||
+        tName.includes('smith') ||
+        tId === 'u_teacher_01' ||
+        tId === 'u_teacher_02'
+      ) {
+        modified = true;
+        return {
+          ...s,
+          teacherId: 'u_super_admin',
+          teacherName: 'Ms. Vy',
+        };
+      }
+      return s;
+    });
+
+    if (modified) {
+      setItem(STORAGE_KEYS.SESSIONS, sanitized);
+      this.syncAllToCloud();
+    }
+    return this.sortAndReindexSessions(sanitized);
   },
   saveSessions(sessions: Session[]) {
     const sorted = this.sortAndReindexSessions(sessions);

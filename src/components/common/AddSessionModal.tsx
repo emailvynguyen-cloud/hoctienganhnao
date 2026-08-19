@@ -692,7 +692,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
       // RECORD NEW SESSION
       StorageEngine.recordBulkSession({
         classId: selectedClassId,
-        teacherId: currentClass?.teacherId || 'u_teacher_01',
+        teacherId: currentClass?.teacherId || 'u_super_admin',
         teacherName: currentClass?.teacherName || 'Giáo viên',
         date,
         lessonContent: finalLessonContent,
