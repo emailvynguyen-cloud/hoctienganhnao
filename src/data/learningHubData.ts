@@ -1,4 +1,4 @@
-import { Book, Chapter } from '../types';
+import { Book, Chapter, Lesson, Exercise } from '../types';
 
 export const INITIAL_BOOKS: Book[] = [
   {
@@ -74,6 +74,103 @@ export const INITIAL_CHAPTERS: Chapter[] = [
     chapterNumber: 1,
     description: 'Giới thiệu bản thân nâng cao, Động từ To Be & Danh từ',
     displayOrder: 1,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export const INITIAL_LESSONS: Lesson[] = [
+  {
+    id: 'les_ef_b_01_01',
+    bookId: 'book_ef_beginner',
+    chapterId: 'ch_ef_b_01',
+    title: 'Lesson 1 – Hello & Introductions',
+    description: 'Học các mẫu câu chào hỏi căn bản và giới thiệu tên tuổi',
+    teacherNotes: 'Cho học viên đóng vai hỏi đáp tên nhau theo cặp (Pair work)',
+    order: 1,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'les_ef_b_01_02',
+    bookId: 'book_ef_beginner',
+    chapterId: 'ch_ef_b_01',
+    title: 'Lesson 2 – Numbers & Alphabet',
+    description: 'Học đếm từ 1-10 và đánh vần tên tiếng Anh',
+    teacherNotes: 'Sử dụng thẻ flashcard chữ cái và đếm đồ vật trong lớp',
+    order: 2,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'les_ef_b_02_01',
+    bookId: 'book_ef_beginner',
+    chapterId: 'ch_ef_b_02',
+    title: 'Lesson 1 – Countries & Where are you from?',
+    description: 'Hỏi và trả lời về quốc tịch và quê hương',
+    teacherNotes: 'Sử dụng bản đồ thế giới sinh động',
+    order: 1,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export const INITIAL_EXERCISES: Exercise[] = [
+  {
+    id: 'ex_ef_b_01_01_v1',
+    bookId: 'book_ef_beginner',
+    chapterId: 'ch_ef_b_01',
+    lessonId: 'les_ef_b_01_01',
+    title: '📚 Từ Vựng – Câu Chào Hỏi Cơ Bản',
+    type: 'vocabulary',
+    description: 'Ghi nhớ các từ vựng chào hỏi hàng ngày',
+    order: 1,
+    richVocabulary: [
+      { id: 'v1', word: 'Hello', ipa: '/həˈloʊ/', meaning: 'Xin chào', example: 'Hello, my name is Vy.' },
+      { id: 'v2', word: 'Goodbye', ipa: '/ˌɡʊdˈbaɪ/', meaning: 'Tạm biệt', example: 'Goodbye! See you tomorrow.' },
+      { id: 'v3', word: 'Nice to meet you', ipa: '/naɪs tuː miːt juː/', meaning: 'Rất vui được gặp bạn', example: 'Nice to meet you, Ms. Vy.' },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'ex_ef_b_01_01_mc1',
+    bookId: 'book_ef_beginner',
+    chapterId: 'ch_ef_b_01',
+    lessonId: 'les_ef_b_01_01',
+    title: '📝 Trắc Nghiệm – Choose the Best Answer',
+    type: 'multiple-choice',
+    description: 'Chọn đáp án đúng nhất để hoàn thành hội thoại',
+    order: 2,
+    questions: [
+      {
+        id: 'q_ex1_01',
+        bookId: 'book_ef_beginner',
+        chapterId: 'ch_ef_b_01',
+        lessonId: 'les_ef_b_01_01',
+        exerciseId: 'ex_ef_b_01_01_mc1',
+        questionType: 'vocab_vi_en',
+        prompt: 'Từ nào có nghĩa là "Xin chào"?',
+        options: ['Hello', 'Goodbye', 'Thank you', 'Sorry'],
+        correctAnswer: 'Hello',
+        explanation: '"Hello" là từ dùng để chào hỏi cơ bản.',
+        difficulty: 'easy',
+        category: 'vocabulary',
+        status: 'published',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'q_ex1_02',
+        bookId: 'book_ef_beginner',
+        chapterId: 'ch_ef_b_01',
+        lessonId: 'les_ef_b_01_01',
+        exerciseId: 'ex_ef_b_01_01_mc1',
+        questionType: 'grammar_choice',
+        prompt: 'Hoàn thành câu: My name _____ Vy.',
+        options: ['am', 'is', 'are', 'be'],
+        correctAnswer: 'is',
+        explanation: 'Ngôi thứ 3 số ít "My name" đi với động từ tobe "is".',
+        difficulty: 'easy',
+        category: 'grammar',
+        status: 'published',
+        createdAt: new Date().toISOString(),
+      },
+    ],
     createdAt: new Date().toISOString(),
   },
 ];

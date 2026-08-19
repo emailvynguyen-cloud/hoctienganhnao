@@ -7,7 +7,11 @@ import { ChapterContentEditor } from './ChapterContentEditor';
 import { AiContentGeneratorModal } from './AiContentGeneratorModal';
 import { AiChapterTestGeneratorModal } from './AiChapterTestGeneratorModal';
 import { LearningResultsView } from './LearningResultsView';
-import { BookOpen, Plus, Sparkles, Layers, FileText, CheckCircle2, Mic, RefreshCw, BarChart2, ShieldAlert, Edit2, PlayCircle, Eye, Lock, Trash2, AlertTriangle, X, Search, Copy, ExternalLink, Filter } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Layers, FileText, CheckCircle2, Mic, RefreshCw, BarChart2, ShieldAlert, Edit2, PlayCircle, Eye, Lock, Trash2, AlertTriangle, X, Search, Copy, ExternalLink, Filter, ArrowLeft, ChevronRight } from 'lucide-react';
+
+import { LessonWorkspace } from './LessonWorkspace';
+import { ExerciseEditorModal } from './ExerciseEditorModal';
+import { Lesson, Exercise } from '../../../types';
 
 interface AdminLearningHubProps {
   currentUser?: User | null;
@@ -25,6 +29,25 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
   // Search & Filter Library State
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string>('');
   const [libraryLevelFilter, setLibraryLevelFilter] = useState<string>('all');
+
+  // Hierarchy Navigation State (Book -> Chapter -> Lesson -> Exercise Workspace)
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
+  // Lessons list for selected Chapter
+  const [currentLessons, setCurrentLessons] = useState<Lesson[]>([]);
+
+  // Exercise Editor & Viewer State
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [isExerciseEditorOpen, setIsExerciseEditorOpen] = useState<boolean>(false);
+  const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
+
+  // New Lesson Modal State
+  const [isAddLessonModalOpen, setIsAddLessonModalOpen] = useState<boolean>(false);
+  const [newLessonTitle, setNewLessonTitle] = useState<string>('');
+  const [newLessonDesc, setNewLessonDesc] = useState<string>('');
+  const [newLessonNotes, setNewLessonNotes] = useState<string>('');
 
   // Student Preview Modal State
   const [previewTargetChapter, setPreviewTargetChapter] = useState<Chapter | null>(null);
@@ -81,6 +104,41 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
     setNewBookTitle('');
     setNewBookDesc('');
     loadAdminData();
+  };
+
+  const loadChapterLessons = async (ch: Chapter) => {
+    setIsLoading(true);
+    setSelectedChapter(ch);
+    const lessons = await LearningHubService.getLessons(ch.id);
+    setCurrentLessons(lessons);
+    setIsLoading(false);
+  };
+
+  const handleCreateLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperAdmin || !selectedChapter) return;
+    if (!newLessonTitle.trim()) return;
+
+    const newLesson: Partial<Lesson> = {
+      id: 'les_' + Date.now(),
+      bookId: selectedChapter.bookId,
+      chapterId: selectedChapter.id,
+      title: newLessonTitle.trim(),
+      description: newLessonDesc.trim(),
+      teacherNotes: newLessonNotes.trim(),
+      order: currentLessons.length + 1,
+    };
+
+    const success = await LearningHubService.saveLesson(newLesson, 'super_admin');
+    if (success) {
+      setIsAddLessonModalOpen(false);
+      setNewLessonTitle('');
+      setNewLessonDesc('');
+      setNewLessonNotes('');
+      await loadChapterLessons(selectedChapter);
+    } else {
+      alert('Không thể tạo bài học. Vui lòng kiểm tra quyền Super Admin.');
+    }
   };
 
   const handleDeleteBookConfirmed = async () => {
@@ -149,6 +207,116 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
         onTriggerAiGenerate={handleTriggerAiGenerate}
         onTriggerAiTestGenerate={handleTriggerAiTestGenerate}
       />
+    );
+  }
+
+  // LEVEL 4 — LESSON WORKSPACE VIEW
+  if (selectedBook && selectedChapter && selectedLesson) {
+    return (
+      <div className="space-y-6">
+        <LessonWorkspace
+          book={selectedBook}
+          chapter={selectedChapter}
+          lesson={selectedLesson}
+          isSuperAdmin={isSuperAdmin}
+          onBackToChapter={() => setSelectedLesson(null)}
+          onOpenExerciseEditor={(ex) => {
+            if (!isSuperAdmin) return;
+            setEditingExercise(ex || null);
+            setIsExerciseEditorOpen(true);
+          }}
+          onOpenExerciseViewer={(ex) => setViewingExercise(ex)}
+        />
+
+        {/* EXERCISE EDITOR MODAL (SUPER ADMIN ONLY) */}
+        {isExerciseEditorOpen && (
+          <ExerciseEditorModal
+            book={selectedBook}
+            chapter={selectedChapter}
+            lesson={selectedLesson}
+            exercise={editingExercise}
+            isSuperAdmin={isSuperAdmin}
+            onClose={() => {
+              setIsExerciseEditorOpen(false);
+              setEditingExercise(null);
+            }}
+            onSaveSuccess={async () => {
+              // Trigger reload in LessonWorkspace
+              const refreshed = await LearningHubService.getLessons(selectedChapter.id);
+              setCurrentLessons(refreshed);
+            }}
+          />
+        )}
+
+        {/* READ ONLY EXERCISE VIEWER MODAL FOR ALL USERS */}
+        {viewingExercise && (
+          <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl border border-sky-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto relative text-slate-900 dark:text-white">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-1 rounded-xl bg-sky-100 text-sky-800 font-black text-xs uppercase">
+                    👁️ NỘI DUNG BÀI TẬP (READ-ONLY)
+                  </span>
+                </div>
+                <button
+                  onClick={() => setViewingExercise(null)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="font-black text-xl text-slate-900 dark:text-white">{viewingExercise.title}</h2>
+                <p className="text-xs text-slate-500">{viewingExercise.description || 'Chưa có mô tả.'}</p>
+              </div>
+
+              <div className="space-y-3 pt-2 text-xs">
+                {viewingExercise.questions && viewingExercise.questions.length > 0 ? (
+                  viewingExercise.questions.map((q, idx) => (
+                    <div key={q.id || idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 space-y-2 border border-slate-200 dark:border-slate-700">
+                      <p className="font-extrabold text-slate-900 dark:text-white">Câu {idx + 1}: {q.prompt}</p>
+                      {q.options && q.options.length > 0 && (
+                        <div className="grid grid-cols-2 gap-1.5 pl-2">
+                          {q.options.map((opt, oIdx) => (
+                            <div key={oIdx} className={`p-2 rounded-xl text-[11px] font-bold ${opt === q.correctAnswer ? 'bg-emerald-100 text-emerald-800 font-black' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'}`}>
+                              {String.fromCharCode(65 + oIdx)}. {opt} {opt === q.correctAnswer && '✓'}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {q.explanation && (
+                        <p className="text-[11px] text-slate-500 italic bg-white dark:bg-slate-900 p-2 rounded-xl">👉 Giải thích: {q.explanation}</p>
+                      )}
+                    </div>
+                  ))
+                ) : viewingExercise.richVocabulary && viewingExercise.richVocabulary.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {viewingExercise.richVocabulary.map((v) => (
+                      <div key={v.id} className="p-3 rounded-2xl bg-pink-50/50 dark:bg-slate-800 border border-pink-100 dark:border-slate-700 space-y-1">
+                        <p className="font-extrabold text-slate-900 dark:text-white">{v.word} <span className="font-mono text-slate-400 text-[11px]">{v.ipa}</span></p>
+                        <p className="text-slate-700 dark:text-slate-200 font-bold">👉 {v.meaning}</p>
+                        {v.example && <p className="text-[11px] text-slate-500 italic">"{v.example}"</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-xs text-slate-400 italic">Chưa có câu hỏi trong bài tập này.</div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => setViewingExercise(null)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition cursor-pointer"
+                >
+                  Đóng Xem Nội Dung
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -240,8 +408,173 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
         </button>
       </div>
 
+      {/* LEVEL 3 — CHAPTER & LESSON LIST LEVEL VIEW */}
+      {selectedBook && selectedChapter && !selectedLesson && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* BREADCRUMB & BACK BUTTON */}
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <button
+              onClick={() => {
+                setSelectedChapter(null);
+                setCurrentLessons([]);
+              }}
+              className="px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              <span>Quay lại danh sách Giáo trình</span>
+            </button>
+
+            <div className="flex items-center space-x-2 text-xs font-bold text-slate-500">
+              <span>📚 {selectedBook.title}</span>
+              <span>/</span>
+              <span className="text-pink-600 font-black">📖 {selectedChapter.title}</span>
+            </div>
+          </div>
+
+          {/* CHAPTER HEADER CARD */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="px-2.5 py-0.5 rounded-lg bg-pink-100 dark:bg-slate-800 text-pink-700 dark:text-pink-300 text-[10px] font-black uppercase">
+                Chapter {selectedChapter.chapterNumber}
+              </span>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">{selectedChapter.title}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{selectedChapter.description || 'Chưa có mô tả.'}</p>
+            </div>
+
+            {isSuperAdmin && (
+              <button
+                onClick={() => setIsAddLessonModalOpen(true)}
+                className="px-5 py-3 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black text-xs shadow-md transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ THÊM LESSON MỚI</span>
+              </button>
+            )}
+          </div>
+
+          {/* LESSONS LIST GRID */}
+          <div className="space-y-4">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center space-x-2">
+              <span>🟢 DANH SÁCH BÀI HỌC (LESSONS)</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-xs font-bold">
+                {currentLessons.length} Lesson
+              </span>
+            </h3>
+
+            {isLoading ? (
+              <div className="p-10 text-center text-xs font-bold text-slate-400 animate-pulse">
+                Đang tải danh sách bài học...
+              </div>
+            ) : currentLessons.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 text-center space-y-2">
+                <p className="text-xs font-bold text-slate-500">Chưa có bài học nào trong Chapter này.</p>
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => setIsAddLessonModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-pink-500 text-white font-bold text-xs hover:bg-pink-600 cursor-pointer"
+                  >
+                    + Thêm Lesson Đầu Tiên
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentLessons.map((les, idx) => (
+                  <div
+                    key={les.id}
+                    onClick={() => setSelectedLesson(les)}
+                    className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:border-pink-300 dark:hover:border-pink-900 transition flex items-center justify-between group cursor-pointer"
+                  >
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase text-pink-600">
+                        Lesson {idx + 1}
+                      </span>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition">
+                        {les.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 line-clamp-1">{les.description || 'Học từ vựng, bài tập ôn luyện...'}</p>
+                    </div>
+
+                    <div className="px-4 py-2 rounded-2xl bg-pink-50 dark:bg-slate-800 text-pink-600 font-extrabold text-xs group-hover:bg-pink-500 group-hover:text-white transition flex items-center space-x-1 shrink-0 ml-3">
+                      <span>Mở Lesson</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* NEW LESSON FORM MODAL (SUPER ADMIN ONLY) */}
+      {isAddLessonModalOpen && isSuperAdmin && selectedChapter && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <form onSubmit={handleCreateLesson} className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl border border-pink-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-fadeIn text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-black text-base">🟢 THÊM LESSON MỚI</h3>
+              <button type="button" onClick={() => setIsAddLessonModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold">Tên Bài Học (Lesson Title) (*):</label>
+                <input
+                  type="text"
+                  required
+                  value={newLessonTitle}
+                  onChange={(e) => setNewLessonTitle(e.target.value)}
+                  placeholder="VD: Lesson 1 – Hello & Introductions"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold">Mô Tả Bài Học:</label>
+                <input
+                  type="text"
+                  value={newLessonDesc}
+                  onChange={(e) => setNewLessonDesc(e.target.value)}
+                  placeholder="VD: Chào hỏi, tự giới thiệu tên tuổi..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold">Teacher Notes (Ghi chú giảng dạy):</label>
+                <textarea
+                  rows={2}
+                  value={newLessonNotes}
+                  onChange={(e) => setNewLessonNotes(e.target.value)}
+                  placeholder="Ghi chú phương pháp giảng dạy..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsAddLessonModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-pink-500 text-white font-black text-xs hover:bg-pink-600 shadow-md"
+              >
+                Tạo Lesson
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* SEARCH & FILTER LIBRARY BAR (PHASE 4) */}
-      {activeTab === 'books' && (
+      {activeTab === 'books' && !selectedChapter && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-slate-400" />
@@ -331,8 +664,9 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      Danh Sách Chapter:
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>Danh Sách Chapter:</span>
+                      <span className="text-pink-600 font-extrabold text-[10px]">Mở để xem Lessons ➔</span>
                     </div>
                     {bookChapters.length === 0 ? (
                       <div className="text-xs text-slate-400 italic">Chưa có Chapter nào.</div>
@@ -341,40 +675,50 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
                         {bookChapters.map((ch) => (
                           <div
                             key={ch.id}
-                            className="p-2.5 rounded-2xl bg-slate-50 hover:bg-pink-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between transition border border-transparent hover:border-pink-200 group"
+                            onClick={() => {
+                              setSelectedBook(book);
+                              loadChapterLessons(ch);
+                            }}
+                            className="p-2.5 rounded-2xl bg-slate-50 hover:bg-pink-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between transition border border-transparent hover:border-pink-200 group cursor-pointer"
                           >
-                            <span
-                              onClick={() => setEditingChapter(ch)}
-                              className="truncate flex-1 cursor-pointer hover:underline"
-                            >
+                            <span className="truncate flex-1 group-hover:text-pink-600 transition">
                               {ch.title}
                             </span>
                             <div className="flex items-center space-x-1 shrink-0">
                               <button
-                                onClick={() => setPreviewTargetChapter(ch)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewTargetChapter(ch);
+                                }}
                                 className="p-1 text-slate-400 hover:text-sky-600 rounded transition cursor-pointer"
-                                title="Xem trước như Học viên (Read-Only Simulation)"
+                                title="Xem trước như Học viên"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
 
                               {isSuperAdmin && (
                                 <button
-                                  onClick={() => handleDuplicateChapter(ch)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuplicateChapter(ch);
+                                  }}
                                   className="p-1 text-slate-400 hover:text-amber-600 rounded transition cursor-pointer"
-                                  title="Nhân bản Chapter này (Duplicate)"
+                                  title="Nhân bản Chapter này"
                                 >
                                   <Copy className="w-3.5 h-3.5" />
                                 </button>
                               )}
 
-                              <span
-                                onClick={() => setEditingChapter(ch)}
-                                className="text-pink-600 text-[11px] font-black flex items-center cursor-pointer ml-1"
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingChapter(ch);
+                                }}
+                                className="text-pink-600 text-[11px] font-black flex items-center cursor-pointer ml-1 p-1 hover:bg-pink-100 rounded"
                               >
                                 <Edit2 className="w-3.5 h-3.5 mr-1" />
-                                {isTeacher ? 'Xem' : 'Soạn'}
-                              </span>
+                                {isTeacher ? 'Xem' : 'Soạn AI'}
+                              </button>
 
                               {isSuperAdmin && (
                                 <button
@@ -382,7 +726,7 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
                                     e.stopPropagation();
                                     setDeleteTargetChapter(ch);
                                   }}
-                                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-100 transition cursor-pointer opacity-80 group-hover:opacity-100 ml-1"
+                                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-100 transition cursor-pointer ml-1"
                                   title="Xóa Chapter này"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />

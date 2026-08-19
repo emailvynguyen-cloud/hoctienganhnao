@@ -469,6 +469,55 @@ export interface RichWritingItem {
   rubric?: string;
 }
 
+export type ExerciseType =
+  | 'vocabulary'
+  | 'grammar'
+  | 'multiple-choice'
+  | 'fill-blank'
+  | 'matching'
+  | 'translation'
+  | 'sentence-building'
+  | 'true-false'
+  | 'short-answer'
+  | 'speaking'
+  | 'reading'
+  | 'listening'
+  | 'writing';
+
+export interface Exercise {
+  id: string;
+  bookId: string;
+  chapterId: string;
+  lessonId: string;
+  title: string;
+  type: ExerciseType;
+  description?: string;
+  order: number;
+  questionIds?: string[];
+  questions?: LearningQuestion[];
+  richVocabulary?: RichVocabItem[];
+  richGrammar?: RichGrammarItem[];
+  richReading?: RichReadingItem[];
+  richListening?: RichListeningItem[];
+  richSpeaking?: RichSpeakingItem[];
+  richWriting?: RichWritingItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Lesson {
+  id: string;
+  bookId: string;
+  chapterId: string;
+  title: string;
+  description?: string;
+  teacherNotes?: string;
+  order: number;
+  exercises?: Exercise[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Chapter {
   id: string;
   bookId: string;
@@ -486,6 +535,7 @@ export interface Chapter {
   richListening?: RichListeningItem[];
   richSpeaking?: RichSpeakingItem[];
   richWriting?: RichWritingItem[];
+  lessons?: Lesson[];
 }
 
 export interface AudioAsset {
@@ -506,7 +556,10 @@ export interface AudioAsset {
 
 export interface LearningQuestion {
   id: string;
+  bookId?: string;
   chapterId?: string;
+  lessonId?: string;
+  exerciseId?: string;
   questionType: LearningQuestionType;
   prompt: string;
   audioAssetId?: string;
@@ -515,6 +568,9 @@ export interface LearningQuestion {
   passageText?: string;
   options: string[];
   correctAnswer: string;
+  acceptedAnswers?: string[];
+  matchPairs?: Array<{ left: string; right: string }>;
+  wordChunks?: string[];
   explanation?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: 'listening' | 'vocabulary' | 'reading' | 'grammar' | 'translation' | 'matching';
