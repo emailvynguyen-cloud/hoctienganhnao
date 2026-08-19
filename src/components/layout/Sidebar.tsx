@@ -100,24 +100,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         {
           groupTitle: 'GIẢNG DẠY',
           items: [
-            { id: 'tch_home', title: 'Dashboard', path: '/teacher', icon: Home },
+            { id: 'tch_home', title: 'Dashboard', path: '/teacher?tab=today', icon: Home },
             { id: 'tch_grading', title: 'Chấm Bài Tập (Feedback)', path: '/teacher?tab=grading', icon: CheckSquare },
             { id: 'tch_learning_hub', title: 'Learning Hub (Ôn Luyện)', path: '/teacher?tab=learning_hub', icon: BookOpen },
-            { id: 'tch_classes', title: 'Lớp Học Phụ Trách', path: '/teacher', icon: BookOpen },
-            { id: 'tch_sessions', title: 'Buổi Học', path: '/teacher', icon: Calendar },
-            { id: 'tch_students', title: 'Danh Sách Học Viên', path: '/teacher/students', icon: GraduationCap },
+            { id: 'tch_classes', title: 'Lớp Học Phụ Trách', path: '/teacher?tab=all_classes', icon: Users },
+            { id: 'tch_sessions', title: 'Buổi Học / Lịch Tuần', path: '/teacher?tab=schedule', icon: Calendar },
           ],
         },
         {
           groupTitle: 'THỐNG KÊ & BÁO CÁO',
           items: [
-            { id: 'tch_stats', title: 'Thống Kê Lớp Học', path: '/teacher', icon: BarChart2 },
-          ],
-        },
-        {
-          groupTitle: 'HỆ THỐNG',
-          items: [
-            { id: 'tch_settings', title: 'Cài Đặt Giáo Viên', path: '/teacher', icon: Settings },
+            { id: 'tch_revenue', title: 'Doanh Thu Lương Dạy', path: '/teacher?tab=revenue', icon: DollarSign },
           ],
         },
       ];
@@ -196,6 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     if (path === currentUrl) return true;
     if (path === '/super-admin?tab=pending_tasks' && location.pathname === '/super-admin' && (!location.search || location.search.includes('pending_tasks'))) return true;
     if (path === '/admin?tab=pending_tasks' && location.pathname === '/admin' && (!location.search || location.search.includes('pending_tasks'))) return true;
+    if (path === '/teacher?tab=today' && location.pathname === '/teacher' && (!location.search || location.search.includes('today'))) return true;
     if (path.includes('?tab=')) {
       return location.pathname + location.search === path;
     }

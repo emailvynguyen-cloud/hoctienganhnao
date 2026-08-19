@@ -503,102 +503,6 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
       )}
 
-      {/* Teacher Portal Navigation Tabs */}
-      <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
-        <button
-          onClick={() => handleSelectTab('today')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'today'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Lịch Dạy Hôm Nay
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('pending_tasks')}
-          className={`h-11 px-4 rounded-xl text-sm font-bold transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'pending_tasks'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4 mr-1.5 text-amber-400" />
-          📋 Công Việc Cần Xử Lý
-          {teacherPendingTasks.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-black bg-amber-400 text-amber-950 shadow-2xs">
-              {teacherPendingTasks.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('grading')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'grading'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Bell className="w-4 h-4 mr-1.5" /> Bài Tập Cần Feedback
-        </button>
-        <button
-          onClick={() => handleSelectTab('schedule')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'schedule'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Thời Khóa Biểu Tuần
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('all_classes')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
-            activeTab === 'all_classes'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          Lớp Phụ Trách ({assignedClasses.length})
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('revenue')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'revenue'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <DollarSign className="w-4 h-4 mr-1.5" /> Doanh Thu Lương Dạy
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('learning_hub')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'learning_hub'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 mr-1.5" /> Learning Hub (Ôn Luyện)
-        </button>
-
-        <button
-          onClick={() => handleSelectTab('ai_studio')}
-          className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
-            activeTab === 'ai_studio'
-              ? 'bg-rose-500 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 mr-1.5 text-amber-300" /> AI Studio Dạy Học
-        </button>
-      </div>
-
       {/* TAB LEARNING HUB */}
       {activeTab === 'learning_hub' && (
         <AdminLearningHub currentUser={currentUser} />
@@ -606,22 +510,22 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
       {/* TAB CÔNG VIỆC CẦN XỬ LÝ (GIÁO VIÊN PENDING TASKS) */}
       {activeTab === 'pending_tasks' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs p-6 space-y-6 animate-fadeIn">
+        <div className="bg-[#FAF9F6] dark:bg-slate-900 rounded-3xl border border-[#E3E0DA] dark:border-slate-800 shadow-2xs p-6 space-y-6 animate-fadeIn">
           
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-6 rounded-2xl bg-[#F5F3EF] dark:bg-slate-800 border border-[#E3E0DA] dark:border-slate-700 text-[#3F4146] dark:text-white shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center space-x-2.5">
-                <AlertTriangle className="w-6 h-6 text-amber-200 animate-bounce shrink-0" />
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                <AlertTriangle className="w-5 h-5 text-[#8C6D4F] shrink-0" />
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-[#3F4146] dark:text-white">
                   📋 CÔNG VIỆC CẦN XỬ LÝ CỦA GIÁO VIÊN
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm text-amber-100 font-medium leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#6F7278] dark:text-slate-300 font-medium leading-relaxed">
                 Chỉ hiển thị các buổi học thuộc các lớp bạn phụ trách đã diễn ra nhưng CHƯA ĐƯỢC NHẬP BUỔI. Nhập buổi ngay để tránh tích lũy tiền phạt!
               </p>
             </div>
 
-            <div className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-extrabold text-sm shrink-0">
+            <div className="px-4 py-2 rounded-xl bg-[#E4C3A8]/30 dark:bg-slate-700 border border-[#E4C3A8] text-[#5C3F29] dark:text-amber-200 font-extrabold text-xs shrink-0">
               ⚠️ Đang có {teacherPendingTasks.length} buổi chưa nhập
             </div>
           </div>
@@ -631,64 +535,64 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
               {teacherPendingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`p-5 rounded-3xl border transition space-y-3 shadow-xs relative ${
+                  className={`p-5 rounded-3xl border transition space-y-3 shadow-2xs relative ${
                     task.isOverdue
-                      ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-300 ring-2 ring-rose-300/50'
-                      : 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200'
+                      ? 'bg-[#D9AEB0]/15 dark:bg-slate-800/80 border-[#D9AEB0]'
+                      : 'bg-[#E4C3A8]/15 dark:bg-slate-800/80 border-[#E4C3A8]'
                   }`}
                 >
-                  <div className="flex items-center justify-between border-b border-rose-100 dark:border-slate-800 pb-2">
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-pink-500 text-white">
+                  <div className="flex items-center justify-between border-b border-[#E3E0DA] dark:border-slate-800 pb-2">
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase bg-[#B8CEE0] text-[#2C3B49]">
                       {task.className}
                     </span>
 
                     {task.isOverdue ? (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase tracking-wider animate-pulse flex items-center">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#D9AEB0]/40 text-[#5A2C2F] dark:text-rose-200 border border-[#D9AEB0] uppercase tracking-wider flex items-center">
                         <AlertTriangle className="w-3 h-3 mr-1" /> 🔴 QUÁ HẠN
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-200 text-amber-950 uppercase tracking-wider">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#E4C3A8]/40 text-[#5C3F29] dark:text-amber-200 border border-[#E4C3A8] uppercase tracking-wider">
                         🟡 Chưa nhập buổi
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                    <h4 className="font-extrabold text-base text-[#3F4146] dark:text-white">
                       🗓️ {task.dateISO.split('-').reverse().join('/')}
                     </h4>
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                    <p className="text-xs font-bold text-[#6F7278] dark:text-slate-300 mt-0.5">
                       Giờ học: {task.scheduleTimeStr}
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1 text-xs">
-                    <div className="text-slate-500 font-medium">
-                      Hạn nhập buổi: <strong className="text-slate-800 dark:text-slate-200 font-mono">{task.dueDeadlineStr}</strong>
+                  <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-[#E3E0DA] dark:border-slate-800 space-y-1 text-xs">
+                    <div className="text-[#6F7278] font-medium">
+                      Hạn nhập buổi: <strong className="text-[#3F4146] dark:text-slate-200 font-mono">{task.dueDeadlineStr}</strong>
                     </div>
 
                     {task.isOverdue && (
-                      <div className="pt-1 text-rose-700 dark:text-rose-400 font-bold border-t border-dashed border-rose-200 dark:border-rose-900/60 flex items-center justify-between">
+                      <div className="pt-1 text-[#5A2C2F] dark:text-rose-300 font-bold border-t border-dashed border-[#E3E0DA] dark:border-slate-800 flex items-center justify-between">
                         <span>⚠️ Quá hạn: {task.overdueDays} ngày</span>
-                        <span className="font-mono text-rose-600 font-black">-{formatVND(task.penaltyAmount)}</span>
+                        <span className="font-mono text-[#5A2C2F] font-black">-{formatVND(task.penaltyAmount)}</span>
                       </div>
                     )}
                   </div>
 
                   <button
                     onClick={() => onOpenAddSession(task.classId)}
-                    className="w-full py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition shadow-md flex items-center justify-center cursor-pointer"
+                    className="w-full py-2.5 rounded-2xl bg-[#B8CEE0] hover:bg-[#A3BFD5] text-[#2C3B49] font-extrabold text-xs transition shadow-2xs flex items-center justify-center cursor-pointer border border-[#A5C3DA]"
                   >
-                    <PlusCircle className="w-4 h-4 mr-1.5" /> [Nhập Buổi Học Ngay]
+                    <PlusCircle className="w-4 h-4 mr-1.5 text-[#2C3B49]" /> [Nhập Buổi Học Ngay]
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center bg-emerald-50 dark:bg-emerald-950/30 rounded-3xl border border-emerald-200 text-emerald-800 dark:text-emerald-300 space-y-2">
-              <ShieldCheck className="w-12 h-12 text-emerald-600 mx-auto" />
+            <div className="p-8 text-center bg-[#B7D8C0]/20 dark:bg-slate-800 rounded-3xl border border-[#B7D8C0] text-[#2D4536] dark:text-emerald-300 space-y-2">
+              <ShieldCheck className="w-12 h-12 text-[#467355] mx-auto" />
               <h4 className="font-extrabold text-base">Tuyệt Vời! Không Có Công Việc Cần Xử Lý Tồn Đọng</h4>
-              <p className="text-xs font-medium text-emerald-700">
+              <p className="text-xs font-medium text-[#365443]">
                 Tất cả các buổi học của bạn đã được ghi nhận đầy đủ đúng hạn.
               </p>
             </div>
@@ -703,22 +607,22 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
           {/* TOP BANNER: CÔNG VIỆC CẦN XỬ LÝ NẾU CÓ */}
           {teacherPendingTasks.length > 0 && (
-            <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 text-white shadow-md space-y-4 animate-fadeIn">
+            <div className="p-5 rounded-3xl bg-[#F5F3EF] dark:bg-slate-900 border border-[#E3E0DA] dark:border-slate-800 text-[#3F4146] dark:text-white shadow-2xs space-y-4 animate-fadeIn">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-2.5">
-                  <AlertTriangle className="w-6 h-6 text-amber-200 animate-bounce shrink-0" />
+                  <AlertTriangle className="w-5 h-5 text-[#8C6D4F] shrink-0" />
                   <div>
-                    <h3 className="font-black text-base tracking-tight">
+                    <h3 className="font-black text-base tracking-tight text-[#3F4146] dark:text-white">
                       📋 CÔNG VIỆC CẦN XỬ LÝ ({teacherPendingTasks.length} buổi chưa nhập)
                     </h3>
-                    <p className="text-xs text-amber-100 font-medium">
+                    <p className="text-xs text-[#6F7278] dark:text-slate-300 font-medium">
                       Buổi học đã diễn ra nhưng chưa được nhập. Nhập buổi ngay để dừng phát sinh tiền phạt!
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveTab('pending_tasks')}
-                  className="px-4 py-2 rounded-xl bg-white text-rose-950 font-black text-xs hover:bg-amber-100 transition cursor-pointer shrink-0 shadow-xs"
+                  onClick={() => handleSelectTab('pending_tasks')}
+                  className="px-4 py-2 rounded-xl bg-[#B8CEE0] text-[#2C3B49] font-extrabold text-xs hover:bg-[#A3BFD5] transition cursor-pointer shrink-0 border border-[#A5C3DA]"
                 >
                   Xem Tất Cả Tasks →
                 </button>
@@ -726,37 +630,37 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {teacherPendingTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white space-y-2">
+                  <div key={task.id} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-[#E3E0DA] dark:border-slate-700 text-[#3F4146] dark:text-white space-y-2 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm">{task.className}</span>
+                      <span className="font-extrabold text-sm text-[#3F4146] dark:text-white">{task.className}</span>
                       {task.isOverdue ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-200 text-rose-950">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#D9AEB0]/40 text-[#5A2C2F] border border-[#D9AEB0]">
                           🔴 QUÁ HẠN
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-950">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#E4C3A8]/40 text-[#5C3F29] border border-[#E4C3A8]">
                           🟡 Chưa nhập buổi
                         </span>
                       )}
                     </div>
 
-                    <p className="text-xs text-amber-100 font-medium">
+                    <p className="text-xs text-[#6F7278] dark:text-slate-300 font-medium">
                       🗓️ {task.dateISO.split('-').reverse().join('/')} • {task.scheduleTimeStr}
                     </p>
 
-                    <div className="text-[11px] text-white/90">
-                      Hạn nhập: <strong>{task.dueDeadlineStr}</strong>
+                    <div className="text-[11px] text-[#6F7278]">
+                      Hạn nhập: <strong className="text-[#3F4146]">{task.dueDeadlineStr}</strong>
                     </div>
 
                     {task.isOverdue && (
-                      <div className="text-[11px] text-amber-200 font-bold bg-black/20 p-1.5 rounded-lg">
+                      <div className="text-[11px] text-[#5A2C2F] font-bold bg-[#D9AEB0]/20 p-1.5 rounded-lg border border-[#D9AEB0]/40">
                         ⚠️ Quá hạn: {task.overdueDays} ngày • Tiền phạt: -{formatVND(task.penaltyAmount)}
                       </div>
                     )}
 
                     <button
                       onClick={() => onOpenAddSession(task.classId)}
-                      className="w-full py-2 rounded-xl bg-white text-rose-950 font-black text-xs hover:bg-amber-100 transition cursor-pointer shadow-xs"
+                      className="w-full py-2 rounded-xl bg-[#B8CEE0] text-[#2C3B49] font-extrabold text-xs hover:bg-[#A3BFD5] transition cursor-pointer border border-[#A5C3DA]"
                     >
                       [Nhập buổi học]
                     </button>

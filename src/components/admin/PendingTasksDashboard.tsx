@@ -574,21 +574,17 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
               {/* PENDING TASKS LIST */}
               <div className="space-y-3.5">
                 {group.tasks.map((task) => {
-                  // Priority color badges:
-                  // yellow: 0-1 days
-                  // orange: 2-3 days
-                  // red: 4+ days
                   const priorityBg =
                     task.priorityColor === 'red'
-                      ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-100 border-rose-300 dark:border-rose-800'
+                      ? 'bg-[#D9AEB0]/40 text-[#5A2C2F] dark:text-rose-200 border-[#D9AEB0]'
                       : task.priorityColor === 'orange'
-                      ? 'bg-orange-100 dark:bg-orange-950/80 text-orange-900 dark:text-orange-100 border-orange-300 dark:border-orange-800'
-                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-800';
+                      ? 'bg-[#E4C3A8]/40 text-[#5C3F29] dark:text-amber-200 border-[#E4C3A8]'
+                      : 'bg-[#E6D5A8]/40 text-[#4D3F1D] dark:text-yellow-200 border-[#E6D5A8]';
 
                   const cardBorderBg =
                     task.type === 'unrecorded_session'
-                      ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-200'
-                      : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-950 dark:text-amber-200';
+                      ? 'bg-[#FAF9F6] dark:bg-slate-800/60 border-[#E3E0DA] dark:border-slate-700 text-[#3F4146] dark:text-slate-200'
+                      : 'bg-[#FAF9F6] dark:bg-slate-800/60 border-[#E3E0DA] dark:border-slate-700 text-[#3F4146] dark:text-slate-200';
 
                   return (
                     <div key={task.id} className={`p-4.5 rounded-2xl border space-y-3 text-xs transition duration-150 ${cardBorderBg}`}>
@@ -596,11 +592,11 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
                       <div className="flex flex-wrap items-center justify-between gap-2 font-black">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm">{task.type === 'unrecorded_session' ? '🔴' : '🟠'}</span>
-                          <span className="uppercase tracking-wider">
+                          <span className="uppercase tracking-wider font-extrabold text-[#3F4146] dark:text-white">
                             {task.type === 'unrecorded_session' ? 'Chưa Nhập Buổi Học' : 'Chưa Thêm Quizlet'}
                           </span>
 
-                          <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-black border uppercase shadow-2xs ${priorityBg}`}>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold border uppercase shadow-2xs ${priorityBg}`}>
                             ⏰ {task.overdueBadgeText}
                           </span>
                         </div>
@@ -611,7 +607,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
                             <button
                               type="button"
                               onClick={() => onOpenAddSession(task.classId)}
-                              className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                              className="px-3 py-1.5 rounded-xl bg-[#B8CEE0] hover:bg-[#A3BFD5] text-[#2C3B49] font-extrabold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0 border border-[#A5C3DA]"
                             >
                               + Nhập Buổi Ngay ↗
                             </button>
@@ -621,7 +617,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
                             <button
                               type="button"
                               onClick={() => onInspectClass(task.classId)}
-                              className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0"
+                              className="px-3 py-1.5 rounded-xl bg-[#E4C3A8] hover:bg-[#D8B497] text-[#4F3622] font-extrabold text-[11px] shadow-2xs transition cursor-pointer flex items-center shrink-0 border border-[#D8B497]"
                             >
                               Chỉnh Sửa Lớp ↗
                             </button>
