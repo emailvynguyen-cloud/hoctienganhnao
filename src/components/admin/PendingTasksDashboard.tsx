@@ -53,9 +53,20 @@ export interface TeacherPendingGroup {
   tasks: PendingTaskItem[];
 }
 
-// ----------------------------------------------------------------------
-// HELPER: DATE FORMATTING & OVERDUE CALCULATION
-// ----------------------------------------------------------------------
+function normalizeDateStr(dStr?: string): string {
+  if (!dStr) return '';
+  const clean = dStr.split('T')[0].trim();
+  const parts = clean.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    } else if (parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  return clean;
+}
+
 function formatSessionDate(dateStr?: string): string {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
@@ -226,7 +237,13 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
         const isTimePassed = !isToday || isTodayEndTimePassed(cls.schedule);
 
         if (isTimePassed) {
-          const recordedSession = sessions.find((s) => s.classId === cls.id && s.date === dateISO);
+          const targetDateNorm = normalizeDateStr(dateISO);
+          const recordedSession = sessions.find((s) => {
+            if (!s || !s.classId || !s.date) return false;
+            const isSameClass = String(s.classId) === String(cls.id);
+            const isSameDate = normalizeDateStr(s.date) === targetDateNorm;
+            return isSameClass && isSameDate;
+          });
           const unrecordedTaskId = `unrecorded_${cls.id}_${dateISO}`;
 
           if (!recordedSession && !dismissedTaskIds.includes(unrecordedTaskId)) {

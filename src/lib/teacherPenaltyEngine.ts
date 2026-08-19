@@ -28,6 +28,20 @@ export interface TeacherRevenueSummary {
   penalties: TeacherPenaltyItem[]; // ⚠️ Chi tiết tiền phạt
 }
 
+export function normalizeDateStr(dStr?: string): string {
+  if (!dStr) return '';
+  const clean = dStr.split('T')[0].trim();
+  const parts = clean.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    } else if (parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  return clean;
+}
+
 function parseScheduleTime(scheduleStr: string = '') {
   const rangeMatch = scheduleStr.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
   const startTimeStr = rangeMatch ? rangeMatch[1].padStart(5, '0') : '18:00';
@@ -136,7 +150,14 @@ export function calculateTeacherPenaltiesAndRevenue(
       dueDeadline.setDate(dueDeadline.getDate() + 1); // 24h grace period
       const dueDeadlineStr = `${formatDisplayDate(dueDeadline.toISOString().split('T')[0])} ${endTimeStr}`;
 
-      const recordedSession = (sessions || []).find((s) => s && s.classId === cls.id && s.date === iso);
+      const targetDateNorm = normalizeDateStr(iso);
+      const recordedSession = (sessions || []).find((s) => {
+        if (!s || !s.classId || !s.date) return false;
+        const isSameClass = String(s.classId) === String(cls.id);
+        const isSameDate = normalizeDateStr(s.date) === targetDateNorm;
+        return isSameClass && isSameDate;
+      });
+
       const penaltyKey = `penalty_${cls.id}_${iso}`;
       const isWaived = waivedKeys.has(penaltyKey);
 

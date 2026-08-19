@@ -84,6 +84,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   // Sub-View Inspection State (Keeps Teacher Portal Context Intact & Syncs 100% with Props)
   const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
   const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
+  const [selectedSessionForRevenueDetail, setSelectedSessionForRevenueDetail] = useState<Session | null>(null);
 
   const activeInspectedStudent = inspectedStudentId
     ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
@@ -1049,70 +1050,206 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
               dRange.endDate
             );
 
+            // Filter actual completed/recorded sessions taught in timeframe
+            const teacherClassesMap = new Map<string, Class>(assignedClasses.map((c) => [c.id, c]));
+            const monthTeacherSessions = (sessions || [])
+              .filter((s) => {
+                if (!s || !s.date || !teacherClassesMap.has(s.classId)) return false;
+                if (s.isExcusedAbsenceSession) return false;
+                if (dRange.startDate && s.date < dRange.startDate) return false;
+                if (dRange.endDate && s.date > dRange.endDate) return false;
+                return true;
+              })
+              .sort((a, b) => b.date.localeCompare(a.date));
+
+            const taughtClassIdsCount = new Set(monthTeacherSessions.map((s) => s.classId)).size;
+            const taughtStudentIdsCount = new Set(
+              (students || [])
+                .filter((std) => std && std.classIds && std.classIds.some((cid) => teacherClassesMap.has(cid)))
+                .map((std) => std.id)
+            ).size;
+
             return (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-fadeIn">
                 
-                {/* 4 KPI Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-sky-100 via-blue-50 to-indigo-100 text-sky-950 border border-sky-300 space-y-1.5 shadow-2xs">
-                    <span className="text-xs font-bold uppercase tracking-wider text-sky-900">
-                      📚 Tổng Số Buổi Dạy
+                {/* 6 KPI Summary Overview Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="p-4 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 text-[#3F4146] dark:text-white border border-[#E3E0DA] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F7278] dark:text-slate-400 block">
+                      📚 Đã Dạy
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-bold text-sky-950 font-mono tracking-tight">
+                    <h4 className="text-xl sm:text-2xl font-black text-[#3F4146] dark:text-white tracking-tight">
                       {summary.totalSessionsCount} Buổi
                     </h4>
-                    <p className="text-xs text-sky-800 font-medium">
-                      Buổi dạy thực tế được ghi nhận
+                    <p className="text-[10px] text-[#6F7278] dark:text-slate-400 font-medium">
+                      Buổi học thực tế
                     </p>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-100 text-emerald-950 border border-emerald-300 space-y-1.5 shadow-2xs">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-                      💰 Tổng Doanh Thu
+                  <div className="p-4 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 text-[#3F4146] dark:text-white border border-[#E3E0DA] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F7278] dark:text-slate-400 block">
+                      🏫 Số Lớp
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-bold text-emerald-950 font-mono tracking-tight">
+                    <h4 className="text-xl sm:text-2xl font-black text-[#3F4146] dark:text-white tracking-tight">
+                      {taughtClassIdsCount} Lớp
+                    </h4>
+                    <p className="text-[10px] text-[#6F7278] dark:text-slate-400 font-medium">
+                      Lớp đang đứng lớp
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 text-[#3F4146] dark:text-white border border-[#E3E0DA] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#6F7278] dark:text-slate-400 block">
+                      👥 Học Viên
+                    </span>
+                    <h4 className="text-xl sm:text-2xl font-black text-[#3F4146] dark:text-white tracking-tight">
+                      {taughtStudentIdsCount} Em
+                    </h4>
+                    <p className="text-[10px] text-[#6F7278] dark:text-slate-400 font-medium">
+                      Học viên phụ trách
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[#B7D8C0]/20 dark:bg-slate-900 text-[#2D4536] dark:text-emerald-200 border border-[#B7D8C0] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#2D4536] dark:text-emerald-300 block">
+                      💰 Tổng Lương
+                    </span>
+                    <h4 className="text-xl sm:text-2xl font-black text-[#2D4536] dark:text-emerald-300 tracking-tight">
                       +{formatVND(summary.grossRevenue)}
                     </h4>
-                    <p className="text-xs text-emerald-800 font-medium">
-                      Tính theo bậc lương chuẩn
+                    <p className="text-[10px] text-[#42604D] dark:text-slate-400 font-medium">
+                      Tính theo mức lương
                     </p>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-100 via-pink-50 to-amber-100 text-rose-950 border border-rose-300 space-y-1.5 shadow-2xs">
-                    <span className="text-xs font-bold uppercase tracking-wider text-rose-900">
-                      ⚠️ Tiền Phạt (Trễ Hạn Nhập)
+                  <div className="p-4 rounded-2xl bg-[#D9AEB0]/20 dark:bg-slate-900 text-[#5A2C2F] dark:text-rose-200 border border-[#D9AEB0] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5A2C2F] dark:text-rose-300 block">
+                      ⚠️ Tiền Phạt
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-bold text-rose-700 font-mono tracking-tight">
+                    <h4 className="text-xl sm:text-2xl font-black text-[#5A2C2F] dark:text-rose-300 tracking-tight">
                       -{formatVND(summary.totalPenalty)}
                     </h4>
-                    <p className="text-xs text-rose-800 font-medium">
-                      Trừ 10.000đ/ngày nếu trễ hạn 24h
+                    <p className="text-[10px] text-[#784447] dark:text-slate-400 font-medium">
+                      Trễ nhập buổi học
                     </p>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-200 via-yellow-100 to-orange-100 text-amber-950 border border-amber-300 space-y-1.5 shadow-2xs">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                      💵 THỰC NHẬN (LƯƠNG RÒNG)
+                  <div className="p-4 rounded-2xl bg-[#B8CEE0]/30 dark:bg-slate-900 text-[#2C3B49] dark:text-sky-200 border border-[#A5C3DA] dark:border-slate-800 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#2C3B49] dark:text-sky-300 block">
+                      💵 THỰC NHẬN
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-bold text-amber-950 font-mono tracking-tight">
+                    <h4 className="text-xl sm:text-2xl font-black text-[#2C3B49] dark:text-sky-200 tracking-tight">
                       {formatVND(summary.netRevenue)}
                     </h4>
-                    <p className="text-xs text-amber-800 font-medium">
-                      Doanh Thu - Tiền Phạt
+                    <p className="text-[10px] text-[#46596A] dark:text-slate-400 font-medium">
+                      Lương trừ phạt
                     </p>
                   </div>
                 </div>
 
-                {/* AREA: CHI TIẾT TIỀN PHẠT */}
-                <div className="p-5 rounded-2xl bg-rose-50/70 dark:bg-slate-800/80 border border-rose-200 dark:border-rose-900/60 space-y-4 shadow-2xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200 dark:border-rose-900/40 pb-3">
+                {/* AREA 1: CHI TIẾT CÁC LỚP / BUỔI ĐÃ DẠY */}
+                <div className="p-5 rounded-3xl bg-[#FAF9F6] dark:bg-slate-900 border border-[#E3E0DA] dark:border-slate-800 space-y-4 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E3E0DA] dark:border-slate-800 pb-3">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#B8CEE0] text-[#2C3B49] flex items-center justify-center font-black text-sm">
+                        📚
+                      </div>
+                      <div>
+                        <h4 className="font-black text-base text-[#3F4146] dark:text-white">
+                          CHI TIẾT LỚP & BUỔI HỌC ĐÃ DẠY ({monthTeacherSessions.length} buổi)
+                        </h4>
+                        <p className="text-xs text-[#6F7278] dark:text-slate-400 font-medium">
+                          Bảng kê chi tiết tiền lương tự động tính theo số buổi thực tế đã được ghi nhận
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {monthTeacherSessions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#F5F3EF] dark:bg-slate-800 text-[#3F4146] dark:text-slate-200 border-b border-[#E3E0DA]">
+                            <th className="p-3 font-extrabold">Ngày Dạy</th>
+                            <th className="p-3 font-extrabold">Tên Lớp Học</th>
+                            <th className="p-3 font-extrabold text-center">Buổi Thứ</th>
+                            <th className="p-3 font-extrabold text-center">Học Viên Tham Gia</th>
+                            <th className="p-3 font-extrabold text-center">Thời Lượng</th>
+                            <th className="p-3 font-extrabold text-center">Trạng Thái</th>
+                            <th className="p-3 font-extrabold text-right">Mức Lương / Ca</th>
+                            <th className="p-3 font-extrabold text-right">Thành Tiền</th>
+                            <th className="p-3 font-extrabold text-center">Thao Tác</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E3E0DA] dark:divide-slate-800">
+                          {monthTeacherSessions.map((ses) => {
+                            const cls = teacherClassesMap.get(ses.classId);
+                            const rate = typeof cls?.teacherPayRatePerSession === 'number' ? cls.teacherPayRatePerSession : 150000;
+                            const attPresent = (ses.attendance || []).filter((a) => a.status === 'present' || a.status === 'late').length;
+                            const totalAtt = (ses.attendance || []).length;
+
+                            return (
+                              <tr key={ses.id} className="hover:bg-[#F5F3EF]/60 dark:hover:bg-slate-800/50 transition">
+                                <td className="p-3 font-extrabold text-[#3F4146] dark:text-white whitespace-nowrap">
+                                  {ses.date.split('-').reverse().join('/')}
+                                </td>
+                                <td className="p-3 font-black text-[#2C3B49] dark:text-sky-300 whitespace-nowrap">
+                                  {cls?.className || ses.className}
+                                </td>
+                                <td className="p-3 text-center font-bold text-[#6F7278] whitespace-nowrap">
+                                  Buổi #{ses.sessionNumber}
+                                </td>
+                                <td className="p-3 text-center whitespace-nowrap">
+                                  <span className="px-2.5 py-1 rounded-xl bg-[#B7D8C0]/30 text-[#2D4536] dark:text-emerald-300 font-extrabold text-[11px] border border-[#B7D8C0]">
+                                    👥 {attPresent}/{totalAtt > 0 ? totalAtt : (cls?.totalStudents || 1)} học viên
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center font-medium text-[#6F7278] whitespace-nowrap">
+                                  1.5 giờ
+                                </td>
+                                <td className="p-3 text-center whitespace-nowrap">
+                                  <span className="px-2.5 py-1 rounded-xl bg-[#B7D8C0]/40 text-[#2D4536] dark:text-emerald-200 font-extrabold text-[11px] border border-[#B7D8C0]">
+                                    🟢 Đã dạy
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right font-medium text-[#6F7278] whitespace-nowrap">
+                                  {formatVND(rate)} / ca
+                                </td>
+                                <td className="p-3 text-right font-black text-[#2D4536] dark:text-emerald-300 whitespace-nowrap font-mono text-sm">
+                                  +{formatVND(rate)}
+                                </td>
+                                <td className="p-3 text-center whitespace-nowrap">
+                                  <button
+                                    onClick={() => setSelectedSessionForRevenueDetail(ses)}
+                                    className="px-2.5 py-1 rounded-xl bg-[#B8CEE0] hover:bg-[#A3BFD5] text-[#2C3B49] font-extrabold text-[11px] border border-[#A5C3DA] transition cursor-pointer"
+                                  >
+                                    Chi Tiết ↗
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center bg-white dark:bg-slate-800/40 rounded-2xl border border-[#E3E0DA] dark:border-slate-800 text-xs text-[#6F7278] font-medium space-y-1">
+                      <p className="font-extrabold text-sm text-[#3F4146] dark:text-white">Chưa có buổi học nào được ghi nhận trong kỳ lọc này</p>
+                      <p>Tiền lương sẽ tự động cộng dồn ngay khi giáo viên nhập buổi học thực tế.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* AREA 2: CHI TIẾT TIỀN PHẠT TRỄ HẠN */}
+                <div className="p-5 rounded-3xl bg-[#FAF9F6] dark:bg-slate-900 border border-[#E3E0DA] dark:border-slate-800 space-y-4 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E3E0DA] dark:border-slate-800 pb-3">
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-                      <h4 className="font-extrabold text-sm text-rose-950 dark:text-rose-200 uppercase tracking-wider">
+                      <AlertTriangle className="w-5 h-5 text-[#5A2C2F] shrink-0" />
+                      <h4 className="font-extrabold text-sm text-[#3F4146] dark:text-rose-200 uppercase tracking-wider">
                         ⚠️ CHI TIẾT TIỀN PHẠT TRỄ HẠN NHẬP BUỔI HỌC ({summary.penalties.length} khoản)
                       </h4>
                     </div>
-                    <span className="text-xs font-mono font-bold text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/80 px-3 py-1 rounded-xl border border-rose-300">
+                    <span className="text-xs font-mono font-extrabold text-[#5A2C2F] dark:text-rose-300 bg-[#D9AEB0]/30 px-3 py-1 rounded-xl border border-[#D9AEB0]">
                       Tổng tiền phạt: -{formatVND(summary.totalPenalty)}
                     </span>
                   </div>
@@ -1121,7 +1258,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="bg-rose-100/80 dark:bg-slate-900 text-rose-950 dark:text-rose-200 border-b border-rose-200">
+                          <tr className="bg-[#F5F3EF] dark:bg-slate-800 text-[#3F4146] dark:text-slate-200 border-b border-[#E3E0DA]">
                             <th className="p-3 font-extrabold">Ngày Dạy</th>
                             <th className="p-3 font-extrabold">Lớp Học</th>
                             <th className="p-3 font-extrabold">Buổi Học</th>
@@ -1133,52 +1270,52 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                             <th className="p-3 font-extrabold text-center">Thao Tác</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-rose-100 dark:divide-slate-700">
+                        <tbody className="divide-y divide-[#E3E0DA] dark:divide-slate-800">
                           {summary.penalties.map((item) => (
                             <tr
                               key={item.id}
-                              className={`hover:bg-rose-100/40 dark:hover:bg-slate-800 transition ${
-                                item.status === 'ongoing' ? 'bg-amber-50/60 dark:bg-amber-950/20' : ''
+                              className={`hover:bg-[#F5F3EF]/50 dark:hover:bg-slate-800 transition ${
+                                item.status === 'ongoing' ? 'bg-[#E4C3A8]/20 dark:bg-amber-950/20' : ''
                               }`}
                             >
-                              <td className="p-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                              <td className="p-3 font-bold text-[#3F4146] dark:text-white whitespace-nowrap">
                                 {item.dateISO.split('-').reverse().join('/')}
                               </td>
-                              <td className="p-3 font-black text-rose-900 dark:text-rose-300 whitespace-nowrap">
+                              <td className="p-3 font-black text-[#2C3B49] dark:text-sky-300 whitespace-nowrap">
                                 {item.className}
                               </td>
-                              <td className="p-3 font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              <td className="p-3 font-medium text-[#6F7278] dark:text-slate-300 whitespace-nowrap">
                                 {item.scheduleTimeStr}
                               </td>
-                              <td className="p-3 font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              <td className="p-3 font-medium text-[#6F7278] dark:text-slate-300 whitespace-nowrap">
                                 {item.dueDeadlineStr}
                               </td>
                               <td className="p-3 font-medium whitespace-nowrap">
                                 {item.isRecorded ? (
-                                  <span className="text-emerald-700 font-bold">{item.recordedTimeStr}</span>
+                                  <span className="text-[#2D4536] font-extrabold">{item.recordedTimeStr}</span>
                                 ) : (
-                                  <span className="text-rose-600 font-black">Chưa nhập</span>
+                                  <span className="text-[#5A2C2F] font-black">Chưa nhập</span>
                                 )}
                               </td>
-                              <td className="p-3 font-bold text-amber-700 text-center whitespace-nowrap">
+                              <td className="p-3 font-extrabold text-[#5C3F29] text-center whitespace-nowrap">
                                 {item.overdueDays} ngày
                               </td>
-                              <td className="p-3 font-mono font-bold text-rose-700 text-right whitespace-nowrap">
+                              <td className="p-3 font-mono font-black text-[#5A2C2F] text-right whitespace-nowrap">
                                 -{formatVND(item.penaltyAmount)}
                               </td>
                               <td className="p-3 text-center whitespace-nowrap">
                                 {item.status === 'ongoing' && (
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#E4C3A8]/40 text-[#5C3F29] border border-[#E4C3A8]">
                                     🟡 Đang phát sinh
                                   </span>
                                 )}
                                 {item.status === 'completed' && (
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#B7D8C0]/40 text-[#2D4536] border border-[#B7D8C0]">
                                     🟢 Đã hoàn tất
                                   </span>
                                 )}
                                 {item.status === 'waived' && (
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-300">
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#FAF9F6] text-[#6F7278] border border-[#E3E0DA]">
                                     ⚪ Đã miễn
                                   </span>
                                 )}
@@ -1187,7 +1324,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                                 {!item.isRecorded && (
                                   <button
                                     onClick={() => onOpenAddSession(item.classId)}
-                                    className="px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-[11px] transition shadow-xs cursor-pointer flex items-center justify-center mx-auto"
+                                    className="px-2.5 py-1 rounded-xl bg-[#B8CEE0] hover:bg-[#A3BFD5] text-[#2C3B49] font-extrabold text-[11px] border border-[#A5C3DA] transition shadow-2xs cursor-pointer flex items-center justify-center mx-auto"
                                     title="Click để nhập buổi học ngay và dừng phát sinh tiền phạt"
                                   >
                                     <PlusCircle className="w-3 h-3 mr-1" /> Nhập Buổi Ngay
@@ -1200,9 +1337,9 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                       </table>
                     </div>
                   ) : (
-                    <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-xl border border-rose-100 text-xs text-emerald-700 font-bold flex items-center justify-center space-x-2">
-                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                      <span>Tuyệt vời! Giáo viên không có khoản phạt nào trong khoảng thời gian này.</span>
+                    <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-xl border border-[#E3E0DA] text-xs text-[#2D4536] font-bold flex items-center justify-center space-x-2">
+                      <ShieldCheck className="w-5 h-5 text-[#2D4536]" />
+                      <span>Tuyệt vời! Bạn không có khoản phạt nào trong khoảng thời gian này.</span>
                     </div>
                   )}
                 </div>
@@ -1217,6 +1354,72 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* TAB 6: AI STUDIO PORTAL FOR TEACHERS */}
       {activeTab === 'ai_studio' && (
         <AiStudioPortal currentUser={currentUser} />
+      )}
+
+      {/* MODAL: CHI TIẾT BUỔI DẠY & LƯƠNG BUỔI HỌC */}
+      {selectedSessionForRevenueDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-[#FAF9F6] dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-xl border border-[#E3E0DA] dark:border-slate-800 p-6 space-y-5 relative text-[#3F4146] dark:text-white max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedSessionForRevenueDetail(null)}
+              className="absolute top-4 right-4 p-2 text-[#6F7278] hover:text-[#3F4146] rounded-full hover:bg-[#F5F3EF] dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 border-b border-[#E3E0DA] dark:border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-[#B8CEE0] text-[#2C3B49] flex items-center justify-center font-black text-lg shadow-2xs">
+                📜
+              </div>
+              <div>
+                <h4 className="font-black text-base text-[#3F4146] dark:text-white">
+                  Buổi Dạy #{selectedSessionForRevenueDetail.sessionNumber} - {selectedSessionForRevenueDetail.className}
+                </h4>
+                <p className="text-xs text-[#6F7278] font-semibold">
+                  🗓️ Ngày dạy: <strong className="text-[#3F4146]">{selectedSessionForRevenueDetail.date.split('-').reverse().join('/')}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-[#E3E0DA] dark:border-slate-700 space-y-2">
+                <span className="font-extrabold text-[#3F4146] dark:text-white block uppercase tracking-wider">📚 Bài Học & Chủ Đề:</span>
+                <p className="text-[#6F7278] font-medium leading-relaxed">
+                  {selectedSessionForRevenueDetail.lessonTopic || selectedSessionForRevenueDetail.topic || 'Đã ghi nhận bài học đầy đủ'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-2xl bg-[#B7D8C0]/30 border border-[#B7D8C0] text-[#2D4536] space-y-0.5">
+                  <span className="text-[10px] font-extrabold block uppercase tracking-wider">Học Viên Tham Gia</span>
+                  <span className="text-lg font-black block font-mono">
+                    {(selectedSessionForRevenueDetail.attendance || []).filter((a) => a.status === 'present' || a.status === 'late').length} học viên
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-[#B8CEE0]/30 border border-[#A5C3DA] text-[#2C3B49] space-y-0.5">
+                  <span className="text-[10px] font-extrabold block uppercase tracking-wider">Mức Lương Được Tính</span>
+                  <span className="text-lg font-black block font-mono">
+                    +{formatVND(
+                      typeof (assignedClasses.find((c) => c.id === selectedSessionForRevenueDetail.classId)?.teacherPayRatePerSession) === 'number'
+                        ? assignedClasses.find((c) => c.id === selectedSessionForRevenueDetail.classId)!.teacherPayRatePerSession!
+                        : 150000
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                onClick={() => setSelectedSessionForRevenueDetail(null)}
+                className="px-6 py-2.5 rounded-2xl bg-[#B8CEE0] text-[#2C3B49] font-extrabold text-xs hover:bg-[#A3BFD5] transition cursor-pointer border border-[#A5C3DA]"
+              >
+                Đóng Cửa Sổ
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODAL 1: PER CLASS DETAILED SESSIONS SALARY BREAKDOWN */}
