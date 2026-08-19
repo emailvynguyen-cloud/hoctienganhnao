@@ -11,6 +11,7 @@ import { BookOpen, Plus, Sparkles, Layers, FileText, CheckCircle2, Mic, RefreshC
 
 import { LessonWorkspace } from './LessonWorkspace';
 import { ExerciseEditorModal } from './ExerciseEditorModal';
+import { ExerciseTypePickerModal } from './ExerciseTypePickerModal';
 import { Lesson, Exercise } from '../../../types';
 
 interface AdminLearningHubProps {
@@ -73,6 +74,11 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
   const [newBookLevel, setNewBookLevel] = useState('A1');
   const [newBookDesc, setNewBookDesc] = useState('');
 
+  // New Chapter Form Modal State
+  const [isAddChapterModalOpen, setIsAddChapterModalOpen] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState('');
+  const [newChapterDesc, setNewChapterDesc] = useState('');
+
   useEffect(() => {
     loadAdminData();
   }, []);
@@ -86,24 +92,61 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
     setIsLoading(false);
   };
 
+  const handleCreateChapter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperAdmin || !selectedBook) return;
+    if (!newChapterTitle.trim()) return;
+
+    const bookChapters = chapters.filter((c) => c.bookId === selectedBook.id);
+
+    const newChapterObj: Chapter = {
+      id: 'ch_' + Date.now(),
+      bookId: selectedBook.id,
+      title: newChapterTitle.trim(),
+      description: newChapterDesc.trim(),
+      chapterNumber: bookChapters.length + 1,
+      displayOrder: bookChapters.length + 1,
+      createdAt: new Date().toISOString(),
+    };
+
+    const success = await LearningHubService.saveChapter(newChapterObj);
+    if (success) {
+      setIsAddChapterModalOpen(false);
+      setNewChapterTitle('');
+      setNewChapterDesc('');
+      await loadAdminData();
+
+      // AUTO-OPEN CREATED CHAPTER (LEVEL 3)
+      await loadChapterLessons(newChapterObj);
+    } else {
+      alert('Không thể tạo Chapter. Vui lòng kiểm tra quyền Super Admin.');
+    }
+  };
+
   const handleCreateBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSuperAdmin) return;
     if (!newBookTitle.trim()) return;
 
-    const newBook: Partial<Book> = {
+    const newBookObj: Book = {
       id: 'book_' + Date.now(),
       title: newBookTitle.trim(),
       level: newBookLevel,
       description: newBookDesc.trim(),
       displayOrder: books.length + 1,
+      createdAt: new Date().toISOString(),
     };
 
-    await LearningHubService.saveBook(newBook);
+    await LearningHubService.saveBook(newBookObj);
     setIsAddBookModalOpen(false);
     setNewBookTitle('');
     setNewBookDesc('');
-    loadAdminData();
+    await loadAdminData();
+
+    // AUTO-OPEN CREATED BOOK (LEVEL 2)
+    setSelectedBook(newBookObj);
+    setSelectedChapter(null);
+    setSelectedLesson(null);
   };
 
   const loadChapterLessons = async (ch: Chapter) => {
@@ -116,10 +159,10 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
 
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSuperAdmin || !selectedChapter) return;
+    if (!isSuperAdmin || !selectedChapter || !selectedBook) return;
     if (!newLessonTitle.trim()) return;
 
-    const newLesson: Partial<Lesson> = {
+    const newLessonObj: Lesson = {
       id: 'les_' + Date.now(),
       bookId: selectedChapter.bookId,
       chapterId: selectedChapter.id,
@@ -129,13 +172,16 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
       order: currentLessons.length + 1,
     };
 
-    const success = await LearningHubService.saveLesson(newLesson, 'super_admin');
+    const success = await LearningHubService.saveLesson(newLessonObj, 'super_admin');
     if (success) {
       setIsAddLessonModalOpen(false);
       setNewLessonTitle('');
       setNewLessonDesc('');
       setNewLessonNotes('');
       await loadChapterLessons(selectedChapter);
+
+      // AUTO-OPEN CREATED LESSON (LEVEL 4 WORKSPACE)
+      setSelectedLesson(newLessonObj);
     } else {
       alert('Không thể tạo bài học. Vui lòng kiểm tra quyền Super Admin.');
     }
@@ -210,6 +256,9 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
     );
   }
 
+  // Exercise Type Picker State
+  const [isExerciseTypePickerOpen, setIsExerciseTypePickerOpen] = useState<boolean>(false);
+
   // LEVEL 4 — LESSON WORKSPACE VIEW
   if (selectedBook && selectedChapter && selectedLesson) {
     return (
@@ -222,11 +271,38 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
           onBackToChapter={() => setSelectedLesson(null)}
           onOpenExerciseEditor={(ex) => {
             if (!isSuperAdmin) return;
-            setEditingExercise(ex || null);
-            setIsExerciseEditorOpen(true);
+            if (ex) {
+              setEditingExercise(ex);
+              setIsExerciseEditorOpen(true);
+            } else {
+              setIsExerciseTypePickerOpen(true);
+            }
           }}
           onOpenExerciseViewer={(ex) => setViewingExercise(ex)}
         />
+
+        {/* EXERCISE TYPE PICKER MODAL */}
+        {isExerciseTypePickerOpen && isSuperAdmin && (
+          <ExerciseTypePickerModal
+            onClose={() => setIsExerciseTypePickerOpen(false)}
+            onSelectType={(selectedType) => {
+              setIsExerciseTypePickerOpen(false);
+              const newEx: Exercise = {
+                id: `ex_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                bookId: selectedBook.id,
+                chapterId: selectedChapter.id,
+                lessonId: selectedLesson.id,
+                title: `Bài Tập ${selectedType.toUpperCase()}`,
+                type: selectedType,
+                description: `Bài tập ${selectedType} dành cho bài học ${selectedLesson.title}`,
+                order: 1,
+                questions: [],
+              };
+              setEditingExercise(newEx);
+              setIsExerciseEditorOpen(true);
+            }}
+          />
+        )}
 
         {/* EXERCISE EDITOR MODAL (SUPER ADMIN ONLY) */}
         {isExerciseEditorOpen && (
@@ -408,6 +484,84 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
         </button>
       </div>
 
+      {/* LEVEL 2 — BOOK WORKSPACE (CHAPTERS LIST LEVEL VIEW) */}
+      {selectedBook && !selectedChapter && !selectedLesson && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* BREADCRUMB & BACK BUTTON */}
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <button
+              onClick={() => setSelectedBook(null)}
+              className="px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              <span>Quay lại danh sách Giáo trình</span>
+            </button>
+
+            <div className="flex items-center space-x-2 text-xs font-bold text-slate-500">
+              <span className="text-pink-600 font-black">📚 {selectedBook.title}</span>
+            </div>
+          </div>
+
+          {/* BOOK HEADER CARD */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="px-2.5 py-0.5 rounded-lg bg-pink-100 dark:bg-slate-800 text-pink-700 dark:text-pink-300 text-[10px] font-black uppercase">
+                Trình độ: {selectedBook.level}
+              </span>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">{selectedBook.title}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{selectedBook.description || 'Chưa có mô tả.'}</p>
+            </div>
+
+            {isSuperAdmin && (
+              <button
+                onClick={() => setIsAddChapterModalOpen(true)}
+                className="px-5 py-3 rounded-2xl bg-pink-500 hover:bg-pink-600 text-white font-black text-xs shadow-md transition flex items-center space-x-1.5 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ THÊM CHAPTER MỚI</span>
+              </button>
+            )}
+          </div>
+
+          {/* CHAPTERS LIST GRID */}
+          <div className="space-y-4">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center space-x-2">
+              <span>📖 DANH SÁCH CHAPTER</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-xs font-bold">
+                {chapters.filter((c) => c.bookId === selectedBook.id).length} Chapter
+              </span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {chapters
+                .filter((c) => c.bookId === selectedBook.id)
+                .map((ch) => (
+                  <div
+                    key={ch.id}
+                    onClick={() => loadChapterLessons(ch)}
+                    className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:border-pink-300 transition flex items-center justify-between group cursor-pointer"
+                  >
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase text-pink-600">
+                        Chapter {ch.chapterNumber}
+                      </span>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 transition">
+                        {ch.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 line-clamp-1">{ch.description || 'Nội dung giảng dạy...'}</p>
+                    </div>
+
+                    <div className="px-4 py-2 rounded-2xl bg-pink-50 dark:bg-slate-800 text-pink-600 font-extrabold text-xs group-hover:bg-pink-500 group-hover:text-white transition flex items-center space-x-1 shrink-0 ml-3">
+                      <span>Mở Chapter</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* LEVEL 3 — CHAPTER & LESSON LIST LEVEL VIEW */}
       {selectedBook && selectedChapter && !selectedLesson && (
         <div className="space-y-6 animate-fadeIn">
@@ -504,6 +658,64 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* NEW CHAPTER FORM MODAL (SUPER ADMIN ONLY) */}
+      {isAddChapterModalOpen && isSuperAdmin && selectedBook && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <form onSubmit={handleCreateChapter} className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl border border-pink-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-fadeIn text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase text-pink-600">Giáo Trình: {selectedBook.title}</span>
+                <h3 className="font-black text-base">📖 THÊM CHAPTER MỚI</h3>
+              </div>
+              <button type="button" onClick={() => setIsAddChapterModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold">Tên Chapter (*):</label>
+                <input
+                  type="text"
+                  required
+                  value={newChapterTitle}
+                  onChange={(e) => setNewChapterTitle(e.target.value)}
+                  placeholder="VD: Chapter 1 – Introductions"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold">Mô Tả Chapter:</label>
+                <textarea
+                  rows={2}
+                  value={newChapterDesc}
+                  onChange={(e) => setNewChapterDesc(e.target.value)}
+                  placeholder="VD: Giới thiệu bản thân, chào hỏi..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsAddChapterModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-pink-500 text-white font-black text-xs hover:bg-pink-600 shadow-md"
+              >
+                Tạo Chapter
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
@@ -661,6 +873,18 @@ export const AdminLearningHub: React.FC<AdminLearningHubProps> = ({ currentUser 
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                       {book.description || 'Chưa có mô tả cho giáo trình này.'}
                     </p>
+
+                    <button
+                      onClick={() => {
+                        setSelectedBook(book);
+                        setSelectedChapter(null);
+                        setSelectedLesson(null);
+                      }}
+                      className="w-full py-2.5 rounded-2xl bg-pink-50 dark:bg-slate-800 hover:bg-pink-500 hover:text-white text-pink-600 font-extrabold text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs group"
+                    >
+                      <span>Mở Giáo Trình</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                    </button>
                   </div>
 
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">

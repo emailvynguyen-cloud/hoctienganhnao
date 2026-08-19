@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Book, Chapter, Lesson, Exercise, ExerciseType, LearningQuestion, LearningQuestionType } from '../../../types';
 import { LearningHubService } from '../../../lib/learningHubService';
 import { BulkImportModal } from './BulkImportModal';
+import { QuestionFormTemplates } from './QuestionFormTemplates';
 import { X, Plus, Trash2, Save, FileText, CheckCircle2, AlertCircle, Copy, HelpCircle } from 'lucide-react';
 
 interface ExerciseEditorModalProps {
@@ -240,82 +241,14 @@ export const ExerciseEditorModal: React.FC<ExerciseEditorModalProps> = ({
           {/* QUESTIONS LIST FORM */}
           <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
             {questions.map((q, qIndex) => (
-              <div
+              <QuestionFormTemplates
                 key={q.id || qIndex}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3 relative group"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-                  <span className="font-extrabold text-xs text-pink-600 dark:text-pink-400">
-                    CÂU HỎI {qIndex + 1}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveQuestion(qIndex)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 transition cursor-pointer"
-                    title="Xóa câu hỏi này"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* QUESTION PROMPT */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Đề bài câu hỏi:</label>
-                  <input
-                    type="text"
-                    value={q.prompt}
-                    onChange={(e) => handleUpdateQuestion(qIndex, { prompt: e.target.value })}
-                    placeholder="VD: What is your name?"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-
-                {/* OPTIONS A, B, C, D */}
-                {['multiple-choice', 'grammar_choice', 'vocab_vi_en'].includes(exerciseType) || q.options?.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {q.options.map((opt, optIndex) => (
-                      <div key={optIndex} className="flex items-center space-x-2">
-                        <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 font-mono text-xs font-bold flex items-center justify-center shrink-0">
-                          {String.fromCharCode(65 + optIndex)}
-                        </span>
-                        <input
-                          type="text"
-                          value={opt}
-                          onChange={(e) => handleUpdateOption(qIndex, optIndex, e.target.value)}
-                          placeholder={`Lựa chọn ${String.fromCharCode(65 + optIndex)}`}
-                          className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                {/* CORRECT ANSWER & EXPLANATION */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">Đáp án đúng (*):</label>
-                    <input
-                      type="text"
-                      value={q.correctAnswer}
-                      onChange={(e) => handleUpdateQuestion(qIndex, { correctAnswer: e.target.value })}
-                      placeholder="VD: I'm Vy hoặc nhập lựa chọn A"
-                      className="w-full px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-500">Giải thích đáp án:</label>
-                    <input
-                      type="text"
-                      value={q.explanation || ''}
-                      onChange={(e) => handleUpdateQuestion(qIndex, { explanation: e.target.value })}
-                      placeholder="VD: Đây là cấu trúc trả lời tên chuẩn."
-                      className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    />
-                  </div>
-                </div>
-              </div>
+                exerciseType={exerciseType}
+                question={q}
+                index={qIndex}
+                onUpdate={(fields) => handleUpdateQuestion(qIndex, fields)}
+                onRemove={() => handleRemoveQuestion(qIndex)}
+              />
             ))}
           </div>
         </div>
