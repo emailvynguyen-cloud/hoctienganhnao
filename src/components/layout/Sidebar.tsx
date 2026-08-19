@@ -189,6 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         {
           groupTitle: 'HỆ THỐNG',
           items: [
+            { id: 'adm_rules', title: 'Quản Lý Nội Quy', path: '/admin?tab=class_rules', icon: BookOpen },
             { id: 'adm_settings', title: 'Cài Đặt', path: '/admin?tab=pending_tasks', icon: Settings },
           ],
         },
@@ -226,6 +227,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       {
         groupTitle: 'HỆ THỐNG & NHÂN SỰ',
         items: [
+          { id: 'sa_rules', title: 'Quản Lý Nội Quy', path: '/super-admin?tab=class_rules', icon: BookOpen },
           { id: 'sa_student_codes', title: 'Quản Lý Mã Học Viên', path: '/super-admin?tab=student_codes', icon: Key },
           { id: 'sa_accounts', title: 'Quản Lý Tài Khoản', path: '/super-admin/accounts', icon: Users, onClick: onOpenAccountManagement },
           { id: 'sa_settings', title: 'Cài Đặt Gemini API', path: '/super-admin/settings', icon: Settings, onClick: onOpenGeminiSettings },
