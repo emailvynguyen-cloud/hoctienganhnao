@@ -330,7 +330,21 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
       new Set(tasks.map((t) => JSON.stringify({ id: t.teacherId, name: t.teacherName })))
     ).map((str) => JSON.parse(str) as { id: string; name: string });
 
+    const isTeacherRole = currentUser?.role === 'teacher';
+
     const fTasks = tasks.filter((task) => {
+      // Rule 1: Teachers NEVER see missing_quizlet tasks in Pending Tasks
+      if (isTeacherRole && task.type === 'missing_quizlet') return false;
+
+      // Rule 2: Teachers ONLY see tasks of their assigned classes / their teacherId / teacherName
+      if (isTeacherRole) {
+        const teacherUid = currentUser?.uid || '';
+        const teacherName = (currentUser?.displayName || '').toLowerCase();
+        const matchesUid = task.teacherId === teacherUid;
+        const matchesName = task.teacherName.toLowerCase() === teacherName || (teacherName && task.teacherName.toLowerCase().includes(teacherName));
+        if (!matchesUid && !matchesName) return false;
+      }
+
       if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;
       if (filterType === 'missing_quizlet' && task.type !== 'missing_quizlet') return false;
       if (filterType === 'overdue' && task.overdueDays === 0) return false;

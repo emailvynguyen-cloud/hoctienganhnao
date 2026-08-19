@@ -458,6 +458,12 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     );
   }
 
+  const handleSelectTab = (tab: typeof activeTab) => {
+    setInspectedClassId(null);
+    setInspectedStudentId(null);
+    setActiveTab(tab);
+  };
+
   return (
     <div className="space-y-6">
       
@@ -500,7 +506,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       {/* Teacher Portal Navigation Tabs */}
       <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-x-auto">
         <button
-          onClick={() => setActiveTab('today')}
+          onClick={() => handleSelectTab('today')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
             activeTab === 'today'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -511,7 +517,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('pending_tasks')}
+          onClick={() => handleSelectTab('pending_tasks')}
           className={`h-11 px-4 rounded-xl text-sm font-bold transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'pending_tasks'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -528,7 +534,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('grading')}
+          onClick={() => handleSelectTab('grading')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'grading'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -538,7 +544,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           <Bell className="w-4 h-4 mr-1.5" /> Bài Tập Cần Feedback
         </button>
         <button
-          onClick={() => setActiveTab('schedule')}
+          onClick={() => handleSelectTab('schedule')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
             activeTab === 'schedule'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -549,7 +555,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('all_classes')}
+          onClick={() => handleSelectTab('all_classes')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 border border-transparent cursor-pointer ${
             activeTab === 'all_classes'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -560,7 +566,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('revenue')}
+          onClick={() => handleSelectTab('revenue')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'revenue'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -571,7 +577,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('learning_hub')}
+          onClick={() => handleSelectTab('learning_hub')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'learning_hub'
               ? 'bg-rose-500 text-white shadow-2xs'
@@ -582,7 +588,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('ai_studio')}
+          onClick={() => handleSelectTab('ai_studio')}
           className={`h-11 px-4 rounded-xl text-sm font-medium transition-all duration-150 shrink-0 flex items-center border border-transparent cursor-pointer ${
             activeTab === 'ai_studio'
               ? 'bg-rose-500 text-white shadow-2xs'

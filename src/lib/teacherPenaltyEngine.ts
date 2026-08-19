@@ -158,12 +158,20 @@ export function calculateTeacherPenaltiesAndRevenue(
           });
         }
       } else {
-        // Session HAS NOT BEEN RECORDED YET (🔴 Đang phát sinh)
-        if (now > dueDeadline) {
-          const diffMs = now.getTime() - dueDeadline.getTime();
-          const overdueDays = Math.max(1, Math.ceil(diffMs / (1000 * 3600 * 24)));
-          const basePenalty = overdueDays * 10000;
-          const penaltyAmount = isWaived ? 0 : basePenalty;
+        // Session HAS NOT BEEN RECORDED YET (🟡 Chưa nhập buổi / 🔴 Quá hạn)
+        const sessionEnd = new Date(`${iso}T${endTimeStr}:00`);
+
+        // Task appears once session end time has passed
+        if (now > sessionEnd) {
+          let overdueDays = 0;
+          let penaltyAmount = 0;
+
+          if (now > dueDeadline) {
+            const diffMs = now.getTime() - dueDeadline.getTime();
+            overdueDays = Math.max(1, Math.ceil(diffMs / (1000 * 3600 * 24)));
+            const basePenalty = overdueDays * 10000;
+            penaltyAmount = isWaived ? 0 : basePenalty;
+          }
 
           penalties.push({
             id: penaltyKey,
