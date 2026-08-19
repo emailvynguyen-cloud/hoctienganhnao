@@ -99,10 +99,23 @@ export function calculateTeacherPenaltiesAndRevenue(
     { idx: 0, pattern: /CN|CHỦ NHẬT/i },
   ];
 
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   teacherClasses.forEach((cls) => {
     const scheduleStr = cls.schedule || '';
     const { startTimeStr, endTimeStr } = parseScheduleTime(scheduleStr);
-    const minAllowedDate = cls.scheduleEffectiveFrom || cls.startDate || (cls.createdAt ? cls.createdAt.split('T')[0] : '');
+    let minAllowedDate = cls.scheduleEffectiveFrom || cls.startDate || (cls.createdAt ? cls.createdAt.split('T')[0] : '');
+
+    // Fallback for legacy classes without effective dates
+    if (!minAllowedDate) {
+      const classSessions = (sessions || []).filter((s) => s && s.classId === cls.id && s.date);
+      if (classSessions.length > 0) {
+        const sortedDates = classSessions.map((s) => s.date).sort();
+        minAllowedDate = sortedDates[0];
+      } else {
+        minAllowedDate = todayISO;
+      }
+    }
 
     // Loop through past 60 days
     for (let i = 0; i <= 60; i++) {
