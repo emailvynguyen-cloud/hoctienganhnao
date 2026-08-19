@@ -48,6 +48,7 @@ const STORAGE_KEYS = {
   CLOUD_SYNC_ENABLED: 'vy_cloud_sync_v4',
   CLASS_RULES: 'vy_class_rules_v4',
   DISMISSED_PENDING_TASKS: 'vy_dismissed_pending_tasks_v4',
+  WAIVED_PENALTIES: 'vy_waived_penalties_v4',
   LAST_STUDENT_PORTAL_URL: 'vy_last_student_portal_url_v4',
   CURRENT_STUDENT_SESSION: 'vy_current_student_session_v4',
 };
@@ -1428,6 +1429,22 @@ export const StorageEngine = {
       setItem(STORAGE_KEYS.DISMISSED_PENDING_TASKS, dismissed);
       this.syncAllToCloud();
     }
+  },
+
+  getWaivedPenaltyKeys(): string[] {
+    return getItem<string[]>(STORAGE_KEYS.WAIVED_PENALTIES, []);
+  },
+
+  toggleWaivePenalty(key: string) {
+    const waived = this.getWaivedPenaltyKeys() || [];
+    const idx = waived.indexOf(key);
+    if (idx !== -1) {
+      waived.splice(idx, 1);
+    } else {
+      waived.push(key);
+    }
+    setItem(STORAGE_KEYS.WAIVED_PENALTIES, waived);
+    this.syncAllToCloud();
   },
 
   getLastStudentPortalUrl(): string | null {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { StorageEngine } from '../../lib/storage';
 import { isBillableStudentSession } from '../../types';
-import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2, Flame, Sparkles, UserCheck, Award } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2, Flame, Sparkles, UserCheck, Award, AlertTriangle, Eye, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
+import { calculateTeacherPenaltiesAndRevenue, TeacherRevenueSummary, TeacherPenaltyItem } from '../../lib/teacherPenaltyEngine';
 
 export const MonthlyRevenueWidget: React.FC = () => {
   // Get current date string in Vietnam time (YYYY-MM-DD)
@@ -26,6 +27,7 @@ export const MonthlyRevenueWidget: React.FC = () => {
   const currentMonthStr = todayDateStr.substring(0, 7); // "YYYY-MM"
 
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
+  const [selectedTeacherForPenalties, setSelectedTeacherForPenalties] = useState<TeacherRevenueSummary | null>(null);
 
   const sessions = StorageEngine.getSessions() || [];
   const students = StorageEngine.getStudents() || [];
@@ -334,6 +336,106 @@ export const MonthlyRevenueWidget: React.FC = () => {
         )}
       </div>
 
+      {/* ------------------------------------------------------------- */}
+      {/* MỤC MỚI: TÍCH HỢP DOANH THU & TIỀN PHẠT CHO TẤT CẢ GIÁO VIÊN */}
+      {/* ------------------------------------------------------------- */}
+      {(() => {
+        const currentUser = StorageEngine.getCurrentUser();
+        const isSuperAdmin = currentUser?.role === 'super_admin';
+
+        // Extract distinct teachers from classes
+        const teacherList: { teacherId: string; teacherName: string }[] = [];
+        const seenTeacherNames = new Set<string>();
+
+        classes.forEach((c) => {
+          if (!c || c.status === 'archived') return;
+          const tName = c.teacherName || 'Giáo viên';
+          if (!seenTeacherNames.has(tName)) {
+            seenTeacherNames.add(tName);
+            teacherList.push({ teacherId: c.teacherId || tName, teacherName: tName });
+          }
+        });
+
+        const startOfMonthISO = `${selectedMonth}-01`;
+        const lastDayNum = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
+        const endOfMonthISO = `${selectedMonth}-${String(lastDayNum).padStart(2, '0')}`;
+
+        const teacherSummaries = teacherList.map((t) => {
+          return calculateTeacherPenaltiesAndRevenue(t.teacherName, classes, sessions, startOfMonthISO, endOfMonthISO);
+        });
+
+        return (
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-4 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider">
+                  💰 THỐNG KÊ DOANH THU & TIỀN PHẠT GIÁO VIÊN (THÁNG {selectedMonth.split('-')[1]})
+                </h4>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+                Thực Nhận = Doanh Thu - Tiền Phạt
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {teacherSummaries.map((ts) => (
+                <div
+                  key={ts.teacherName}
+                  className="p-4.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3 shadow-2xs hover:shadow-md transition"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
+                      👩‍🏫 {ts.teacherName}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-300 border border-sky-200">
+                      {ts.totalSessionsCount} buổi dạy
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                    <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
+                      <span className="text-[10px] text-emerald-800 font-bold block">Doanh Thu</span>
+                      <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-xs">
+                        +{formatVND(ts.grossRevenue)}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200">
+                      <span className="text-[10px] text-rose-800 font-bold block">Tiền Phạt</span>
+                      <span className="font-mono font-bold text-rose-700 dark:text-rose-300 text-xs">
+                        -{formatVND(ts.totalPenalty)}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200">
+                      <span className="text-[10px] text-amber-900 font-bold block">Thực Nhận</span>
+                      <span className="font-mono font-bold text-amber-900 dark:text-amber-300 text-xs">
+                        {formatVND(ts.netRevenue)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {ts.penalties.length > 0 && (
+                    <div className="p-2 rounded-xl bg-rose-100/60 dark:bg-rose-950/40 border border-rose-200 text-[11px] text-rose-900 dark:text-rose-300 font-medium">
+                      ⚠️ Đang có {ts.penalties.length} khoản phạt trễ hạn nhập ({formatVND(ts.totalPenalty)})
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedTeacherForPenalties(ts)}
+                    className="w-full py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs border border-slate-300 dark:border-slate-600 transition cursor-pointer flex items-center justify-center space-x-1"
+                  >
+                    <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                    <span>Xem Chi Tiết Chi Trả & Miễn Phạt</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MỤC CHI TIẾT: DOANH THU MỖI NGÀY TRONG THÁNG CỦA MS. VY */}
       <div className="p-5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4 shadow-2xs">
         <div className="flex items-center justify-between">
@@ -438,6 +540,184 @@ export const MonthlyRevenueWidget: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* MODAL CHI TIẾT PENALTY & SUPER ADMIN MIỄN PHẠT */}
+      {selectedTeacherForPenalties && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-4xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  ⚠️ Chi Tiết Doanh Thu & Tiền Phạt: {selectedTeacherForPenalties.teacherName}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedTeacherForPenalties(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* KPI Summary for this teacher */}
+            <div className="grid grid-cols-4 gap-3 text-center text-xs">
+              <div className="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200">
+                <span className="text-[10px] text-sky-800 font-bold block">Tổng Buổi Dạy</span>
+                <span className="font-mono font-bold text-sky-950 dark:text-sky-200 text-sm">
+                  {selectedTeacherForPenalties.totalSessionsCount} buổi
+                </span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
+                <span className="text-[10px] text-emerald-800 font-bold block">Doanh Thu</span>
+                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-sm">
+                  +{formatVND(selectedTeacherForPenalties.grossRevenue)}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200">
+                <span className="text-[10px] text-rose-800 font-bold block">Tiền Phạt</span>
+                <span className="font-mono font-bold text-rose-700 dark:text-rose-300 text-sm">
+                  -{formatVND(selectedTeacherForPenalties.totalPenalty)}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200">
+                <span className="text-[10px] text-amber-900 font-bold block">THỰC NHẬN</span>
+                <span className="font-mono font-bold text-amber-950 dark:text-amber-300 text-sm">
+                  {formatVND(selectedTeacherForPenalties.netRevenue)}
+                </span>
+              </div>
+            </div>
+
+            {/* Table of Penalties */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                ⚠️ Bảng Khoản Phạt Chi Tiết & Quyền Miễn Phạt (Super Admin):
+              </h4>
+
+              {selectedTeacherForPenalties.penalties.length > 0 ? (
+                <div className="overflow-x-auto rounded-2xl border border-rose-200 dark:border-slate-800">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-rose-100/80 dark:bg-slate-800 text-rose-950 dark:text-rose-200 border-b border-rose-200">
+                        <th className="p-3 font-extrabold">Ngày Dạy</th>
+                        <th className="p-3 font-extrabold">Lớp Học</th>
+                        <th className="p-3 font-extrabold">Giờ Học</th>
+                        <th className="p-3 font-extrabold">Hạn Nhập</th>
+                        <th className="p-3 font-extrabold">Nhập Lúc</th>
+                        <th className="p-3 font-extrabold text-center">Trễ</th>
+                        <th className="p-3 font-extrabold text-right">Tiền Phạt</th>
+                        <th className="p-3 font-extrabold text-center">Trạng Thái</th>
+                        <th className="p-3 font-extrabold text-center">Miễn Phạt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-rose-100 dark:divide-slate-800">
+                      {selectedTeacherForPenalties.penalties.map((item) => {
+                        const isSuperAdmin = StorageEngine.getCurrentUser()?.role === 'super_admin';
+
+                        return (
+                          <tr key={item.id} className="hover:bg-rose-50/50 dark:hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                              {item.dateISO.split('-').reverse().join('/')}
+                            </td>
+                            <td className="p-3 font-black text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                              {item.className}
+                            </td>
+                            <td className="p-3 font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {item.scheduleTimeStr}
+                            </td>
+                            <td className="p-3 font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {item.dueDeadlineStr}
+                            </td>
+                            <td className="p-3 font-medium whitespace-nowrap">
+                              {item.isRecorded ? (
+                                <span className="text-emerald-700 font-bold">{item.recordedTimeStr}</span>
+                              ) : (
+                                <span className="text-rose-600 font-black">Chưa nhập</span>
+                              )}
+                            </td>
+                            <td className="p-3 font-bold text-amber-700 text-center whitespace-nowrap">
+                              {item.overdueDays} ngày
+                            </td>
+                            <td className="p-3 font-mono font-bold text-rose-700 text-right whitespace-nowrap">
+                              -{formatVND(item.penaltyAmount)}
+                            </td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              {item.status === 'ongoing' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                  🟡 Đang phát sinh
+                                </span>
+                              )}
+                              {item.status === 'completed' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  🟢 Đã hoàn tất
+                                </span>
+                              )}
+                              {item.status === 'waived' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-300">
+                                  ⚪ Đã miễn
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-center whitespace-nowrap">
+                              {isSuperAdmin ? (
+                                <button
+                                  onClick={() => {
+                                    StorageEngine.toggleWaivePenalty(item.id);
+                                    // Refresh summary in modal
+                                    const startOfMonthISO = `${selectedMonth}-01`;
+                                    const lastDayNum = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
+                                    const endOfMonthISO = `${selectedMonth}-${String(lastDayNum).padStart(2, '0')}`;
+                                    const updated = calculateTeacherPenaltiesAndRevenue(
+                                      selectedTeacherForPenalties.teacherName,
+                                      classes,
+                                      sessions,
+                                      startOfMonthISO,
+                                      endOfMonthISO
+                                    );
+                                    setSelectedTeacherForPenalties(updated);
+                                  }}
+                                  className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition cursor-pointer border ${
+                                    item.status === 'waived'
+                                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'
+                                      : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {item.status === 'waived' ? '🔄 Phục Hồi Phạt' : '⚪ Miễn Phạt'}
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 italic">Super Admin</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-5 text-center bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs text-emerald-700 font-bold flex items-center justify-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <span>Giáo viên này không có khoản phạt nào trong tháng.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                onClick={() => setSelectedTeacherForPenalties(null)}
+                className="px-5 py-2.5 rounded-2xl bg-slate-800 text-white font-black text-xs hover:bg-slate-900 transition cursor-pointer"
+              >
+                Đóng Cửa Sổ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
