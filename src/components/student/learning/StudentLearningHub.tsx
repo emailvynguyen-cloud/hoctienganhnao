@@ -368,17 +368,93 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
 
           {/* TAB CONTENTS */}
           {activeTab === 'practice' && (
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    🧠 Bài Tập Ôn Luyện Daily Practice
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Luyện tập nhiều lần, tự tin làm chủ kiến thức Chapter.
-                  </p>
+            <div className="space-y-4">
+              {/* RICH CHAPTER CONTENT STUDY OVERVIEW FOR STUDENTS */}
+              {selectedChapter && (
+                <div className="space-y-4">
+                  {/* RICH VOCABULARY */}
+                  {selectedChapter.richVocabulary && selectedChapter.richVocabulary.length > 0 && (
+                    <div className="p-5 rounded-3xl bg-pink-50/60 dark:bg-slate-800/80 border border-pink-100 dark:border-slate-700 space-y-3">
+                      <h4 className="font-black text-sm text-pink-800 dark:text-pink-300 flex items-center">
+                        📚 Từ Vựng Cần Nhớ ({selectedChapter.richVocabulary.length} Từ)
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        {selectedChapter.richVocabulary.map((v) => (
+                          <div key={v.id} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-pink-100 dark:border-slate-800 space-y-1 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold text-slate-900 dark:text-white text-sm">{v.word}</span>
+                              {v.ipa && <span className="font-mono text-slate-400 text-[11px]">{v.ipa}</span>}
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-200 font-bold">👉 {v.meaning}</p>
+                            {v.example && <p className="text-[11px] text-slate-500 italic">"{v.example}"</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RICH GRAMMAR */}
+                  {selectedChapter.richGrammar && selectedChapter.richGrammar.length > 0 && (
+                    <div className="p-5 rounded-3xl bg-amber-50/60 dark:bg-slate-800/80 border border-amber-100 dark:border-slate-700 space-y-3">
+                      <h4 className="font-black text-sm text-amber-800 dark:text-amber-300 flex items-center">
+                        📐 Cấu Trúc Ngữ Pháp
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        {selectedChapter.richGrammar.map((g) => (
+                          <div key={g.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-slate-800 space-y-1 shadow-2xs">
+                            <p className="font-bold text-slate-900 dark:text-white text-sm">{g.topic}</p>
+                            {g.formula && <p className="font-mono text-amber-700 dark:text-amber-300 font-bold text-xs bg-amber-50 dark:bg-slate-800 p-2 rounded-xl border border-amber-200/60 dark:border-slate-700">{g.formula}</p>}
+                            {g.usage && <p className="text-slate-700 dark:text-slate-200">{g.usage}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RICH READING */}
+                  {selectedChapter.richReading && selectedChapter.richReading.length > 0 && (
+                    <div className="p-5 rounded-3xl bg-emerald-50/60 dark:bg-slate-800/80 border border-emerald-100 dark:border-slate-700 space-y-3 text-xs">
+                      <h4 className="font-black text-sm text-emerald-800 dark:text-emerald-300 flex items-center">
+                        📖 Bài Đọc Reading
+                      </h4>
+                      {selectedChapter.richReading.map((r) => (
+                        <div key={r.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 space-y-2 shadow-2xs">
+                          <p className="font-extrabold text-slate-900 dark:text-white text-sm">{r.title}</p>
+                          <p className="text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">{r.passageText}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* RICH LISTENING */}
+                  {selectedChapter.richListening && selectedChapter.richListening.length > 0 && (
+                    <div className="p-5 rounded-3xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-100 dark:border-slate-700 space-y-3 text-xs">
+                      <h4 className="font-black text-sm text-indigo-800 dark:text-indigo-300 flex items-center">
+                        🎧 Bài Nghe Listening
+                      </h4>
+                      {selectedChapter.richListening.map((l) => (
+                        <div key={l.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-slate-800 space-y-2 shadow-2xs">
+                          <p className="font-extrabold text-slate-900 dark:text-white text-sm">{l.title}</p>
+                          {l.audioUrl && <audio controls src={l.audioUrl} className="w-full h-8" />}
+                          {l.transcript && <p className="text-slate-600 dark:text-slate-300 italic text-[11px] bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl">{l.transcript}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-pink-100 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      🧠 Bài Tập Ôn Luyện Daily Practice
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Luyện tập nhiều lần, tự tin làm chủ kiến thức Chapter.
+                    </p>
+                  </div>
+                </div>
 
               <div className="grid grid-cols-1 gap-3">
                 {samplePracticeSets.map((ps) => (
@@ -405,6 +481,7 @@ export const StudentLearningHub: React.FC<StudentLearningHubProps> = ({ currentS
                 ))}
               </div>
             </div>
+          </div>
           )}
 
           {activeTab === 'test' && (

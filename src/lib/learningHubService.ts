@@ -58,6 +58,18 @@ export class LearningHubService {
     }
   }
 
+  static async deleteBook(bookId: string): Promise<boolean> {
+    try {
+      // First delete all chapters associated with this book
+      await supabase.from('learning_chapters').delete().eq('book_id', bookId);
+      // Then delete the book record
+      const { error } = await supabase.from('learning_books').delete().eq('id', bookId);
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
   // ==========================================
   // CHAPTERS
   // ==========================================
@@ -103,6 +115,51 @@ export class LearningHubService {
       return !error;
     } catch {
       return false;
+    }
+  }
+
+  static async deleteChapter(chapterId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('learning_chapters').delete().eq('id', chapterId);
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  static async duplicateChapter(sourceChapter: Chapter, targetBookId?: string): Promise<Chapter | null> {
+    try {
+      const newChapterId = 'ch_copy_' + Date.now();
+      const duplicatedChapter: Chapter = {
+        ...sourceChapter,
+        id: newChapterId,
+        bookId: targetBookId || sourceChapter.bookId,
+        title: `${sourceChapter.title} (Bản sao)`,
+        createdAt: new Date().toISOString(),
+        richVocabulary: sourceChapter.richVocabulary
+          ? sourceChapter.richVocabulary.map((v) => ({ ...v, id: 'vocab_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+        richGrammar: sourceChapter.richGrammar
+          ? sourceChapter.richGrammar.map((g) => ({ ...g, id: 'gram_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+        richReading: sourceChapter.richReading
+          ? sourceChapter.richReading.map((r) => ({ ...r, id: 'read_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+        richListening: sourceChapter.richListening
+          ? sourceChapter.richListening.map((l) => ({ ...l, id: 'listen_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+        richSpeaking: sourceChapter.richSpeaking
+          ? sourceChapter.richSpeaking.map((s) => ({ ...s, id: 'speak_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+        richWriting: sourceChapter.richWriting
+          ? sourceChapter.richWriting.map((w) => ({ ...w, id: 'write_' + Math.random().toString(36).substring(2, 9) }))
+          : undefined,
+      };
+
+      await LearningHubService.saveChapter(duplicatedChapter);
+      return duplicatedChapter;
+    } catch {
+      return null;
     }
   }
 

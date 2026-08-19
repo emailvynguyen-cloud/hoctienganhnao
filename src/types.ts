@@ -414,6 +414,61 @@ export interface Book {
   createdAt: string;
 }
 
+export interface RichVocabItem {
+  id: string;
+  word: string;
+  ipa?: string;
+  partOfSpeech?: string;
+  meaning: string;
+  example?: string;
+  notes?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+}
+
+export interface RichGrammarItem {
+  id: string;
+  topic: string;
+  formula?: string;
+  usage?: string;
+  examples?: string[];
+  notes?: string;
+}
+
+export interface RichReadingItem {
+  id: string;
+  title: string;
+  passageText: string;
+  vocabularyList?: string[];
+  questions?: LearningQuestion[];
+}
+
+export interface RichListeningItem {
+  id: string;
+  title: string;
+  audioUrl?: string;
+  transcript?: string;
+  questions?: LearningQuestion[];
+}
+
+export interface RichSpeakingItem {
+  id: string;
+  topic: string;
+  promptText: string;
+  hints?: string[];
+  usefulPhrases?: string[];
+  rolePlayScenario?: string;
+}
+
+export interface RichWritingItem {
+  id: string;
+  promptTitle: string;
+  instructions: string;
+  usefulWords?: string[];
+  modelEssay?: string;
+  rubric?: string;
+}
+
 export interface Chapter {
   id: string;
   bookId: string;
@@ -422,6 +477,15 @@ export interface Chapter {
   description?: string;
   displayOrder: number;
   createdAt: string;
+  vocabularyInput?: string;
+  grammarInput?: string;
+  notesInput?: string;
+  richVocabulary?: RichVocabItem[];
+  richGrammar?: RichGrammarItem[];
+  richReading?: RichReadingItem[];
+  richListening?: RichListeningItem[];
+  richSpeaking?: RichSpeakingItem[];
+  richWriting?: RichWritingItem[];
 }
 
 export interface AudioAsset {
