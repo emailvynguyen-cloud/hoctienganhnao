@@ -169,12 +169,26 @@ export const INITIAL_CLASS_RULES = `📋 NỘI QUY TRUNG TÂM MS. VY ENGLISH
 - Học phí được tính theo gói buổi học đã đăng ký.`;
 
 const liveMemoryStore: Record<string, any> = {};
+const storageChangeSubscribers: Set<() => void> = new Set();
+
+export function getLiveMemoryStore(): Record<string, any> {
+  return { ...liveMemoryStore };
+}
+
+export function notifyStorageChange() {
+  storageChangeSubscribers.forEach((cb) => {
+    try {
+      cb();
+    } catch (e) {}
+  });
+}
 
 export function updateLiveMemoryStore(key: string, value: any) {
   liveMemoryStore[key] = value;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {}
+  notifyStorageChange();
 }
 
 function getItem<T>(key: string, defaultValue: T): T {
@@ -203,6 +217,7 @@ function setItem<T>(key: string, value: T): void {
   } catch (e) {
     console.error(`Error saving ${key} to storage:`, e);
   }
+  notifyStorageChange();
 }
 
 // Background Cloud Sync Helper (Non-blocking)
@@ -242,6 +257,13 @@ export const StorageEngine = {
       [STORAGE_KEYS.DISMISSED_PENDING_TASKS]: this.getDismissedPendingTaskIds(),
       [STORAGE_KEYS.WAIVED_PENALTIES]: this.getWaivedPenaltyKeys(),
       [STORAGE_KEYS.CUSTOM_FINES]: this.getCustomFines(),
+    };
+  },
+
+  onDataChange(callback: () => void) {
+    storageChangeSubscribers.add(callback);
+    return () => {
+      storageChangeSubscribers.delete(callback);
     };
   },
 
@@ -1655,6 +1677,7 @@ export const StorageEngine = {
   },
 
   dismissPendingTaskId(taskId: string) {
+    console.log('[SYNC][WRITE] dismissPendingTaskId called for taskId:', taskId);
     const dismissed = this.getDismissedPendingTaskIds() || [];
     const idsToAdd: string[] = [taskId];
 
@@ -1683,6 +1706,7 @@ export const StorageEngine = {
   },
 
   toggleWaivePenalty(key: string) {
+    console.log('[SYNC][WRITE] toggleWaivePenalty called for key:', key);
     const waived = this.getWaivedPenaltyKeys() || [];
     const idx = waived.indexOf(key);
     if (idx !== -1) {
@@ -1704,6 +1728,7 @@ export const StorageEngine = {
   },
 
   addCustomFine(fineData: Omit<FineRecord, 'id' | 'createdAt' | 'updatedAt'>): FineRecord {
+    console.log('[SYNC][WRITE] addCustomFine called:', fineData);
     const fines = this.getCustomFines();
     const nowIso = new Date().toISOString();
     const newFine: FineRecord = {
@@ -1718,6 +1743,7 @@ export const StorageEngine = {
   },
 
   deleteCustomFine(fineId: string) {
+    console.log('[SYNC][WRITE] deleteCustomFine called for fineId:', fineId);
     const fines = this.getCustomFines();
     const filtered = fines.filter((f) => f.id !== fineId);
     this.saveCustomFines(filtered);

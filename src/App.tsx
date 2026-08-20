@@ -318,7 +318,13 @@ export default function App() {
         setIsCloudLoading(false);
       });
 
-    const unsubscribe = CloudSyncEngine.subscribeToCloudData(() => {
+    const unsubscribeCloud = CloudSyncEngine.subscribeToCloudData(() => {
+      console.log('[SYNC][STATE] Cloud sync event received in App -> triggering loadData');
+      loadData();
+    });
+
+    const unsubscribeStorage = StorageEngine.onDataChange(() => {
+      console.log('[SYNC][STATE] Storage memory change received in App -> triggering loadData');
       loadData();
     });
 
@@ -331,7 +337,8 @@ export default function App() {
     window.addEventListener('focus', handleFocus);
 
     return () => {
-      unsubscribe();
+      unsubscribeCloud();
+      unsubscribeStorage();
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
