@@ -26,7 +26,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { StorageEngine } from '../../lib/storage';
-import { calculateGlobalPendingTasks } from '../../lib/pendingTasksEngine';
+import { calculateGlobalPendingTasks, isTaskForTeacher } from '../../lib/pendingTasksEngine';
 
 interface SidebarProps {
   currentUser: User | null;
@@ -37,6 +37,7 @@ interface SidebarProps {
   setIsMobileOpen: (open: boolean) => void;
   onOpenAccountManagement: () => void;
   onOpenGeminiSettings: () => void;
+  syncTick?: number;
 }
 
 interface MenuItem {
@@ -62,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   setIsMobileOpen,
   onOpenAccountManagement,
   onOpenGeminiSettings,
+  syncTick,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,36 +78,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       const students = StorageEngine.getStudents();
       const dismissed = StorageEngine.getDismissedPendingTaskIds();
       const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissed);
-      const teacherUid = currentUser?.uid || '';
-      const teacherName = (currentUser?.displayName || '').toLowerCase().trim();
-
-      const assignedClasses = (classes || []).filter((c) => {
-        if (!c || c.status === 'archived') return false;
-        return (
-          c.teacherId === teacherUid ||
-          (c.teacherName && c.teacherName.toLowerCase().trim() === teacherName) ||
-          (teacherName && (c.teacherName || '').toLowerCase().includes(teacherName))
-        );
-      });
-      const assignedClassIds = new Set(assignedClasses.map((c) => String(c.id)));
 
       return tasks.filter((t) => {
         if (t.type === 'missing_quizlet') return false;
-
-        const matchesClass = assignedClassIds.has(String(t.classId));
-        const matchesUid = t.teacherId === teacherUid;
-        const tNameLower = (t.teacherName || '').toLowerCase().trim();
-        const matchesName =
-          tNameLower === teacherName ||
-          (teacherName && tNameLower.includes(teacherName)) ||
-          (teacherName && teacherName.includes(tNameLower));
-
-        return matchesClass || matchesUid || matchesName;
+        return isTaskForTeacher(t, currentUser, classes);
       }).length;
     } catch {
       return 0;
     }
-  }, [role, currentUser]);
+  }, [role, currentUser, syncTick]);
 
   // BUILD ROLE-SPECIFIC MENU GROUPS (MEMOIZED)
   const menuGroups = React.useMemo((): MenuGroup[] => {

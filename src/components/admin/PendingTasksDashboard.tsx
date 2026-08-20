@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Class, Student, Session, User, getStudentQuizletUrl } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { calculateGlobalPendingTasks, PendingTaskItem } from '../../lib/pendingTasksEngine';
+import { calculateGlobalPendingTasks, PendingTaskItem, isTaskForTeacher } from '../../lib/pendingTasksEngine';
 import {
   Bell,
   Clock,
@@ -98,11 +98,7 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
 
       // Rule 2: Teachers ONLY see tasks of their assigned classes / their teacherId / teacherName
       if (isTeacherRole) {
-        const teacherUid = currentUser?.uid || '';
-        const teacherName = (currentUser?.displayName || '').toLowerCase();
-        const matchesUid = task.teacherId === teacherUid;
-        const matchesName = task.teacherName.toLowerCase() === teacherName || (teacherName && task.teacherName.toLowerCase().includes(teacherName));
-        if (!matchesUid && !matchesName) return false;
+        if (!isTaskForTeacher(task, currentUser, classes)) return false;
       }
 
       if (filterType === 'unrecorded' && task.type !== 'unrecorded_session') return false;

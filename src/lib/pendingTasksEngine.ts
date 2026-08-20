@@ -20,6 +20,50 @@ export interface PendingTaskItem {
   isOverdue?: boolean;
 }
 
+export function isTaskForTeacher(
+  task: { teacherId: string; teacherName: string; classId: string },
+  currentUser: User | null | undefined,
+  classes: Class[] = []
+): boolean {
+  if (!currentUser) return false;
+  if (currentUser.role === 'super_admin' || currentUser.role === 'admin') return true;
+
+  const teacherUid = currentUser.uid || '';
+  const teacherName = (currentUser.displayName || '').toLowerCase().trim();
+
+  // 1. Direct UID match
+  if (task.teacherId && task.teacherId === teacherUid) return true;
+
+  // 2. Direct Name match
+  const taskNameLower = (task.teacherName || '').toLowerCase().trim();
+  if (
+    taskNameLower &&
+    teacherName &&
+    (taskNameLower === teacherName || taskNameLower.includes(teacherName) || teacherName.includes(taskNameLower))
+  ) {
+    return true;
+  }
+
+  // 3. Class-based teacher match
+  const cls = (classes || []).find((c) => String(c.id) === String(task.classId));
+  if (cls) {
+    if (cls.teacherId === teacherUid) return true;
+    const clsTeacherNameLower = (cls.teacherName || '').toLowerCase().trim();
+    if (
+      clsTeacherNameLower &&
+      teacherName &&
+      (clsTeacherNameLower === teacherName ||
+        clsTeacherNameLower.includes(teacherName) ||
+        teacherName.includes(clsTeacherNameLower))
+    ) {
+      return true;
+    }
+    if (cls.coTeacherIds && cls.coTeacherIds.includes(teacherUid)) return true;
+  }
+
+  return false;
+}
+
 export function normalizeDateStr(dStr?: string): string {
   if (!dStr) return '';
   const clean = dStr.split('T')[0].trim();

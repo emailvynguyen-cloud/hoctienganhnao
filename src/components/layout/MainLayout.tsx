@@ -19,6 +19,7 @@ interface MainLayoutProps {
   activePublicHash?: string | null;
   onExitPublicView?: () => void;
   canNavigateBack?: boolean;
+  syncTick?: number;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -35,6 +36,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   activePublicHash,
   onExitPublicView,
   canNavigateBack,
+  syncTick,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,6 +81,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           setIsMobileOpen={setIsMobileSidebarOpen}
           onOpenAccountManagement={onOpenAccountManagement}
           onOpenGeminiSettings={onOpenGeminiSettings}
+          syncTick={syncTick}
         />
       )}
 

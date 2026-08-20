@@ -18,6 +18,7 @@ import {
   StudentAbsenceRecord,
   isBillableStudentSession,
   SystemRule,
+  FineRecord,
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -50,6 +51,7 @@ const STORAGE_KEYS = {
   CLASS_RULES: 'vy_class_rules_v4',
   DISMISSED_PENDING_TASKS: 'vy_dismissed_pending_tasks_v4',
   WAIVED_PENALTIES: 'vy_waived_penalties_v4',
+  CUSTOM_FINES: 'vy_custom_fines_v4',
   LAST_STUDENT_PORTAL_URL: 'vy_last_student_portal_url_v4',
   CURRENT_STUDENT_SESSION: 'vy_current_student_session_v4',
   SYSTEM_RULES: 'vy_system_rules_v1',
@@ -238,6 +240,8 @@ export const StorageEngine = {
       [STORAGE_KEYS.CLASS_RULES]: this.getClassRules(),
       [STORAGE_KEYS.SYSTEM_RULES]: this.getSystemRules(),
       [STORAGE_KEYS.DISMISSED_PENDING_TASKS]: this.getDismissedPendingTaskIds(),
+      [STORAGE_KEYS.WAIVED_PENALTIES]: this.getWaivedPenaltyKeys(),
+      [STORAGE_KEYS.CUSTOM_FINES]: this.getCustomFines(),
     };
   },
 
@@ -1688,6 +1692,35 @@ export const StorageEngine = {
     }
     setItem(STORAGE_KEYS.WAIVED_PENALTIES, waived);
     this.syncAllToCloud();
+  },
+
+  getCustomFines(): FineRecord[] {
+    return getItem<FineRecord[]>(STORAGE_KEYS.CUSTOM_FINES, []);
+  },
+
+  saveCustomFines(fines: FineRecord[]) {
+    setItem(STORAGE_KEYS.CUSTOM_FINES, [...fines]);
+    this.syncAllToCloud();
+  },
+
+  addCustomFine(fineData: Omit<FineRecord, 'id' | 'createdAt' | 'updatedAt'>): FineRecord {
+    const fines = this.getCustomFines();
+    const nowIso = new Date().toISOString();
+    const newFine: FineRecord = {
+      ...fineData,
+      id: `fine_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+    fines.push(newFine);
+    this.saveCustomFines(fines);
+    return newFine;
+  },
+
+  deleteCustomFine(fineId: string) {
+    const fines = this.getCustomFines();
+    const filtered = fines.filter((f) => f.id !== fineId);
+    this.saveCustomFines(filtered);
   },
 
   getLastStudentPortalUrl(): string | null {

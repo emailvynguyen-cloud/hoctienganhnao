@@ -295,16 +295,18 @@ export default function App() {
   const [bankConfig, setBankConfig] = useState<BankConfig>(() => StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
 
   const [isCloudLoading, setIsCloudLoading] = useState<boolean>(true);
+  const [syncTick, setSyncTick] = useState<number>(0);
 
   const loadData = () => {
-    setStudents(StorageEngine.getStudents());
-    setClasses(StorageEngine.getClasses());
-    setSessions(StorageEngine.getSessions());
-    setHomeworkTasks(StorageEngine.getHomeworkTasks());
-    setHomeworkSubmissions(StorageEngine.getHomeworkSubmissions());
-    setInvoices(StorageEngine.getInvoices());
+    setStudents([...StorageEngine.getStudents()]);
+    setClasses([...StorageEngine.getClasses()]);
+    setSessions([...StorageEngine.getSessions()]);
+    setHomeworkTasks([...StorageEngine.getHomeworkTasks()]);
+    setHomeworkSubmissions([...StorageEngine.getHomeworkSubmissions()]);
+    setInvoices([...StorageEngine.getInvoices()]);
     setBankConfig(StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
     setCurrentUser(StorageEngine.getCurrentUser());
+    setSyncTick((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -429,6 +431,7 @@ export default function App() {
                 onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
                 onOpenGeminiSettings={() => setIsGeminiSettingsOpen(true)}
                 onResetData={loadData}
+                syncTick={syncTick}
               />
             }
           >
@@ -562,6 +565,7 @@ export default function App() {
                     onRefreshData={loadData}
                     onOpenAddSession={handleOpenAddOrEditSession}
                     targetSubmissionId={selectedNotificationSubmissionId}
+                    syncTick={syncTick}
                   />
                 </ProtectedRoute>
               }
@@ -577,6 +581,7 @@ export default function App() {
                     sessions={sessions}
                     onRefreshData={loadData}
                     onOpenAddSession={handleOpenAddOrEditSession}
+                    syncTick={syncTick}
                   />
                 </ProtectedRoute>
               }
@@ -592,6 +597,7 @@ export default function App() {
                     sessions={sessions}
                     onRefreshData={loadData}
                     onOpenAddSession={handleOpenAddOrEditSession}
+                    syncTick={syncTick}
                   />
                 </ProtectedRoute>
               }

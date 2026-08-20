@@ -7,7 +7,7 @@ import { HomeworkGradingWidget } from '../admin/HomeworkGradingWidget';
 import { AiStudioPortal } from '../admin/AiStudioPortal';
 import { AdminLearningHub } from '../admin/learning/AdminLearningHub';
 import { StorageEngine } from '../../lib/storage';
-import { calculateGlobalPendingTasks } from '../../lib/pendingTasksEngine';
+import { calculateGlobalPendingTasks, isTaskForTeacher } from '../../lib/pendingTasksEngine';
 import {
   Calendar,
   Clock,
@@ -52,6 +52,7 @@ interface TeacherPortalProps {
   onOpenAddSession: (classId?: string, editingSession?: Session) => void;
   onSetSubViewNavigation?: (canBack: boolean, onBack?: () => void, onHome?: () => void) => void;
   targetSubmissionId?: string | null;
+  syncTick?: number;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({
@@ -63,6 +64,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   onOpenAddSession,
   onSetSubViewNavigation,
   targetSubmissionId,
+  syncTick,
 }) => {
   const [activeTab, setActiveTab] = useState<'today' | 'pending_tasks' | 'grading' | 'schedule' | 'all_classes' | 'revenue' | 'ai_studio' | 'learning_hub' | 'rules'>('today');
   const [selectedClassIdForRevenueDetails, setSelectedClassIdForRevenueDetails] = useState<string | null>(null);
@@ -94,6 +96,53 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const activeInspectedClass = inspectedClassId
     ? (classes || []).find((c) => c && c.id === inspectedClassId) || null
     : null;
+
+  // CANONICAL TEACHER ASSIGNED CLASSES (PROPER RE-CALCULATION WITH PROPS & SYNCTICK)
+  const currentTeacherId = currentUser?.uid || '';
+  const currentTeacherName = (currentUser?.displayName || '').toLowerCase().trim();
+
+  const assignedClasses = React.useMemo(() => {
+    return (classes || []).filter((c) => {
+      if (!c || c.status === 'archived') return false;
+      const cTeacherId = c.teacherId || '';
+      const cTeacherName = (c.teacherName || '').toLowerCase().trim();
+      const isTeacherMatch =
+        cTeacherId === currentTeacherId ||
+        cTeacherName === currentTeacherName ||
+        (currentTeacherName && cTeacherName.includes(currentTeacherName)) ||
+        (c.coTeacherIds && c.coTeacherIds.includes(currentTeacherId));
+      return isTeacherMatch;
+    });
+  }, [classes, currentTeacherId, currentTeacherName, syncTick]);
+
+  // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM CANONICAL ENGINE)
+  const teacherPendingTasks = React.useMemo(() => {
+    const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
+    const globalTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
+
+    return globalTasks
+      .filter((task) => {
+        // RULE 1: Teacher ONLY sees unrecorded_session AND missing_record_link tasks (NO Quizlet tasks)
+        if (task.type === 'missing_quizlet') return false;
+        // RULE 2: Use canonical isTaskForTeacher helper
+        return isTaskForTeacher(task, currentUser, classes);
+      })
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        classId: item.classId,
+        className: item.className,
+        teacherId: item.teacherId,
+        teacherName: item.teacherName,
+        dateISO: item.dateISO,
+        scheduleTimeStr: item.scheduleTimeStr,
+        dueDeadlineStr: item.dueDeadlineStr,
+        overdueDays: item.overdueDays,
+        penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
+        isOverdue: item.overdueDays > 0,
+        sessionId: item.sessionId,
+      }));
+  }, [currentUser, assignedClasses, classes, sessions, students, syncTick]);
 
   useEffect(() => {
     const syncTabFromUrl = () => {
@@ -158,62 +207,6 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const [selectedTeacherPreviewId, setSelectedTeacherPreviewId] = useState<string>('u_super_admin');
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
-
-  const assignedClasses = (classes || []).filter((c) => {
-    if (!c || c.status === 'archived') return false;
-
-    if (isSuperAdmin) {
-      if (selectedTeacherPreviewId === 'all') return true;
-      if (selectedTeacherPreviewId === 'u_super_admin') {
-        return isMsVyTeacher(c.teacherName, c.teacherId);
-      }
-      const matchedTeacherObj = otherTeachersList.find((t) => t.uid === selectedTeacherPreviewId);
-      const matchedTeacherName = matchedTeacherObj ? matchedTeacherObj.displayName : '';
-      return c.teacherId === selectedTeacherPreviewId || (matchedTeacherName && c.teacherName?.toLowerCase() === matchedTeacherName.toLowerCase());
-    }
-
-    // Other teachers (e.g. Ms. Ngọc): strictly match their teacherId or teacherName
-    return (
-      c.teacherId === currentUser?.uid ||
-      (c.teacherName && c.teacherName.toLowerCase() === (currentUser?.displayName || '').toLowerCase())
-    );
-  });
-
-  // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM CANONICAL ENGINE)
-  const teacherPendingTasks = React.useMemo(() => {
-    const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
-    const globalTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
-    const teacherUid = currentUser?.uid || '';
-    const teacherName = (currentUser?.displayName || '').toLowerCase().trim();
-
-    return globalTasks
-      .filter((task) => {
-        // RULE: Teacher ONLY sees unrecorded_session AND missing_record_link tasks (NO Quizlet tasks)
-        if (task.type === 'missing_quizlet') return false;
-
-        const matchesClass = assignedClasses.some((c) => String(c.id) === String(task.classId));
-        const matchesUid = task.teacherId === teacherUid;
-        const tNameLower = (task.teacherName || '').toLowerCase().trim();
-        const matchesName = tNameLower === teacherName || (teacherName && tNameLower.includes(teacherName)) || (teacherName && teacherName.includes(tNameLower));
-
-        return matchesClass || matchesUid || matchesName;
-      })
-      .map((item) => ({
-        id: item.id,
-        type: item.type,
-        classId: item.classId,
-        className: item.className,
-        teacherId: item.teacherId,
-        teacherName: item.teacherName,
-        dateISO: item.dateISO,
-        scheduleTimeStr: item.scheduleTimeStr,
-        dueDeadlineStr: item.dueDeadlineStr,
-        overdueDays: item.overdueDays,
-        penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
-        isOverdue: item.overdueDays > 0,
-        sessionId: item.sessionId,
-      }));
-  }, [currentUser, assignedClasses, classes, sessions, students]);
 
   // REAL-TIME VIETNAM TIME (ICT / GMT+7) CALCULATION
   const getCurrentVietnamTime = () => {

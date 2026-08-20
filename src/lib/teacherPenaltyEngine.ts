@@ -234,6 +234,40 @@ export function calculateTeacherPenaltiesAndRevenue(
     }
   });
 
+  // 4. Merge Custom Fine Records created by Admin / Super Admin
+  const customFines = StorageEngine.getCustomFines() || [];
+  const targetTeacherLower = teacherIdOrName.toLowerCase().trim();
+  customFines.forEach((cf) => {
+    if (!cf) return;
+    const isTeacherMatch =
+      cf.teacherId === teacherIdOrName ||
+      (cf.teacherName || '').toLowerCase().trim() === targetTeacherLower ||
+      targetTeacherLower.includes((cf.teacherName || '').toLowerCase().trim());
+
+    if (!isTeacherMatch) return;
+    const fineDate = cf.createdAt ? cf.createdAt.split('T')[0] : todayISO;
+    if (startDateISO && fineDate < startDateISO) return;
+    if (endDateISO && fineDate > endDateISO) return;
+
+    const isWaived = cf.status === 'waived' || waivedKeys.has(cf.id);
+
+    penalties.push({
+      id: cf.id,
+      classId: cf.classId || '',
+      className: cf.className || 'Phạt Khác / Admin',
+      teacherId: cf.teacherId,
+      teacherName: cf.teacherName || teacherIdOrName,
+      dateISO: fineDate,
+      scheduleTimeStr: cf.reason || 'Tiền phạt từ Admin',
+      dueDeadlineStr: fineDate,
+      recordedTimeStr: cf.reason,
+      overdueDays: 0,
+      penaltyAmount: isWaived ? 0 : cf.amount,
+      status: isWaived ? 'waived' : 'completed',
+      isRecorded: true,
+    });
+  });
+
   // Calculate total penalties
   const totalPenalty = penalties.reduce((sum, item) => sum + item.penaltyAmount, 0);
   const netRevenue = Math.max(0, grossRevenue - totalPenalty);

@@ -124,6 +124,21 @@ export interface AuditLogRecord {
   details: string;
 }
 
+export interface FineRecord {
+  id: string;
+  teacherId: string;
+  teacherName?: string;
+  classId?: string;
+  className?: string;
+  sessionId?: string;
+  type: string;
+  amount: number;
+  reason: string;
+  status: 'pending' | 'ongoing' | 'completed' | 'waived' | 'confirmed';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AttendanceStatus = 'present' | 'excused' | 'unexcused' | 'late';
 
 export interface AttendanceRecord {
