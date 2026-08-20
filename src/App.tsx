@@ -18,6 +18,9 @@ import { GeminiSettingsModal } from './components/common/GeminiSettingsModal';
 import { PublicStudentPortal } from './components/public/PublicStudentPortal';
 import { ClassDetailsView } from './components/admin/ClassDetailsView';
 import { PendingTasksDashboard } from './components/admin/PendingTasksDashboard';
+import { RealtimeIsolationTest } from './components/admin/RealtimeIsolationTest';
+import { PendingTaskService } from './lib/pendingTaskService';
+import { FineService } from './lib/fineService';
 import { Crown, LogIn, Trophy } from 'lucide-react';
 
 // Lazy Loaded Portals for Code-Splitting
@@ -298,15 +301,25 @@ export default function App() {
   const [syncTick, setSyncTick] = useState<number>(0);
 
   const loadData = () => {
-    setStudents([...StorageEngine.getStudents()]);
-    setClasses([...StorageEngine.getClasses()]);
-    setSessions([...StorageEngine.getSessions()]);
+    const loadedStudents = StorageEngine.getStudents();
+    const loadedClasses = StorageEngine.getClasses();
+    const loadedSessions = StorageEngine.getSessions();
+    const dismissedIds = StorageEngine.getDismissedPendingTaskIds() || [];
+
+    setStudents([...loadedStudents]);
+    setClasses([...loadedClasses]);
+    setSessions([...loadedSessions]);
     setHomeworkTasks([...StorageEngine.getHomeworkTasks()]);
     setHomeworkSubmissions([...StorageEngine.getHomeworkSubmissions()]);
     setInvoices([...StorageEngine.getInvoices()]);
     setBankConfig(StorageEngine.getBankConfig() || INITIAL_BANK_CONFIG_FALLBACK);
     setCurrentUser(StorageEngine.getCurrentUser());
     setSyncTick((prev) => prev + 1);
+
+    // One-time sync derived pending tasks & fine records to direct Supabase tables
+    try {
+      PendingTaskService.syncDerivedPendingTasks(loadedClasses, loadedSessions, loadedStudents, dismissedIds);
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -444,6 +457,9 @@ export default function App() {
           >
             {/* PUBLIC ROUTE: ROOT & ROLE REDIRECT */}
             <Route path="/" element={<RootRouteHandler currentUser={currentUser} students={students} />} />
+
+            {/* REALTIME ISOLATION TEST ROUTE */}
+            <Route path="/realtime-test" element={<RealtimeIsolationTest />} />
 
             {/* PUBLIC ROUTE: LOGIN */}
             <Route

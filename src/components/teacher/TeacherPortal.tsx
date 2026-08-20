@@ -8,6 +8,8 @@ import { AiStudioPortal } from '../admin/AiStudioPortal';
 import { AdminLearningHub } from '../admin/learning/AdminLearningHub';
 import { StorageEngine } from '../../lib/storage';
 import { calculateGlobalPendingTasks, isTaskForTeacher } from '../../lib/pendingTasksEngine';
+import { PendingTaskService, DbPendingTask } from '../../lib/pendingTaskService';
+import { FineService, DbFineRecord } from '../../lib/fineService';
 import {
   Calendar,
   Clock,
@@ -115,6 +117,33 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     });
   }, [classes, currentTeacherId, currentTeacherName, syncTick]);
 
+  const [dbTasks, setDbTasks] = useState<DbPendingTask[]>([]);
+  const [dbFines, setDbFines] = useState<DbFineRecord[]>([]);
+
+  useEffect(() => {
+    const teacherId = currentUser?.uid || currentUser?.displayName || '';
+
+    // Initial fetch from Supabase tables for current teacher
+    PendingTaskService.fetchPendingTasks(teacherId).then((tasks) => setDbTasks(tasks));
+    FineService.fetchFines(teacherId).then((fines) => setDbFines(fines));
+
+    // Direct Supabase Realtime subscriptions
+    const unsubTasks = PendingTaskService.subscribePendingTasks((updatedTasks) => {
+      console.log('[REALTIME][PENDING_TASK] TeacherPortal received realtime tasks:', updatedTasks.length);
+      setDbTasks(updatedTasks);
+    }, teacherId);
+
+    const unsubFines = FineService.subscribeFines((updatedFines) => {
+      console.log('[REALTIME][FINE] TeacherPortal received realtime fines:', updatedFines.length);
+      setDbFines(updatedFines);
+    }, teacherId);
+
+    return () => {
+      unsubTasks();
+      unsubFines();
+    };
+  }, [currentUser]);
+
   // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM CANONICAL ENGINE)
   const teacherPendingTasks = React.useMemo(() => {
     const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
@@ -142,7 +171,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         isOverdue: item.overdueDays > 0,
         sessionId: item.sessionId,
       }));
-  }, [currentUser, assignedClasses, classes, sessions, students, syncTick]);
+  }, [currentUser, assignedClasses, classes, sessions, students, syncTick, dbTasks]);
 
   useEffect(() => {
     const syncTabFromUrl = () => {

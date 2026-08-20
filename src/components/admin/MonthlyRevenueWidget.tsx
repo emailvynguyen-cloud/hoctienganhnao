@@ -4,6 +4,7 @@ import { isBillableStudentSession } from '../../types';
 import { DollarSign, Calendar, TrendingUp, Clock, CheckCircle2, Flame, Sparkles, UserCheck, Award, AlertTriangle, Eye, X, RotateCcw, ShieldCheck } from 'lucide-react';
 import { formatVND } from '../../lib/vietqr';
 import { calculateTeacherPenaltiesAndRevenue, TeacherRevenueSummary, TeacherPenaltyItem } from '../../lib/teacherPenaltyEngine';
+import { FineService } from '../../lib/fineService';
 
 export const MonthlyRevenueWidget: React.FC = () => {
   // Get current date string in Vietnam time (YYYY-MM-DD)
@@ -667,6 +668,11 @@ export const MonthlyRevenueWidget: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     StorageEngine.toggleWaivePenalty(item.id);
+                                    if (item.status === 'waived') {
+                                      FineService.restoreFine(item.id);
+                                    } else {
+                                      FineService.waiveFine(item.id);
+                                    }
                                     // Refresh summary in modal
                                     const startOfMonthISO = `${selectedMonth}-01`;
                                     const lastDayNum = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Class, Student, Session, User, getStudentQuizletUrl } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { calculateGlobalPendingTasks, PendingTaskItem, isTaskForTeacher } from '../../lib/pendingTasksEngine';
+import { PendingTaskService, DbPendingTask } from '../../lib/pendingTaskService';
 import {
   Bell,
   Clock,
@@ -52,13 +53,28 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
   onInspectClass,
 }) => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  const [dbTasks, setDbTasks] = useState<DbPendingTask[]>([]);
   const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
   const [filterType, setFilterType] = useState<'all' | 'unrecorded' | 'missing_quizlet' | 'missing_record_link' | 'overdue' | 'today'>('all');
   const [selectedTeacherFilter, setSelectedTeacherFilter] = useState<string>('all');
 
+  useEffect(() => {
+    // Initial fetch from Supabase pending_tasks table
+    PendingTaskService.fetchPendingTasks().then((tasks) => setDbTasks(tasks));
+
+    // Direct Supabase Realtime subscription on pending_tasks table
+    const unsubscribe = PendingTaskService.subscribePendingTasks((updatedTasks) => {
+      console.log('[REALTIME][PENDING_TASK] Dashboard received realtime update, items:', updatedTasks.length);
+      setDbTasks(updatedTasks);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleDismissTask = (taskId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
       StorageEngine.dismissPendingTaskId(taskId);
+      PendingTaskService.dismissPendingTask(taskId);
     }
   };
 

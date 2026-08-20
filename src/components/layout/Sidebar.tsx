@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { StorageEngine } from '../../lib/storage';
 import { calculateGlobalPendingTasks, isTaskForTeacher } from '../../lib/pendingTasksEngine';
+import { PendingTaskService } from '../../lib/pendingTaskService';
 
 interface SidebarProps {
   currentUser: User | null;
@@ -70,6 +71,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
   const role = currentUser?.role || 'student';
 
+  const [rtTaskCount, setRtTaskCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (role !== 'teacher') return;
+    const teacherId = currentUser?.uid || currentUser?.displayName || '';
+    const unsubscribe = PendingTaskService.subscribePendingTasks((tasks) => {
+      setRtTaskCount(tasks.filter((t) => t.status === 'pending').length);
+    }, teacherId);
+    return () => unsubscribe();
+  }, [role, currentUser]);
+
   const teacherPendingTasksCount = React.useMemo(() => {
     if (role !== 'teacher') return 0;
     try {
@@ -79,14 +91,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       const dismissed = StorageEngine.getDismissedPendingTaskIds();
       const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissed);
 
-      return tasks.filter((t) => {
+      const calculated = tasks.filter((t) => {
         if (t.type === 'missing_quizlet') return false;
         return isTaskForTeacher(t, currentUser, classes);
       }).length;
+
+      return Math.max(calculated, rtTaskCount);
     } catch {
-      return 0;
+      return rtTaskCount;
     }
-  }, [role, currentUser, syncTick]);
+  }, [role, currentUser, syncTick, rtTaskCount]);
 
   // BUILD ROLE-SPECIFIC MENU GROUPS (MEMOIZED)
   const menuGroups = React.useMemo((): MenuGroup[] => {
