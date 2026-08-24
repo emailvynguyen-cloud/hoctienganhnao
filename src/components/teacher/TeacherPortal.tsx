@@ -90,6 +90,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const [inspectedClassId, setInspectedClassId] = useState<string | null>(null);
   const [inspectedStudentId, setInspectedStudentId] = useState<string | null>(null);
   const [selectedSessionForRevenueDetail, setSelectedSessionForRevenueDetail] = useState<Session | null>(null);
+  const [selectedTeacherPreviewId, setSelectedTeacherPreviewId] = useState<string>('u_super_admin');
 
   const activeInspectedStudent = inspectedStudentId
     ? (students || []).find((s) => s && s.id === inspectedStudentId) || null
@@ -121,18 +122,24 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const [dbFines, setDbFines] = useState<DbFineRecord[]>([]);
 
   useEffect(() => {
-    const teacherId = currentUser?.uid || currentUser?.displayName || '';
-    console.log('[PENDING][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId);
-    console.log('[FINE][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId);
+    const isSuperAdminUser = currentUser?.role === 'super_admin';
+    const teacherId = isSuperAdminUser && selectedTeacherPreviewId
+      ? selectedTeacherPreviewId
+      : (currentUser?.uid || currentUser?.displayName || '');
 
-    // Initial fetch from Supabase tables for current teacher
-    PendingTaskService.fetchPendingTasks(teacherId).then((tasks) => {
+    console.log('[PENDING][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId || 'ALL');
+    console.log('[FINE][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId || 'ALL');
+
+    // Initial fetch from Supabase tables for current teacher (or ALL if super_admin with no preview)
+    const queryTeacherId = isSuperAdminUser && !selectedTeacherPreviewId ? undefined : teacherId;
+
+    PendingTaskService.fetchPendingTasks(queryTeacherId).then((tasks) => {
       console.log('[PENDING][INITIAL FETCH] Fetched tasks:', tasks.length);
       console.log('[PENDING][STATE UPDATE] Updating dbTasks state:', tasks.length);
       setDbTasks(tasks);
     });
 
-    FineService.fetchFines(teacherId).then((fines) => {
+    FineService.fetchFines(queryTeacherId).then((fines) => {
       console.log('[FINE][INITIAL FETCH] Fetched fines:', fines.length);
       console.log('[FINE][STATE UPDATE] Updating dbFines state:', fines.length);
       setDbFines(fines);
@@ -144,20 +151,20 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
       console.log('[PENDING][REALTIME EVENT] Received tasks via Realtime event:', updatedTasks.length);
       console.log('[PENDING][STATE UPDATE] Updating dbTasks state from Realtime:', updatedTasks.length);
       setDbTasks(updatedTasks);
-    }, teacherId);
+    }, queryTeacherId);
 
     const unsubFines = FineService.subscribeFines((updatedFines) => {
       console.log('[FINE][REALTIME SUBSCRIBED] Subscription callback ready');
       console.log('[FINE][REALTIME EVENT] Received fines via Realtime event:', updatedFines.length);
       console.log('[FINE][STATE UPDATE] Updating dbFines state from Realtime:', updatedFines.length);
       setDbFines(updatedFines);
-    }, teacherId);
+    }, queryTeacherId);
 
     return () => {
       unsubTasks();
       unsubFines();
     };
-  }, [currentUser]);
+  }, [currentUser, selectedTeacherPreviewId]);
 
   // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM REALTIME SUPABASE)
   const teacherPendingTasks = React.useMemo(() => {
@@ -307,7 +314,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   const allUsers = StorageEngine.getUsers() || [];
   const otherTeachersList = allUsers.filter((u) => u && u.role === 'teacher');
 
-  const [selectedTeacherPreviewId, setSelectedTeacherPreviewId] = useState<string>('u_super_admin');
+
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
 

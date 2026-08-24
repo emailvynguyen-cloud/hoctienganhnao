@@ -171,7 +171,12 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
       if (filterType === 'today' && task.overdueDays !== 0) return false;
 
       if (selectedTeacherFilter !== 'all') {
-        if (task.teacherId !== selectedTeacherFilter && task.teacherName !== selectedTeacherFilter) {
+        const targetTeacherUser = (allUsers || []).find((u) => u.uid === selectedTeacherFilter || u.displayName === selectedTeacherFilter) || {
+          uid: selectedTeacherFilter,
+          displayName: selectedTeacherFilter,
+          role: 'teacher' as const,
+        };
+        if (!isTaskForTeacher(task, targetTeacherUser, classes)) {
           return false;
         }
       }
