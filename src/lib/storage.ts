@@ -220,6 +220,15 @@ function setItem<T>(key: string, value: T): void {
   notifyStorageChange();
 }
 
+function setItemSilent<T>(key: string, value: T): void {
+  liveMemoryStore[key] = value;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error(`Error saving ${key} silently to storage:`, e);
+  }
+}
+
 // Background Cloud Sync Helper (Non-blocking)
 async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
   collectionName: string,
@@ -1701,6 +1710,31 @@ export const StorageEngine = {
     }
   },
 
+  dismissPendingTaskIdSilent(taskId: string) {
+    console.log('[SYNC][WRITE] dismissPendingTaskIdSilent called for taskId:', taskId);
+    const dismissed = this.getDismissedPendingTaskIds() || [];
+    const idsToAdd: string[] = [taskId];
+
+    if (taskId.startsWith('unrecorded_')) {
+      idsToAdd.push(taskId.replace('unrecorded_', 'penalty_'));
+    } else if (taskId.startsWith('penalty_')) {
+      idsToAdd.push(taskId.replace('penalty_', 'unrecorded_'));
+    }
+
+    let changed = false;
+    idsToAdd.forEach((id) => {
+      if (!dismissed.includes(id)) {
+        dismissed.push(id);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setItemSilent(STORAGE_KEYS.DISMISSED_PENDING_TASKS, dismissed);
+      this.syncAllToCloud();
+    }
+  },
+
   getWaivedPenaltyKeys(): string[] {
     return getItem<string[]>(STORAGE_KEYS.WAIVED_PENALTIES, []);
   },
@@ -1715,6 +1749,19 @@ export const StorageEngine = {
       waived.push(key);
     }
     setItem(STORAGE_KEYS.WAIVED_PENALTIES, waived);
+    this.syncAllToCloud();
+  },
+
+  toggleWaivePenaltySilent(key: string) {
+    console.log('[SYNC][WRITE] toggleWaivePenaltySilent called for key:', key);
+    const waived = this.getWaivedPenaltyKeys() || [];
+    const idx = waived.indexOf(key);
+    if (idx !== -1) {
+      waived.splice(idx, 1);
+    } else {
+      waived.push(key);
+    }
+    setItemSilent(STORAGE_KEYS.WAIVED_PENALTIES, waived);
     this.syncAllToCloud();
   },
 

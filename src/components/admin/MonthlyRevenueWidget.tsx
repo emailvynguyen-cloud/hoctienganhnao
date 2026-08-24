@@ -681,25 +681,42 @@ export const MonthlyRevenueWidget: React.FC = () => {
                             <td className="p-3 text-center whitespace-nowrap">
                               {isSuperAdmin ? (
                                 <button
-                                  onClick={() => {
-                                    StorageEngine.toggleWaivePenalty(item.id);
-                                    if (item.status === 'waived') {
-                                      FineService.restoreFine(item.id);
-                                    } else {
-                                      FineService.waiveFine(item.id);
-                                    }
-                                    // Refresh summary in modal
-                                    const startOfMonthISO = `${selectedMonth}-01`;
-                                    const lastDayNum = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate();
-                                    const endOfMonthISO = `${selectedMonth}-${String(lastDayNum).padStart(2, '0')}`;
-                                    const updated = calculateTeacherPenaltiesAndRevenue(
-                                      selectedTeacherForPenalties.teacherName,
-                                      classes,
-                                      sessions,
-                                      startOfMonthISO,
-                                      endOfMonthISO
+                                  onClick={async () => {
+                                    const isWaived = item.status === 'waived';
+                                    const newStatus = isWaived ? 'completed' : 'waived';
+
+                                    // 1. OPTIMISTIC UI UPDATE: Instantly toggle status in modal state (0ms latency!)
+                                    const prevSummary = { ...selectedTeacherForPenalties };
+                                    const updatedPenalties = selectedTeacherForPenalties.penalties.map((p) =>
+                                      p.id === item.id ? { ...p, status: newStatus as any } : p
                                     );
-                                    setSelectedTeacherForPenalties(updated);
+                                    const updatedTotalPenalty = updatedPenalties
+                                      .filter((p) => p.status !== 'waived')
+                                      .reduce((sum, p) => sum + (p.penaltyAmount || 0), 0);
+
+                                    setSelectedTeacherForPenalties({
+                                      ...selectedTeacherForPenalties,
+                                      penalties: updatedPenalties,
+                                      totalPenalty: updatedTotalPenalty,
+                                    });
+
+                                    // 2. Silent storage persistence
+                                    StorageEngine.toggleWaivePenaltySilent(item.id);
+
+                                    // 3. Background Supabase request with failure rollback
+                                    try {
+                                      const ok = isWaived
+                                        ? await FineService.restoreFine(item.id)
+                                        : await FineService.waiveFine(item.id);
+                                      if (!ok) {
+                                        setSelectedTeacherForPenalties(prevSummary);
+                                        alert('Không thể thay đổi trạng thái phạt trên máy chủ. Đã khôi phục dữ liệu.');
+                                      }
+                                    } catch (e) {
+                                      console.error('[WAIVE][ERROR]', e);
+                                      setSelectedTeacherForPenalties(prevSummary);
+                                      alert('Đã xảy ra lỗi khi thay đổi trạng thái phạt. Đã khôi phục dữ liệu.');
+                                    }
                                   }}
                                   className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition cursor-pointer border ${
                                     item.status === 'waived'

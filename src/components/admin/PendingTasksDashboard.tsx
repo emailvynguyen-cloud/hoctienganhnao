@@ -79,10 +79,29 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
     return () => unsubscribe();
   }, []);
 
-  const handleDismissTask = (taskId: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
-      StorageEngine.dismissPendingTaskId(taskId);
-      PendingTaskService.dismissPendingTask(taskId);
+  const handleDismissTask = async (taskId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn bỏ qua vĩnh viễn công việc này khỏi danh sách cần xử lý?')) {
+      return;
+    }
+
+    // 1. OPTIMISTIC UI UPDATE: Instantly remove item from local React state (0ms latency!)
+    const previousDbTasks = [...dbTasks];
+    setDbTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    // 2. Silent storage persistence (does not trigger full-app loadData re-render)
+    StorageEngine.dismissPendingTaskIdSilent(taskId);
+
+    // 3. Async backend request with failure rollback
+    try {
+      const ok = await PendingTaskService.dismissPendingTask(taskId);
+      if (!ok) {
+        setDbTasks(previousDbTasks);
+        alert('Không thể bỏ qua tác vụ trên máy chủ. Đã khôi phục dữ liệu.');
+      }
+    } catch (e) {
+      console.error('[DISMISS][ERROR]', e);
+      setDbTasks(previousDbTasks);
+      alert('Đã xảy ra lỗi khi bỏ qua tác vụ. Đã khôi phục dữ liệu.');
     }
   };
 
