@@ -122,19 +122,34 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
 
   useEffect(() => {
     const teacherId = currentUser?.uid || currentUser?.displayName || '';
+    console.log('[PENDING][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId);
+    console.log('[FINE][UI MOUNT] TeacherPortal mounted for teacherId:', teacherId);
 
     // Initial fetch from Supabase tables for current teacher
-    PendingTaskService.fetchPendingTasks(teacherId).then((tasks) => setDbTasks(tasks));
-    FineService.fetchFines(teacherId).then((fines) => setDbFines(fines));
+    PendingTaskService.fetchPendingTasks(teacherId).then((tasks) => {
+      console.log('[PENDING][INITIAL FETCH] Fetched tasks:', tasks.length);
+      console.log('[PENDING][STATE UPDATE] Updating dbTasks state:', tasks.length);
+      setDbTasks(tasks);
+    });
+
+    FineService.fetchFines(teacherId).then((fines) => {
+      console.log('[FINE][INITIAL FETCH] Fetched fines:', fines.length);
+      console.log('[FINE][STATE UPDATE] Updating dbFines state:', fines.length);
+      setDbFines(fines);
+    });
 
     // Direct Supabase Realtime subscriptions
     const unsubTasks = PendingTaskService.subscribePendingTasks((updatedTasks) => {
-      console.log('[REALTIME][PENDING_TASK] TeacherPortal received realtime tasks:', updatedTasks.length);
+      console.log('[PENDING][REALTIME SUBSCRIBED] Subscription callback ready');
+      console.log('[PENDING][REALTIME EVENT] Received tasks via Realtime event:', updatedTasks.length);
+      console.log('[PENDING][STATE UPDATE] Updating dbTasks state from Realtime:', updatedTasks.length);
       setDbTasks(updatedTasks);
     }, teacherId);
 
     const unsubFines = FineService.subscribeFines((updatedFines) => {
-      console.log('[REALTIME][FINE] TeacherPortal received realtime fines:', updatedFines.length);
+      console.log('[FINE][REALTIME SUBSCRIBED] Subscription callback ready');
+      console.log('[FINE][REALTIME EVENT] Received fines via Realtime event:', updatedFines.length);
+      console.log('[FINE][STATE UPDATE] Updating dbFines state from Realtime:', updatedFines.length);
       setDbFines(updatedFines);
     }, teacherId);
 
@@ -144,34 +159,93 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
     };
   }, [currentUser]);
 
-  // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM CANONICAL ENGINE)
+  // SINGLE SOURCE OF TRUTH: TEACHER PENDING TASKS (READ-ONLY VIEW FROM REALTIME SUPABASE)
   const teacherPendingTasks = React.useMemo(() => {
     const dismissedTaskIds = StorageEngine.getDismissedPendingTaskIds() || [];
-    const globalTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
+    const derivedTasks = calculateGlobalPendingTasks(classes || [], sessions || [], students || [], dismissedTaskIds);
 
-    return globalTasks
+    // 1. Build a map of all tasks from dbTasks (Supabase Realtime)
+    const dbTaskMap = new Map<string, DbPendingTask>();
+    (dbTasks || []).forEach((t) => dbTaskMap.set(t.id, t));
+
+    // 2. Map active tasks from dbTasks
+    const activeDbTasks = (dbTasks || [])
+      .filter((t) => t.status === 'pending' && !dismissedTaskIds.includes(t.id))
+      .map((t) => ({
+        id: t.id,
+        type: t.type as any,
+        classId: t.class_id || '',
+        className: t.class_name || '',
+        teacherId: t.teacher_id,
+        teacherName: t.teacher_name || '',
+        dateISO: t.date_iso || '',
+        scheduleTimeStr: t.schedule_time_str || '',
+        dueDeadlineStr: '',
+        overdueDays: t.overdue_days || 0,
+        penaltyAmount: (t.overdue_days || 0) * 10000,
+        isOverdue: (t.overdue_days || 0) > 0,
+        sessionId: t.session_id,
+      }));
+
+    const taskMap = new Map<string, any>();
+
+    // Add derived tasks ONLY if they are not marked completed/dismissed in dbTasks
+    derivedTasks.forEach((dt) => {
+      const dbRecord = dbTaskMap.get(dt.id);
+      if (!dbRecord || (dbRecord.status === 'pending' && !dismissedTaskIds.includes(dt.id))) {
+        taskMap.set(dt.id, dt);
+      }
+    });
+
+    // Overwrite with active dbTasks
+    activeDbTasks.forEach((dbt) => taskMap.set(dbt.id, dbt));
+
+    const combinedTasks = Array.from(taskMap.values());
+    console.log('[PENDING][UI RENDER] teacherPendingTasks re-calculating directly from dbTasks Realtime! Count:', combinedTasks.length);
+
+    return combinedTasks
       .filter((task) => {
         // RULE 1: Teacher ONLY sees unrecorded_session AND missing_record_link tasks (NO Quizlet tasks)
         if (task.type === 'missing_quizlet') return false;
         // RULE 2: Use canonical isTaskForTeacher helper
         return isTaskForTeacher(task, currentUser, classes);
-      })
-      .map((item) => ({
-        id: item.id,
-        type: item.type,
-        classId: item.classId,
-        className: item.className,
-        teacherId: item.teacherId,
-        teacherName: item.teacherName,
-        dateISO: item.dateISO,
-        scheduleTimeStr: item.scheduleTimeStr,
-        dueDeadlineStr: item.dueDeadlineStr,
-        overdueDays: item.overdueDays,
-        penaltyAmount: item.penaltyAmount || item.overdueDays * 10000,
-        isOverdue: item.overdueDays > 0,
-        sessionId: item.sessionId,
-      }));
+      });
   }, [currentUser, assignedClasses, classes, sessions, students, syncTick, dbTasks]);
+
+  // SINGLE SOURCE OF TRUTH: TEACHER FINE PENALTIES (READ-ONLY VIEW FROM REALTIME SUPABASE dbFines)
+  const teacherFinePenalties = React.useMemo(() => {
+    const currentTeacherId = currentUser?.uid || currentUser?.displayName || '';
+    const currentTeacherName = (currentUser?.displayName || '').toLowerCase().trim();
+
+    const filteredFines = (dbFines || []).filter((f) => {
+      const matchId = f.teacher_id === currentTeacherId;
+      const matchName = f.teacher_name && f.teacher_name.toLowerCase().trim() === currentTeacherName;
+      return matchId || matchName;
+    });
+
+    console.log('[FINE][UI RENDER] teacherFinePenalties re-calculating directly from dbFines Realtime! Count:', filteredFines.length);
+
+    return filteredFines.map((f) => ({
+      id: f.id,
+      teacherId: f.teacher_id,
+      teacherName: f.teacher_name || '',
+      classId: f.class_id || '',
+      className: f.class_name || 'Lớp học',
+      sessionId: f.session_id,
+      dateISO: f.created_at ? f.created_at.split('T')[0] : '',
+      overdueDays: 0,
+      penaltyAmount: f.amount || 0,
+      status: f.status as any,
+      isRecorded: f.type !== 'ongoing_unrecorded',
+      reason: f.reason,
+    }));
+  }, [currentUser, dbFines]);
+
+  const teacherTotalPenaltyAmount = React.useMemo(() => {
+    return teacherFinePenalties
+      .filter((p) => p.status !== 'waived')
+      .reduce((sum, p) => sum + (p.penaltyAmount || 0), 0);
+  }, [teacherFinePenalties]);
 
   useEffect(() => {
     const syncTabFromUrl = () => {
@@ -1327,15 +1401,15 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                     <div className="flex items-center space-x-2">
                       <AlertTriangle className="w-5 h-5 text-[#5A2C2F] shrink-0" />
                       <h4 className="font-extrabold text-sm text-[#3F4146] dark:text-rose-200 uppercase tracking-wider">
-                        ⚠️ CHI TIẾT TIỀN PHẠT TRỄ HẠN NHẬP BUỔI HỌC ({summary.penalties.length} khoản)
+                        ⚠️ CHI TIẾT TIỀN PHẠT TRỄ HẠN NHẬP BUỔI HỌC ({teacherFinePenalties.length} khoản)
                       </h4>
                     </div>
                     <span className="text-xs font-mono font-extrabold text-[#5A2C2F] dark:text-rose-300 bg-[#D9AEB0]/30 px-3 py-1 rounded-xl border border-[#D9AEB0]">
-                      Tổng tiền phạt: -{formatVND(summary.totalPenalty)}
+                      Tổng tiền phạt: -{formatVND(teacherTotalPenaltyAmount)}
                     </span>
                   </div>
 
-                  {summary.penalties.length > 0 ? (
+                  {teacherFinePenalties.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
@@ -1352,7 +1426,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E3E0DA] dark:divide-slate-800">
-                          {summary.penalties.map((item) => (
+                          {teacherFinePenalties.map((item) => (
                             <tr
                               key={item.id}
                               className={`hover:bg-[#F5F3EF]/50 dark:hover:bg-slate-800 transition ${

@@ -30,6 +30,21 @@ export const MonthlyRevenueWidget: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
   const [selectedTeacherForPenalties, setSelectedTeacherForPenalties] = useState<TeacherRevenueSummary | null>(null);
 
+  React.useEffect(() => {
+    console.log('[FINE][UI MOUNT] MonthlyRevenueWidget mounted');
+
+    FineService.fetchFines().then((fines) => {
+      console.log('[FINE][INITIAL FETCH] MonthlyRevenueWidget fetched fines:', fines.length);
+    });
+
+    const unsubscribe = FineService.subscribeFines((updatedFines) => {
+      console.log('[FINE][REALTIME SUBSCRIBED] MonthlyRevenueWidget subscription ready');
+      console.log('[FINE][REALTIME EVENT] MonthlyRevenueWidget received fines via Realtime event:', updatedFines.length);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const sessions = StorageEngine.getSessions() || [];
   const students = StorageEngine.getStudents() || [];
   const classes = StorageEngine.getClasses() || [];

@@ -59,12 +59,20 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
   const [selectedTeacherFilter, setSelectedTeacherFilter] = useState<string>('all');
 
   useEffect(() => {
+    console.log('[PENDING][UI MOUNT] PendingTasksDashboard mounted');
+
     // Initial fetch from Supabase pending_tasks table
-    PendingTaskService.fetchPendingTasks().then((tasks) => setDbTasks(tasks));
+    PendingTaskService.fetchPendingTasks().then((tasks) => {
+      console.log('[PENDING][INITIAL FETCH] Dashboard fetched tasks:', tasks.length);
+      console.log('[PENDING][STATE UPDATE] Dashboard updating dbTasks state:', tasks.length);
+      setDbTasks(tasks);
+    });
 
     // Direct Supabase Realtime subscription on pending_tasks table
     const unsubscribe = PendingTaskService.subscribePendingTasks((updatedTasks) => {
-      console.log('[REALTIME][PENDING_TASK] Dashboard received realtime update, items:', updatedTasks.length);
+      console.log('[PENDING][REALTIME SUBSCRIBED] Dashboard subscription ready');
+      console.log('[PENDING][REALTIME EVENT] Dashboard received tasks via Realtime event:', updatedTasks.length);
+      console.log('[PENDING][STATE UPDATE] Dashboard updating dbTasks state from Realtime:', updatedTasks.length);
       setDbTasks(updatedTasks);
     });
 
@@ -94,7 +102,46 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
     const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const todayFmt = now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissedTaskIds);
+    const derivedTasks = calculateGlobalPendingTasks(classes, sessions, students, dismissedTaskIds);
+
+    // 1. Build a map of all tasks from dbTasks (Supabase Realtime)
+    const dbTaskMap = new Map<string, DbPendingTask>();
+    (dbTasks || []).forEach((t) => dbTaskMap.set(t.id, t));
+
+    // 2. Map active tasks from dbTasks
+    const activeDbTasks: PendingTaskItem[] = (dbTasks || [])
+      .filter((t) => t.status === 'pending' && !dismissedTaskIds.includes(t.id))
+      .map((t) => ({
+        id: t.id,
+        type: t.type as any,
+        classId: t.class_id || '',
+        className: t.class_name || 'Lớp học',
+        teacherId: t.teacher_id,
+        teacherName: t.teacher_name || 'Giáo viên',
+        dateISO: t.date_iso || '',
+        scheduleTimeStr: t.schedule_time_str || '',
+        dueDeadlineStr: '',
+        overdueDays: t.overdue_days || 0,
+        penaltyAmount: (t.overdue_days || 0) * 10000,
+        isOverdue: (t.overdue_days || 0) > 0,
+        sessionId: t.session_id,
+      }));
+
+    const taskMap = new Map<string, PendingTaskItem>();
+
+    // Add derived tasks ONLY if they are not marked completed/dismissed in dbTasks
+    derivedTasks.forEach((dt) => {
+      const dbRecord = dbTaskMap.get(dt.id);
+      if (!dbRecord || (dbRecord.status === 'pending' && !dismissedTaskIds.includes(dt.id))) {
+        taskMap.set(dt.id, dt);
+      }
+    });
+
+    // Overwrite with active dbTasks
+    activeDbTasks.forEach((dbt) => taskMap.set(dbt.id, dbt));
+
+    const tasks = Array.from(taskMap.values());
+    console.log('[PENDING][UI RENDER] PendingTasksDashboard re-calculating directly from dbTasks Realtime! Active items:', tasks.length);
 
     const totalCount = tasks.length;
     const unrecCount = tasks.filter((t) => t.type === 'unrecorded_session').length;
