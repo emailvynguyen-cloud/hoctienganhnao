@@ -3,6 +3,8 @@ import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, Ban
 import { StudentPortal } from '../student/StudentPortal';
 import { Lock } from 'lucide-react';
 
+import { normalizeStudentKey } from '../../lib/obfuscate';
+
 interface PublicStudentPortalProps {
   publicHash: string;
   students: Student[];
@@ -28,13 +30,14 @@ export const PublicStudentPortal: React.FC<PublicStudentPortalProps> = ({
   onRefreshData,
   onExit,
 }) => {
-  const cleanTarget = (publicHash || '').trim().replace(/\s+/g, '').toUpperCase();
+  const cleanTarget = normalizeStudentKey(publicHash || '');
   const matchedStudent = students.find((s) => {
     if (!s || s.status === 'soft_deleted') return false;
-    const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
-    const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
-    const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
-    return matchHash || matchId || matchCode;
+    const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanTarget;
+    const matchId = s.id && normalizeStudentKey(s.id) === cleanTarget;
+    const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanTarget;
+    const matchName = s.name && normalizeStudentKey(s.name) === cleanTarget;
+    return matchHash || matchId || matchCode || matchName;
   });
 
   if (!matchedStudent) {

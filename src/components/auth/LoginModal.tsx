@@ -5,6 +5,8 @@ import { CloudSyncEngine } from '../../lib/cloudSync';
 import logoImg from '../../assets/logo.jpg';
 import { Lock, Mail, Key, Sparkles, UserCheck, Shield, Crown, Info, X, LogIn, ArrowRight, AlertCircle } from 'lucide-react';
 
+import { normalizeStudentKey } from '../../lib/obfuscate';
+
 interface LoginModalProps {
   isOpen?: boolean;
   canClose?: boolean;
@@ -32,8 +34,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setErrorMsg(null);
 
     const cleanInput = studentCode.trim();
-    const cleanCode = cleanInput.replace(/\s+/g, '').toUpperCase();
-    if (!cleanCode) {
+    const cleanKey = normalizeStudentKey(cleanInput);
+    if (!cleanKey && !cleanInput) {
       setErrorMsg('Vui lòng nhập Mã học viên của bạn!');
       return;
     }
@@ -49,12 +51,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const students = StorageEngine.getStudents() || [];
     const matchedStudent = students.find((s) => {
       if (!s || s.status === 'soft_deleted') return false;
-      const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
-      const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
-      const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+      const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanKey;
+      const matchName = s.name && normalizeStudentKey(s.name) === cleanKey;
+      const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanKey;
+      const matchId = s.id && normalizeStudentKey(s.id) === cleanKey;
       const matchEmail = s.email && s.email.trim().toLowerCase() === cleanInput.toLowerCase();
-      const matchPhone = s.phone && s.phone.trim().replace(/\s+/g, '') === cleanInput.replace(/\s+/g, '');
-      return matchCode || matchHash || matchId || matchEmail || matchPhone;
+      const matchPhone = s.phone && s.phone.replace(/\D/g, '') === cleanInput.replace(/\D/g, '');
+      return matchCode || matchName || matchHash || matchId || matchEmail || (matchPhone && cleanInput.replace(/\D/g, '').length >= 6);
     });
 
     if (!matchedStudent) {

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from './
 import { UserRole, User, Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig } from './types';
 import { StorageEngine } from './lib/storage';
 import { CloudSyncEngine } from './lib/cloudSync';
+import { normalizeStudentKey } from './lib/obfuscate';
 import { GeminiEngine } from './lib/gemini';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { NotFound } from './components/common/NotFound';
@@ -86,13 +87,14 @@ const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> 
     } else if (savedStudentUrl) {
       const candidateHash = extractHashFromUrl(savedStudentUrl);
       if (candidateHash) {
-        const cleanCandidate = candidateHash.trim().replace(/\s+/g, '').toUpperCase();
+        const cleanCandidate = normalizeStudentKey(candidateHash);
         const activeStudent = students.find((s) => {
           if (!s || s.status === 'soft_deleted') return false;
-          const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
-          const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
-          const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
-          return matchHash || matchId || matchCode;
+          const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanCandidate;
+          const matchId = s.id && normalizeStudentKey(s.id) === cleanCandidate;
+          const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanCandidate;
+          const matchName = s.name && normalizeStudentKey(s.name) === cleanCandidate;
+          return matchHash || matchId || matchCode || matchName;
         });
         if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
           return <Navigate to={savedStudentUrl} replace />;
@@ -393,13 +395,14 @@ export default function App() {
 
   useEffect(() => {
     if (activeStudentSecretHash) {
-      const cleanSecret = activeStudentSecretHash.trim().replace(/\s+/g, '').toUpperCase();
+      const cleanSecret = normalizeStudentKey(activeStudentSecretHash);
       const matchedStd = students.find((s) => {
         if (!s || s.status === 'soft_deleted') return false;
-        const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
-        const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
-        const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
-        return matchHash || matchId || matchCode;
+        const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanSecret;
+        const matchId = s.id && normalizeStudentKey(s.id) === cleanSecret;
+        const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanSecret;
+        const matchName = s.name && normalizeStudentKey(s.name) === cleanSecret;
+        return matchHash || matchId || matchCode || matchName;
       });
       if (matchedStd) {
         const currentUrl = location.pathname + location.search;
