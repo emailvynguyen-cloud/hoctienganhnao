@@ -126,7 +126,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
 
   const handleToggleStudentCodeStatus = (std: Student) => {
     const nextStatus = std.studentCodeStatus === 'DISABLED' ? 'ACTIVE' : 'DISABLED';
-    const updated = safeStudents.map((s) => (s.id === std.id ? { ...s, studentCodeStatus: nextStatus } : s));
+    const nowIso = new Date().toISOString();
+    const updated = safeStudents.map((s) => (s.id === std.id ? { ...s, studentCodeStatus: nextStatus, updatedAt: nowIso } : s));
     StorageEngine.saveStudents(updated);
     onUpdateStudents();
   };
@@ -144,12 +145,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
       return;
     }
 
+    const nowIso = new Date().toISOString();
     const updated = safeStudents.map((s) =>
       s.id === stdId
         ? {
             ...s,
             studentCode: cleanCode,
             studentCodeStatus: (s.studentCodeStatus || 'ACTIVE') as 'ACTIVE' | 'DISABLED',
+            updatedAt: nowIso,
           }
         : s
     );

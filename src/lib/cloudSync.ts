@@ -71,13 +71,14 @@ export function mergeStorePayload(
             if (!existing) {
               itemMap.set(String(itemId), item);
             } else {
-              // Prefer local if local has newer timestamp or non-null values
               const localTs = item.updatedAt || item.createdAt || item.date || '';
               const cloudTs = existing.updatedAt || existing.createdAt || existing.date || '';
-              if (localTs && cloudTs && localTs >= cloudTs) {
-                itemMap.set(String(itemId), { ...existing, ...item });
-              } else {
+              if (cloudTs && localTs && cloudTs > localTs) {
+                // Prefer cloud ONLY if cloud explicitly has a newer timestamp
                 itemMap.set(String(itemId), { ...item, ...existing });
+              } else {
+                // Otherwise prefer local edits so local user changes are never overwritten by stale cloud state
+                itemMap.set(String(itemId), { ...existing, ...item });
               }
             }
           }
