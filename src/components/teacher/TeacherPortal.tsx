@@ -1289,7 +1289,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                       ⚠️ Tiền Phạt
                     </span>
                     <h4 className="text-xl sm:text-2xl font-black text-[#5A2C2F] dark:text-rose-300 tracking-tight">
-                      -{formatVND(summary.totalPenalty)}
+                      -{formatVND(teacherTotalPenaltyAmount)}
                     </h4>
                     <p className="text-[10px] text-[#784447] dark:text-slate-400 font-medium">
                       Trễ nhập buổi học
@@ -1301,7 +1301,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
                       💵 THỰC NHẬN
                     </span>
                     <h4 className="text-xl sm:text-2xl font-black text-[#2C3B49] dark:text-sky-200 tracking-tight">
-                      {formatVND(summary.netRevenue)}
+                      {formatVND(Math.max(0, summary.grossRevenue - teacherTotalPenaltyAmount))}
                     </h4>
                     <p className="text-[10px] text-[#46596A] dark:text-slate-400 font-medium">
                       Lương trừ phạt

@@ -86,7 +86,14 @@ const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> 
     } else if (savedStudentUrl) {
       const candidateHash = extractHashFromUrl(savedStudentUrl);
       if (candidateHash) {
-        const activeStudent = students.find((s) => s && (s.publicHash === candidateHash || s.id === candidateHash) && s.status !== 'soft_deleted');
+        const cleanCandidate = candidateHash.trim().replace(/\s+/g, '').toUpperCase();
+        const activeStudent = students.find((s) => {
+          if (!s || s.status === 'soft_deleted') return false;
+          const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
+          const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
+          const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCandidate;
+          return matchHash || matchId || matchCode;
+        });
         if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
           return <Navigate to={savedStudentUrl} replace />;
         }
@@ -386,7 +393,14 @@ export default function App() {
 
   useEffect(() => {
     if (activeStudentSecretHash) {
-      const matchedStd = students.find((s) => s && (s.publicHash === activeStudentSecretHash || s.id === activeStudentSecretHash));
+      const cleanSecret = activeStudentSecretHash.trim().replace(/\s+/g, '').toUpperCase();
+      const matchedStd = students.find((s) => {
+        if (!s || s.status === 'soft_deleted') return false;
+        const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
+        const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
+        const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanSecret;
+        return matchHash || matchId || matchCode;
+      });
       if (matchedStd) {
         const currentUrl = location.pathname + location.search;
         StorageEngine.setLastStudentPortalUrl(currentUrl);

@@ -28,7 +28,14 @@ export const PublicStudentPortal: React.FC<PublicStudentPortalProps> = ({
   onRefreshData,
   onExit,
 }) => {
-  const matchedStudent = students.find((s) => s && (s.publicHash === publicHash || s.id === publicHash));
+  const cleanTarget = (publicHash || '').trim().replace(/\s+/g, '').toUpperCase();
+  const matchedStudent = students.find((s) => {
+    if (!s || s.status === 'soft_deleted') return false;
+    const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
+    const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
+    const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanTarget;
+    return matchHash || matchId || matchCode;
+  });
 
   if (!matchedStudent) {
     return (

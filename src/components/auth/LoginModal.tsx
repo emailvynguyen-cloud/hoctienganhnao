@@ -30,7 +30,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    const cleanCode = studentCode.trim().toUpperCase();
+    const cleanInput = studentCode.trim();
+    const cleanCode = cleanInput.replace(/\s+/g, '').toUpperCase();
     if (!cleanCode) {
       setErrorMsg('Vui lòng nhập Mã học viên của bạn!');
       return;
@@ -39,9 +40,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsSubmitting(true);
     setTimeout(() => {
       const students = StorageEngine.getStudents() || [];
-      const matchedStudent = students.find(
-        (s) => s && s.status !== 'soft_deleted' && s.studentCode && s.studentCode.trim().toUpperCase() === cleanCode
-      );
+      const matchedStudent = students.find((s) => {
+        if (!s || s.status === 'soft_deleted') return false;
+        const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+        const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+        const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+        const matchEmail = s.email && s.email.trim().toLowerCase() === cleanInput.toLowerCase();
+        const matchPhone = s.phone && s.phone.trim().replace(/\s+/g, '') === cleanInput.replace(/\s+/g, '');
+        return matchCode || matchHash || matchId || matchEmail || matchPhone;
+      });
 
       if (!matchedStudent) {
         setErrorMsg('Mã học viên không hợp lệ. Vui lòng kiểm tra lại mã của bạn.');

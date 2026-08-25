@@ -268,8 +268,10 @@ export function calculateTeacherPenaltiesAndRevenue(
     });
   });
 
-  // Calculate total penalties
-  const totalPenalty = penalties.reduce((sum, item) => sum + item.penaltyAmount, 0);
+  // Calculate total penalties (ONLY active completed fines that are not waived)
+  const totalPenalty = penalties
+    .filter((p) => p.status === 'completed' && (p.penaltyAmount || 0) > 0)
+    .reduce((sum, item) => sum + item.penaltyAmount, 0);
   const netRevenue = Math.max(0, grossRevenue - totalPenalty);
 
   return {
