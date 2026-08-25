@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Student } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { CloudSyncEngine } from '../../lib/cloudSync';
 import logoImg from '../../assets/logo.jpg';
 import { LogIn, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -33,37 +34,42 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const students = StorageEngine.getStudents() || [];
-      const matchedStudent = students.find((s) => {
-        if (!s || s.status === 'soft_deleted') return false;
-        const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
-        const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
-        const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
-        const matchEmail = s.email && s.email.trim().toLowerCase() === cleanInput.toLowerCase();
-        const matchPhone = s.phone && s.phone.trim().replace(/\s+/g, '') === cleanInput.replace(/\s+/g, '');
-        return matchCode || matchHash || matchId || matchEmail || matchPhone;
-      });
+    try {
+      // Force fresh pull from Supabase Cloud DB before validating code to ensure cross-device consistency
+      await CloudSyncEngine.pullInitialCloudData();
+    } catch (e) {
+      console.warn('[LOGIN][SYNC] Cloud pull before login failed:', e);
+    }
 
-      if (!matchedStudent) {
-        setErrorMsg('Mã học viên không hợp lệ. Vui lòng kiểm tra lại mã của bạn.');
-        setIsSubmitting(false);
-        return;
-      }
+    const students = StorageEngine.getStudents() || [];
+    const matchedStudent = students.find((s) => {
+      if (!s || s.status === 'soft_deleted') return false;
+      const matchCode = s.studentCode && s.studentCode.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+      const matchHash = s.publicHash && s.publicHash.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+      const matchId = s.id && s.id.trim().replace(/\s+/g, '').toUpperCase() === cleanCode;
+      const matchEmail = s.email && s.email.trim().toLowerCase() === cleanInput.toLowerCase();
+      const matchPhone = s.phone && s.phone.trim().replace(/\s+/g, '') === cleanInput.replace(/\s+/g, '');
+      return matchCode || matchHash || matchId || matchEmail || matchPhone;
+    });
 
-      if (matchedStudent.studentCodeStatus === 'DISABLED') {
-        setErrorMsg('Mã học viên này hiện không hoạt động. Vui lòng liên hệ giáo viên.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Save student session & last portal URL
-      StorageEngine.setCurrentStudentSession(matchedStudent.id);
-      StorageEngine.setLastStudentPortalUrl(`/student/${matchedStudent.publicHash || matchedStudent.id}`);
-
+    if (!matchedStudent) {
+      setErrorMsg('Mã học viên không hợp lệ. Vui lòng kiểm tra lại mã của bạn.');
       setIsSubmitting(false);
-      onStudentLoginSuccess(matchedStudent);
-    }, 300);
+      return;
+    }
+
+    if (matchedStudent.studentCodeStatus === 'DISABLED') {
+      setErrorMsg('Mã học viên này hiện không hoạt động. Vui lòng liên hệ giáo viên.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Save student session & last portal URL
+    StorageEngine.setCurrentStudentSession(matchedStudent.id);
+    StorageEngine.setLastStudentPortalUrl(`/student/${matchedStudent.publicHash || matchedStudent.id}`);
+
+    setIsSubmitting(false);
+    onStudentLoginSuccess(matchedStudent);
   };
 
   return (
