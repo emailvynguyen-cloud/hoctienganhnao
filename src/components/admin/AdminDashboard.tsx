@@ -161,6 +161,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
     setEditingStudentCodeModal(null);
   };
 
+  const handleDeleteStudentCode = (std: Student) => {
+    const codeDisplay = std.studentCode ? `"${std.studentCode}"` : 'hiện tại';
+    if (!window.confirm(`Bạn có chắc chắn muốn XÓA MÃ TRUY CẬP ${codeDisplay} của học viên "${std.name}"?\n\nSau khi xóa, học viên sẽ không thể dùng mã này để đăng nhập nữa. Dữ liệu học tập và tài khoản của học viên vẫn được giữ nguyên.`)) {
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const updated = safeStudents.map((s) =>
+      s.id === std.id
+        ? {
+            ...s,
+            studentCode: '',
+            studentCodeStatus: 'DISABLED' as const,
+            updatedAt: nowIso,
+          }
+        : s
+    );
+    StorageEngine.saveStudents(updated);
+    onUpdateStudents();
+  };
+
   // Class Manager Assignment Modal State
   const [editingClassManagersModal, setEditingClassManagersModal] = useState<Class | null>(null);
 
@@ -354,13 +374,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const registeredTeacherUsers = allUsers.filter((u) => u.role === 'teacher' && !isMsVyTeacher(u.displayName, u.uid));
 
   // Also collect any teachers referenced in classes who might not be in registeredTeacherUsers
-  const otherTeachersMap = new Map<string, { id: string; name: string; email?: string; phone?: string; avatarUrl?: string }>();
+  const otherTeachersMap = new Map<string, { id: string; name: string; email?: string; password?: string; phone?: string; avatarUrl?: string }>();
 
   registeredTeacherUsers.forEach((u) => {
     otherTeachersMap.set(u.uid, {
       id: u.uid,
       name: u.displayName,
       email: u.email,
+      password: u.password || 'admin123',
       phone: u.phoneNumber,
       avatarUrl: u.avatarUrl,
     });
@@ -370,10 +391,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
     if (cls.teacherName && !isMsVyTeacher(cls.teacherName, cls.teacherId)) {
       const key = cls.teacherId || cls.teacherName;
       if (!otherTeachersMap.has(key)) {
+        const matchingUser = registeredTeacherUsers.find((u) => u.uid === key || u.displayName === cls.teacherName);
         otherTeachersMap.set(key, {
           id: key,
           name: cls.teacherName,
-          email: `${cls.teacherName.toLowerCase().replace(/[^a-z0-9]/g, '')}@msvyenglish.edu.vn`,
+          email: matchingUser?.email || `${cls.teacherName.toLowerCase().replace(/[^a-z0-9]/g, '')}@msvyenglish.edu.vn`,
+          password: matchingUser?.password || 'admin123',
         });
       }
     }
@@ -736,7 +759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Email: {teacher.email} • SĐT: {teacher.phone || 'Chưa cập nhật'}
+                          Tài khoản (Email): <strong className="font-mono text-slate-900 dark:text-white font-bold">{teacher.email || 'Chưa có email'}</strong> • Mật khẩu: <strong className="font-mono text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 rounded border border-purple-200 font-bold">{teacher.password || 'admin123'}</strong> • SĐT: {teacher.phone || 'Chưa cập nhật'}
                         </p>
                       </div>
                     </div>
@@ -745,6 +768,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                       <span className="px-3 py-1.5 rounded-2xl bg-white dark:bg-slate-800 text-sky-950 dark:text-sky-300 font-extrabold text-xs border border-sky-200">
                         {teacherClasses.length} Lớp Phụ Trách
                       </span>
+
+                      {isSuperAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const u = allUsers.find((user) => user.uid === teacher.id || user.displayName === teacher.name);
+                            if (u) {
+                              const newPass = prompt(`Nhập mật khẩu mới cho giáo viên ${u.displayName}:`, u.password || 'admin123');
+                              if (newPass) {
+                                StorageEngine.updateUser({ ...u, password: newPass });
+                                onUpdateStudents();
+                                alert(`Đã đổi mật khẩu cho giáo viên ${u.displayName} thành công!`);
+                              }
+                            } else {
+                              alert('Không tìm thấy tài khoản giáo viên để sửa mật khẩu.');
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 dark:bg-purple-950 dark:text-purple-200 font-bold text-xs transition flex items-center shrink-0 cursor-pointer border border-purple-300"
+                          title="Đổi mật khẩu tài khoản giáo viên"
+                        >
+                          🔑 Đổi Mật Khẩu
+                        </button>
+                      )}
 
                       {isSuperAdmin && (
                         <button
@@ -1681,11 +1727,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                               onClick={() => handleToggleStudentCodeStatus(std)}
                               className={`px-3 py-1.5 rounded-xl font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center ${
                                 isCodeActive
-                                  ? 'bg-rose-100 hover:bg-rose-200 text-rose-950 dark:bg-rose-950 dark:text-rose-200 border border-rose-300'
+                                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 dark:bg-amber-950 dark:text-amber-200 border border-amber-300'
                                   : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300'
                               }`}
                             >
                               {isCodeActive ? '🔒 Vô hiệu hóa' : '🔓 Bật lại mã'}
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteStudentCode(std)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-600 hover:text-white text-rose-800 dark:bg-rose-950 dark:text-rose-200 font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center border border-rose-300"
+                              title="Xóa mã đăng nhập của học viên này"
+                            >
+                              🗑️ Xóa Mã
                             </button>
                           </div>
                         </td>

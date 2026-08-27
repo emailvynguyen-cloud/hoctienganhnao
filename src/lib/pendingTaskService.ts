@@ -239,31 +239,41 @@ export const PendingTaskService = {
     students: Student[],
     dismissedTaskIds: string[] = []
   ): Promise<DbPendingTask[]> {
+    const dismissedSet = new Set(dismissedTaskIds || []);
     const computedItems = calculateGlobalPendingTasks(classes, sessions, students, dismissedTaskIds);
     const nowIso = new Date().toISOString();
 
-    const dbTasks: DbPendingTask[] = computedItems.map((item) => ({
-      id: item.id,
-      teacher_id: item.teacherId,
-      teacher_name: item.teacherName,
-      class_id: item.classId,
-      class_name: item.className,
-      session_id: item.sessionId,
-      type: item.type,
-      title: item.type === 'unrecorded_session' ? `Chưa nhập buổi học: ${item.className}` : `Thiếu thông tin: ${item.className}`,
-      description: item.scheduleTimeStr,
-      status: 'pending',
-      date_iso: item.dateISO,
-      schedule_time_str: item.scheduleTimeStr,
-      overdue_days: item.overdueDays,
-      created_at: nowIso,
-      updated_at: nowIso,
-    }));
+    const dbTasks: DbPendingTask[] = computedItems
+      .filter((item) => !dismissedSet.has(item.id))
+      .map((item) => ({
+        id: item.id,
+        teacher_id: item.teacherId,
+        teacher_name: item.teacherName,
+        class_id: item.classId,
+        class_name: item.className,
+        session_id: item.sessionId,
+        type: item.type,
+        title: item.type === 'unrecorded_session' ? `Chưa nhập buổi học: ${item.className}` : `Thiếu thông tin: ${item.className}`,
+        description: item.scheduleTimeStr,
+        status: 'pending',
+        date_iso: item.dateISO,
+        schedule_time_str: item.scheduleTimeStr,
+        overdue_days: item.overdueDays,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }));
 
-    // Merge into local and push to Supabase
+    // Merge into local and push to Supabase ONLY if task is NOT in dismissedSet and NOT already dismissed/completed in memory
     dbTasks.forEach((dt) => {
-      if (!inMemoryTasks.some((t) => t.id === dt.id)) {
+      if (dismissedSet.has(dt.id)) return;
+
+      const existing = inMemoryTasks.find((t) => t.id === dt.id);
+      if (!existing) {
         this.createPendingTask(dt);
+      } else if (existing.status === 'pending') {
+        if (existing.overdue_days !== dt.overdue_days) {
+          this.updatePendingTask(dt.id, { overdue_days: dt.overdue_days });
+        }
       }
     });
 

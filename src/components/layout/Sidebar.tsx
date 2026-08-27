@@ -77,7 +77,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     if (role !== 'teacher') return;
     const teacherId = currentUser?.uid || currentUser?.displayName || '';
     const unsubscribe = PendingTaskService.subscribePendingTasks((tasks) => {
-      setRtTaskCount(tasks.filter((t) => t.status === 'pending').length);
+      const dismissedSet = new Set(StorageEngine.getDismissedPendingTaskIds() || []);
+      const activeTasks = tasks.filter((t) => t.status === 'pending' && !dismissedSet.has(t.id));
+      setRtTaskCount(activeTasks.length);
     }, teacherId);
     return () => unsubscribe();
   }, [role, currentUser]);
@@ -91,12 +93,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       const dismissed = StorageEngine.getDismissedPendingTaskIds();
       const tasks = calculateGlobalPendingTasks(classes, sessions, students, dismissed);
 
-      const calculated = tasks.filter((t) => {
+      return tasks.filter((t) => {
         if (t.type === 'missing_quizlet') return false;
         return isTaskForTeacher(t, currentUser, classes);
       }).length;
-
-      return Math.max(calculated, rtTaskCount);
     } catch {
       return rtTaskCount;
     }

@@ -73,13 +73,17 @@ export function mergeStorePayload(
             } else {
               const localTs = item.updatedAt || item.createdAt || item.date || '';
               const cloudTs = existing.updatedAt || existing.createdAt || existing.date || '';
+              let mergedItem = { ...existing, ...item };
               if (cloudTs && localTs && cloudTs > localTs) {
-                // Prefer cloud ONLY if cloud explicitly has a newer timestamp
-                itemMap.set(String(itemId), { ...item, ...existing });
-              } else {
-                // Otherwise prefer local edits so local user changes are never overwritten by stale cloud state
-                itemMap.set(String(itemId), { ...existing, ...item });
+                mergedItem = { ...item, ...existing };
               }
+              if (existing.password || item.password) {
+                mergedItem.password = item.password || existing.password || 'admin123';
+              }
+              if (existing.email || item.email) {
+                mergedItem.email = item.email || existing.email;
+              }
+              itemMap.set(String(itemId), mergedItem);
             }
           }
         }

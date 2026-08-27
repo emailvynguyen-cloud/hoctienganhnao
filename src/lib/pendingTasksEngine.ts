@@ -147,40 +147,15 @@ export function getPastScheduledDates(cls: Class, daysBack: number = 45): string
     { idx: 0, pattern: /CN|CHỦ NHẬT/i },
   ];
 
-  const rawMinDate = cls.scheduleEffectiveFrom || cls.startDate || (cls.createdAt ? cls.createdAt.split('T')[0] : '');
-
-  let minAllowedDateISO = rawMinDate;
-  if (!minAllowedDateISO) {
-    const existingSessions = StorageEngine.getSessions().filter((s) => s && s.classId === cls.id && s.date);
-    if (existingSessions.length > 0) {
-      const sortedDates = existingSessions.map((s) => s.date).sort();
-      minAllowedDateISO = sortedDates[0];
-    } else {
-      minAllowedDateISO = todayISO;
-    }
-  }
+  const minAllowedDateISO = cls.scheduleEffectiveFrom || (cls.createdAt ? cls.createdAt.split('T')[0] : todayISO);
 
   for (let i = 0; i <= daysBack; i++) {
     const d = new Date();
     d.setDate(now.getDate() - i);
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+    // DO NOT scan history or generate tasks for dates prior to schedule creation/update
     if (iso < minAllowedDateISO) {
-      if (cls.scheduleHistory && cls.scheduleHistory.length > 0) {
-        const matchingPastPeriod = cls.scheduleHistory.find((sp) => {
-          if (iso < sp.effectiveFrom) return false;
-          if (sp.effectiveUntil && iso > sp.effectiveUntil) return false;
-          return true;
-        });
-
-        if (matchingPastPeriod) {
-          const dayIdx = d.getDay();
-          const matchPattern = dayPatterns.find((p) => p.idx === dayIdx);
-          if (matchPattern && matchPattern.pattern.test(matchingPastPeriod.schedule)) {
-            result.push(iso);
-          }
-        }
-      }
       continue;
     }
 

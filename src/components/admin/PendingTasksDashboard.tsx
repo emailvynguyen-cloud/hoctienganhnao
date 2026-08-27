@@ -147,17 +147,22 @@ export const PendingTasksDashboard: React.FC<PendingTasksDashboardProps> = React
       }));
 
     const taskMap = new Map<string, PendingTaskItem>();
+    const dismissedSet = new Set(dismissedTaskIds || []);
 
-    // Add derived tasks ONLY if they are not marked completed/dismissed in dbTasks
+    // Add derived tasks ONLY if they are not in dismissedSet AND not marked completed/dismissed in dbTasks
     derivedTasks.forEach((dt) => {
+      if (dismissedSet.has(dt.id)) return;
       const dbRecord = dbTaskMap.get(dt.id);
-      if (!dbRecord || (dbRecord.status === 'pending' && !dismissedTaskIds.includes(dt.id))) {
-        taskMap.set(dt.id, dt);
-      }
+      if (dbRecord && (dbRecord.status === 'dismissed' || dbRecord.status === 'completed')) return;
+      taskMap.set(dt.id, dt);
     });
 
     // Overwrite with active dbTasks
-    activeDbTasks.forEach((dbt) => taskMap.set(dbt.id, dbt));
+    activeDbTasks.forEach((dbt) => {
+      if (!dismissedSet.has(dbt.id)) {
+        taskMap.set(dbt.id, dbt);
+      }
+    });
 
     const tasks = Array.from(taskMap.values());
     console.log('[PENDING][UI RENDER] PendingTasksDashboard re-calculating directly from dbTasks Realtime! Active items:', tasks.length);
