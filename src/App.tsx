@@ -4,6 +4,7 @@ import { UserRole, User, Student, Class, Session, HomeworkTask, HomeworkSubmissi
 import { StorageEngine } from './lib/storage';
 import { CloudSyncEngine } from './lib/cloudSync';
 import { normalizeStudentKey } from './lib/obfuscate';
+import { normalizeStudentTuitionData } from './lib/tuitionEngine';
 import { GeminiEngine } from './lib/gemini';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { NotFound } from './components/common/NotFound';

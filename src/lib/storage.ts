@@ -1031,8 +1031,31 @@ export const StorageEngine = {
       const invoices = getItem<Invoice[]>(STORAGE_KEYS.INVOICES, INITIAL_INVOICES) || [];
       const sessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS) || [];
       const classes = getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES) || [];
-      const normalized = normalizeStudentTuitionData(students, invoices, sessions, classes);
-      setItem(STORAGE_KEYS.STUDENTS, normalized);
+
+      let hasChanged = false;
+      const normalized = students.map((std) => {
+        if (!std || std.status === 'soft_deleted') return std;
+        const summary = calculateStudentTuitionSummary(std, invoices, sessions, classes);
+        if (
+          std.remainingSessions !== summary.remainingSessions ||
+          std.totalPaidSessions !== summary.totalPaidSessions
+        ) {
+          hasChanged = true;
+          return {
+            ...std,
+            totalPaidSessions: summary.totalPaidSessions,
+            remainingSessions: summary.remainingSessions,
+          };
+        }
+        return std;
+      });
+
+      if (hasChanged) {
+        liveMemoryStore[STORAGE_KEYS.STUDENTS] = normalized;
+        try {
+          localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(normalized));
+        } catch (e) {}
+      }
     } catch (e) {
       console.warn('[STORAGE][TUITION_NORMALIZE] Error:', e);
     }
