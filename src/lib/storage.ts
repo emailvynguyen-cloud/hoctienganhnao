@@ -248,7 +248,7 @@ async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
 }
 
 import { CloudSyncEngine } from './cloudSync';
-import { normalizeStudentTuitionData } from './tuitionEngine';
+import { normalizeStudentTuitionData, calculateStudentTuitionSummary } from './tuitionEngine';
 
 export const StorageEngine = {
   getAllData(): Record<string, any> {

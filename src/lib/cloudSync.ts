@@ -50,20 +50,20 @@ export function mergeStorePayload(
       return;
     }
 
-    // 2. Object collection array keys with id / uid (sessions, students, classes, homework, fines)
+    // 2. Object collection array keys with id / uid (sessions, students, classes, homework, fines, invoices)
     if (Array.isArray(localVal) && Array.isArray(cloudVal)) {
       const itemMap = new Map<string, any>();
 
-      // Insert cloud items first
-      cloudVal.forEach((item: any) => {
+      // Insert local items first into itemMap
+      localVal.forEach((item: any) => {
         if (item && typeof item === 'object') {
           const itemId = item.id || item.uid;
           if (itemId) itemMap.set(String(itemId), item);
         }
       });
 
-      // Merge local items
-      localVal.forEach((item: any) => {
+      // Merge / overwrite with Cloud items (Cloud data takes priority for fresh cross-device updates)
+      cloudVal.forEach((item: any) => {
         if (item && typeof item === 'object') {
           const itemId = item.id || item.uid;
           if (itemId) {
@@ -71,12 +71,18 @@ export function mergeStorePayload(
             if (!existing) {
               itemMap.set(String(itemId), item);
             } else {
-              const localTs = item.updatedAt || item.createdAt || item.date || '';
-              const cloudTs = existing.updatedAt || existing.createdAt || existing.date || '';
+              const localTs = existing.updatedAt || existing.createdAt || existing.date || '';
+              const cloudTs = item.updatedAt || item.createdAt || item.date || '';
+
+              // Default: Cloud item (item) overwrites Local item (existing)
               let mergedItem = { ...existing, ...item };
-              if (cloudTs && localTs && cloudTs > localTs) {
+
+              // Only if Local item is strictly newer by timestamp do we preserve Local sub-fields
+              if (localTs && cloudTs && localTs > cloudTs) {
                 mergedItem = { ...item, ...existing };
               }
+
+              // Account credential preservation safeguard
               if (existing.password || item.password) {
                 mergedItem.password = item.password || existing.password || 'admin123';
               }
