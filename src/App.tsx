@@ -333,11 +333,24 @@ export default function App() {
   };
 
   useEffect(() => {
+    // 1. Immediately load local storage data so UI renders instantly in 0ms
+    loadData();
+
+    // 2. Safety timeout fallback: Hide full-screen loading spinner after 2 seconds no matter what
+    const loadingTimeout = setTimeout(() => {
+      setIsCloudLoading(false);
+    }, 2000);
+
+    // 3. Pull cloud data in background and update
     CloudSyncEngine.pullInitialCloudData()
       .then(() => {
         loadData();
       })
+      .catch((err) => {
+        console.warn('[APP] Cloud initial pull notice:', err);
+      })
       .finally(() => {
+        clearTimeout(loadingTimeout);
         setIsCloudLoading(false);
       });
 
@@ -360,6 +373,7 @@ export default function App() {
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      clearTimeout(loadingTimeout);
       unsubscribeCloud();
       unsubscribeStorage();
       window.removeEventListener('focus', handleFocus);
