@@ -11,6 +11,8 @@ import { StudentPortal } from '../student/StudentPortal';
 import { AdminLearningHub } from './learning/AdminLearningHub';
 import { AdminRulesManagement } from './AdminRulesManagement';
 import { ReceiptGeneratorModal } from './ReceiptGeneratorModal';
+import { EditReceiptModal } from './EditReceiptModal';
+import { calculateStudentTuitionSummary } from '../../lib/tuitionEngine';
 import { StorageEngine, generateStudentCode } from '../../lib/storage';
 import { formatVND } from '../../lib/vietqr';
 import { resolveAvatarUrl, KAKAOTALK_SVG_AVATARS } from '../../lib/kakaotalkAvatars';
@@ -238,6 +240,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const [classSearchQuery, setClassSearchQuery] = useState('');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [tuitionSearchQuery, setTuitionSearchQuery] = useState('');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'paid' | 'pending' | 'cancelled'>('all');
+  const [editingInvoiceModal, setEditingInvoiceModal] = useState<Invoice | null>(null);
   const [auditLogSearchQuery, setAuditLogSearchQuery] = useState('');
   const [auditLogFilterType, setAuditLogFilterType] = useState('all');
 
@@ -1253,7 +1257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
               <div className="flex items-center space-x-2">
                 <QrCode className="w-5 h-5 text-sky-600 animate-pulse" />
                 <h3 className="text-lg font-black text-sky-950 dark:text-white">
-                  Quản Lý Học Phí & Mã VietQR Tự Động (MBBank 0355176317)
+                  Quản Lý Phiếu Thu & Mã VietQR Tự Động (MBBank 0355176317)
                 </h3>
               </div>
               <p className="text-xs text-sky-900 font-medium">
@@ -1269,105 +1273,181 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                   alert('Chưa có học viên nào trong hệ thống!');
                 }
               }}
-              className="px-5 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0"
+              className="px-5 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
             >
-              <DollarSign className="w-4 h-4 mr-1.5" /> + Tạo Phiếu Thu / Mã VietQR Mới
+              <DollarSign className="w-4 h-4 mr-1.5" /> + Tạo Phiếu Thu / VietQR Mới
             </button>
           </div>
 
-          {/* PENDING INVOICES LIST (CHỜ PHỤ HUYNH NỘP HỌC PHÍ) */}
-          {(() => {
-            const pendingInvoices = (invoices || []).filter((inv) => inv && inv.status === 'pending');
-            if (pendingInvoices.length === 0) return null;
+          {/* SECTION 1: DANH SÁCH TOÀN BỘ PHIẾU THU HỌC PHÍ */}
+          <div className="space-y-4 p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div>
+                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
+                  📑 Danh Sách Phiếu Thu Học Phí ({invoices.length} Phiếu Thu)
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">
+                  Chỉnh sửa ngày thu, số tiền, số buổi và mốc bắt đầu tính bất cứ lúc nào
+                </p>
+              </div>
 
-            return (
-              <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 border-2 border-amber-300 dark:border-amber-700 space-y-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-amber-200/80 pb-2.5 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-5 h-5 text-amber-600 animate-spin" />
-                    <h4 className="font-black text-sm text-amber-950 dark:text-amber-300 uppercase tracking-wider">
-                      ⏳ DANH SÁCH PHIẾU THU ĐANG CHỜ THU HỌC PHÍ ({pendingInvoices.length} PHIẾU CHỜ)
-                    </h4>
+              {/* Status Filter Badges */}
+              <div className="flex items-center space-x-1.5 text-xs font-bold">
+                <button
+                  onClick={() => setInvoiceStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                    invoiceStatusFilter === 'all'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300'
+                  }`}
+                >
+                  Tất cả ({invoices.length})
+                </button>
+                <button
+                  onClick={() => setInvoiceStatusFilter('paid')}
+                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                    invoiceStatusFilter === 'paid'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800'
+                  }`}
+                >
+                  Đã Thu ({invoices.filter((i) => i && i.status === 'paid').length})
+                </button>
+                <button
+                  onClick={() => setInvoiceStatusFilter('pending')}
+                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                    invoiceStatusFilter === 'pending'
+                      ? 'bg-amber-600 text-white border-amber-600'
+                      : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800'
+                  }`}
+                >
+                  Chờ Thu ({invoices.filter((i) => i && i.status === 'pending').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Invoices List */}
+            {(() => {
+              const filteredInvoices = (invoices || []).filter((inv) => {
+                if (!inv) return false;
+                if (invoiceStatusFilter !== 'all' && inv.status !== invoiceStatusFilter) return false;
+                if (!tuitionSearchQuery.trim()) return true;
+                const q = tuitionSearchQuery.toLowerCase();
+                return (
+                  (inv.code || '').toLowerCase().includes(q) ||
+                  (inv.studentName || '').toLowerCase().includes(q) ||
+                  (inv.studentPhone || '').toLowerCase().includes(q) ||
+                  (inv.notes || '').toLowerCase().includes(q)
+                );
+              });
+
+              if (filteredInvoices.length === 0) {
+                return (
+                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-400">
+                    Chưa có phiếu thu nào trong danh mục này.
                   </div>
-                  <span className="text-xs font-extrabold text-amber-900 bg-amber-200 px-3 py-1 rounded-full border border-amber-300">
-                    Bấm "Tick Đã Thu Tiền" để tự động cộng buổi vào tài khoản
-                  </span>
-                </div>
+                );
+              }
 
+              return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {pendingInvoices.map((inv) => (
+                  {filteredInvoices.map((inv) => (
                     <div
                       key={inv.id}
-                      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 shadow-xs space-y-3"
+                      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3"
                     >
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                         <div>
-                          <span className="font-mono font-black text-xs text-pink-600 block">{inv.code}</span>
+                          <span className="font-mono font-black text-xs text-purple-600 block">#{inv.code}</span>
                           <h5 className="font-black text-sm text-slate-900 dark:text-white">{inv.studentName}</h5>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
-                          Chờ Thu Học Phí
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                            inv.status === 'paid'
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                              : inv.status === 'pending'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                              : 'bg-rose-100 text-rose-900 border border-rose-300'
+                          }`}
+                        >
+                          {inv.status === 'paid' ? '✅ Đã Thu Tiền' : inv.status === 'pending' ? '⏳ Chờ Thu Tiền' : '🚫 Đã Hủy'}
                         </span>
                       </div>
 
                       <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Số tiền cần thu:</span>
+                          <span className="text-slate-500">Ngày thu tiền:</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{inv.paymentDate || inv.paidDate || inv.createdDate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Số tiền:</span>
                           <span className="font-black text-emerald-600">{formatVND(inv.amount)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Số buổi mua thêm:</span>
-                          <span className="font-extrabold text-purple-700">+{inv.sessionsPurchased} Buổi</span>
+                          <span className="text-slate-500">Số buổi & Mốc tính:</span>
+                          <span className="font-black text-purple-700">
+                            {inv.sessionsPurchased} buổi (từ buổi #{inv.startFromSessionNumber || 1})
+                          </span>
                         </div>
-                        <div className="flex justify-between text-[11px] text-slate-400 font-medium">
-                          <span>SĐT: {inv.studentPhone || 'N/A'}</span>
-                          <span>Ngày tạo: {inv.createdDate}</span>
-                        </div>
+                        {inv.notes && (
+                          <div className="pt-1 text-[11px] text-slate-500 font-normal italic">
+                            💬 Ghi chú: {inv.notes}
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Xác nhận đã nhận ${formatVND(inv.amount)} từ em ${inv.studentName}? Hệ thống sẽ cộng thêm +${inv.sessionsPurchased} buổi học vào tài khoản!`)) {
-                              const result = StorageEngine.markInvoiceAsPaid(inv.id);
-                              if (result && typeof result === 'object' && result.success) {
-                                confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-                                alert(`Thành công! Đã thu ${formatVND(inv.amount)} và tự động cộng +${inv.sessionsPurchased} buổi học cho em ${inv.studentName}!`);
-                                onUpdateInvoices();
-                                onUpdateStudents();
-                              }
-                            }
-                          }}
-                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs transition shadow-xs flex items-center shrink-0 cursor-pointer"
-                        >
-                          <ShieldCheck className="w-4 h-4 mr-1" /> ☑️ Tick Đã Thu Tiền (+{inv.sessionsPurchased} Buổi)
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => setEditingInvoiceModal(inv)}
+                            className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
+                          >
+                            ✏️ Sửa Phiếu Thu
+                          </button>
+
+                          {inv.status === 'pending' && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Xác nhận đã nhận ${formatVND(inv.amount)} từ em ${inv.studentName}?`)) {
+                                  StorageEngine.markInvoiceAsPaid(inv.id);
+                                  confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                                  onUpdateInvoices();
+                                  onUpdateStudents();
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer"
+                            >
+                              ☑️ Tick Đã Thu
+                            </button>
+                          )}
+                        </div>
 
                         <button
                           onClick={() => {
-                            if (window.confirm(`Bạn có chắc chắn muốn hủy phiếu thu #${inv.code} của em ${inv.studentName}?`)) {
+                            if (window.confirm(`Bạn chắc chắn muốn xóa phiếu thu #${inv.code} của ${inv.studentName}?`)) {
                               StorageEngine.deleteInvoice(inv.id);
                               onUpdateInvoices();
+                              onUpdateStudents();
                             }
                           }}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition"
-                          title="Hủy bỏ phiếu thu này"
+                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer"
+                          title="Xóa phiếu thu này"
                         >
-                          Hủy Phiếu
+                          🗑️ Xóa
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
+          </div>
 
-          {/* Student Tuition Fee Status Grid */}
+          {/* SECTION 2: STUDENT TUITION FEE STATUS GRID */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
-                💳 Danh Sách Theo Dõi Học Phí Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length} Học Viên)
+                💳 Theo Dõi Số Buổi Còn Lại Của Học Viên ({safeStudents.filter(s => s && s.status !== 'soft_deleted').length} Học Viên)
               </h4>
 
               {/* FAST REALTIME SEARCH BAR FOR TUITION */}
@@ -1375,7 +1455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                 <Search className="w-4 h-4 text-pink-400 absolute left-3.5 top-3" />
                 <input
                   type="text"
-                  placeholder="🔍 Tìm nhanh tên, SĐT, lớp, trạng thái..."
+                  placeholder="🔍 Tìm nhanh tên, SĐT, lớp..."
                   value={tuitionSearchQuery}
                   onChange={(e) => setTuitionSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-2xl border border-pink-200 text-xs font-medium bg-pink-50/50 focus:outline-none focus:ring-2 focus:ring-pink-300 dark:bg-slate-800 dark:text-white"
@@ -1391,13 +1471,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                   const q = tuitionSearchQuery.toLowerCase();
                   const cls = safeClasses.find((c) => s.classIds && s.classIds.includes(c.id));
                   const clsName = (cls?.className || '').toLowerCase();
-                  const statusText = (s.remainingSessions || 0) <= 0 ? 'hết hạn' : (s.remainingSessions || 0) <= 2 ? 'sắp hết' : 'còn hạn';
                   return (
                     (s.name || '').toLowerCase().includes(q) ||
                     (s.phone || '').toLowerCase().includes(q) ||
                     (s.id || '').toLowerCase().includes(q) ||
-                    clsName.includes(q) ||
-                    statusText.includes(q)
+                    clsName.includes(q)
                   );
                 });
 
@@ -1415,6 +1493,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredTuitionList.map((std) => {
                     const stdClass = safeClasses.find((c) => std.classIds && std.classIds.includes(c.id)) || safeClasses[0];
+                    const summary = calculateStudentTuitionSummary(std, invoices, sessions, safeClasses);
 
                     return (
                       <div
@@ -1438,28 +1517,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                             />
                             <span className="font-extrabold text-xs text-slate-900 dark:text-white">{std.name}</span>
                           </div>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-200 text-pink-950">
-                            {std.remainingSessions} Buổi Còn
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                              summary.isOverdue
+                                ? 'bg-rose-100 text-rose-900 border border-rose-300 animate-bounce'
+                                : summary.isLowBalance
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            }`}
+                          >
+                            {summary.remainingSessions} Buổi Còn
                           </span>
                         </div>
 
                         <div className="text-xs text-slate-600 dark:text-slate-300 font-medium space-y-1">
                           <p><strong>Lớp:</strong> {stdClass?.className || 'Ms. Vy English'}</p>
                           <p><strong>SĐT:</strong> {std.phone || 'Chưa có'}</p>
-                          <p><strong>Gói học phí:</strong> <span className="font-bold text-pink-600">{formatVND(std.tuitionPackagePrice || 2000000)} / {std.packageSessionCount || 8} buổi</span></p>
+                          <p><strong>Tổng đã đóng:</strong> <span className="font-bold text-purple-700">{summary.totalPaidSessions} buổi ({summary.receiptsCount} phiếu thu)</span></p>
+                          <p><strong>Đã dạy thực tế:</strong> <span className="font-bold text-slate-900 dark:text-white">{summary.totalBillableSessionsConducted} buổi</span></p>
                         </div>
+
+                        {summary.activePackages.length > 0 && (
+                          <div className="pt-2 border-t border-purple-100 text-[11px] font-medium space-y-1">
+                            <span className="text-purple-900 font-extrabold block">Gói buổi thu:</span>
+                            {summary.activePackages.map((pkg) => (
+                              <div key={pkg.receiptId} className="flex justify-between text-slate-600 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-lg border border-purple-100">
+                                <span>#{pkg.receiptCode} ({pkg.paymentDate}):</span>
+                                <span className="font-bold text-purple-800">
+                                  {pkg.sessionsPurchased}B (từ buổi #{pkg.startFromSessionNumber})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="pt-2 border-t border-pink-100 flex items-center justify-between">
                           <button
                             onClick={() => setSelectedStudentForReceipt(std)}
-                            className="px-3.5 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center"
+                            className="px-3.5 py-1.5 rounded-xl bg-sky-200 hover:bg-sky-300 text-sky-950 font-extrabold text-xs transition border border-sky-300 shadow-2xs flex items-center cursor-pointer"
                           >
                             <QrCode className="w-3.5 h-3.5 mr-1 text-sky-700" /> Tạo Phiếu Thu / VietQR
                           </button>
 
                           <button
                             onClick={() => setInspectedStudentId(std.id)}
-                            className="text-xs font-bold text-pink-600 hover:underline"
+                            className="text-xs font-bold text-pink-600 hover:underline cursor-pointer"
                           >
                             Xem Học Tập →
                           </button>
@@ -1838,6 +1940,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
           student={selectedStudentForReceipt}
           classes={safeClasses}
           bankConfig={bankConfig}
+          onRefreshData={() => {
+            onUpdateInvoices();
+            onUpdateStudents();
+          }}
+        />
+      )}
+
+      {/* EDIT RECEIPT MODAL FOR SUPER ADMIN */}
+      {editingInvoiceModal && (
+        <EditReceiptModal
+          isOpen={!!editingInvoiceModal}
+          onClose={() => setEditingInvoiceModal(null)}
+          invoice={editingInvoiceModal}
+          classes={safeClasses}
           onRefreshData={() => {
             onUpdateInvoices();
             onUpdateStudents();

@@ -325,17 +325,24 @@ export interface Invoice {
   code: string;
   studentId: string;
   studentName: string;
-  studentPhone: string;
+  studentPhone?: string;
+  classId?: string;
+  className?: string;
   amount: number;
   sessionsPurchased: number;
+  startFromSessionNumber?: number; // Bắt đầu tính từ buổi số bao nhiêu (mặc định 1)
   status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  dueDate: string;
-  createdDate: string;
+  dueDate?: string;
+  createdDate?: string;
+  paymentDate?: string; // Ngày thu tiền thực tế (YYYY-MM-DD) - cho phép chỉnh sửa cả phiếu cũ
   paidDate?: string;
-  qrContent: string;
-  bankId: string;
-  accountNo: string;
-  accountName: string;
+  notes?: string; // Ghi chú phiếu thu
+  qrContent?: string;
+  bankId?: string;
+  accountNo?: string;
+  accountName?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Badge {

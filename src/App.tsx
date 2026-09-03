@@ -310,6 +310,7 @@ export default function App() {
   const [syncTick, setSyncTick] = useState<number>(0);
 
   const loadData = () => {
+    StorageEngine.normalizeAllTuitionData();
     const loadedStudents = StorageEngine.getStudents();
     const loadedClasses = StorageEngine.getClasses();
     const loadedSessions = StorageEngine.getSessions();

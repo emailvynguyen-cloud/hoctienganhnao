@@ -248,6 +248,7 @@ async function syncCollectionToCloud<T extends { id?: string; uid?: string }>(
 }
 
 import { CloudSyncEngine } from './cloudSync';
+import { normalizeStudentTuitionData } from './tuitionEngine';
 
 export const StorageEngine = {
   getAllData(): Record<string, any> {
@@ -996,6 +997,7 @@ export const StorageEngine = {
   saveSessions(sessions: Session[]) {
     const sorted = this.sortAndReindexSessions(sessions);
     setItem(STORAGE_KEYS.SESSIONS, sorted);
+    this.normalizeAllTuitionData();
     this.syncAllToCloud();
   },
 
@@ -1023,85 +1025,94 @@ export const StorageEngine = {
     this.syncAllToCloud();
   },
 
+  normalizeAllTuitionData() {
+    try {
+      const students = getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS) || [];
+      const invoices = getItem<Invoice[]>(STORAGE_KEYS.INVOICES, INITIAL_INVOICES) || [];
+      const sessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS) || [];
+      const classes = getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES) || [];
+      const normalized = normalizeStudentTuitionData(students, invoices, sessions, classes);
+      setItem(STORAGE_KEYS.STUDENTS, normalized);
+    } catch (e) {
+      console.warn('[STORAGE][TUITION_NORMALIZE] Error:', e);
+    }
+  },
+
   getInvoices(): Invoice[] {
     return getItem<Invoice[]>(STORAGE_KEYS.INVOICES, INITIAL_INVOICES);
   },
   saveInvoices(invoices: Invoice[]) {
     setItem(STORAGE_KEYS.INVOICES, invoices);
+    this.normalizeAllTuitionData();
     this.syncAllToCloud();
   },
   addInvoice(invData: Partial<Invoice>): Invoice {
     const invoices = this.getInvoices() || [];
+    const nowIso = new Date().toISOString();
+    const todayDate = nowIso.split('T')[0];
     const newId = invData.id || `inv_${Date.now()}`;
+
     const newInvoice: Invoice = {
       id: newId,
       code: invData.code || `VY-REC-${Date.now().toString().slice(-6)}`,
       studentId: invData.studentId || '',
       studentName: invData.studentName || 'Học viên',
       studentPhone: invData.studentPhone || '',
+      classId: invData.classId || '',
+      className: invData.className || '',
       amount: Number(invData.amount) || 2000000,
       sessionsPurchased: Number(invData.sessionsPurchased) || 8,
-      status: invData.status || 'pending',
-      dueDate: invData.dueDate || new Date().toISOString().split('T')[0],
-      createdDate: new Date().toISOString().split('T')[0],
+      startFromSessionNumber: Number(invData.startFromSessionNumber) || 1,
+      status: invData.status || 'paid',
+      dueDate: invData.dueDate || todayDate,
+      createdDate: invData.createdDate || todayDate,
+      paymentDate: invData.paymentDate || invData.paidDate || todayDate,
+      paidDate: invData.paidDate || (invData.status === 'paid' ? todayDate : undefined),
+      notes: invData.notes || '',
       qrContent: invData.qrContent || '',
       bankId: invData.bankId || 'MB',
       accountNo: invData.accountNo || '0355176317',
       accountName: invData.accountName || 'MS. VY ENGLISH - MS VY',
+      createdAt: nowIso,
+      updatedAt: nowIso,
     };
+
     invoices.unshift(newInvoice);
     this.saveInvoices(invoices);
-
-    // If initial status is paid, immediately credit student
-    if (newInvoice.status === 'paid') {
-      const students = this.getStudents() || [];
-      const std = students.find((s) => s && s.id === newInvoice.studentId);
-      if (std) {
-        const addedCount = newInvoice.sessionsPurchased || 8;
-        if (!std.totalPaidSessions || std.totalPaidSessions === 0) {
-          // Lần đầu đóng học phí: Số buổi còn lại = đúng bằng số buổi học viên vừa đóng
-          std.remainingSessions = addedCount;
-          std.totalPaidSessions = addedCount;
-        } else {
-          // Từ lần thứ 2 trở đi: Tính theo công thức = (số buổi còn lại hiện tại) + (số buổi mới đóng)
-          std.remainingSessions = (std.remainingSessions || 0) + addedCount;
-          std.totalPaidSessions = (std.totalPaidSessions || 0) + addedCount;
-        }
-        this.saveStudents(students);
-      }
-    }
-
     return newInvoice;
+  },
+  updateInvoice(invData: Partial<Invoice> & { id: string }): Invoice | null {
+    const invoices = this.getInvoices() || [];
+    const idx = invoices.findIndex((i) => i && i.id === invData.id);
+    if (idx === -1) return null;
+
+    const nowIso = new Date().toISOString();
+    const updatedInvoice: Invoice = {
+      ...invoices[idx],
+      ...invData,
+      updatedAt: nowIso,
+    };
+
+    invoices[idx] = updatedInvoice;
+    this.saveInvoices(invoices);
+    return updatedInvoice;
   },
   markInvoiceAsPaid(invoiceId: string) {
     const invoices = this.getInvoices() || [];
     const inv = invoices.find((i) => i && i.id === invoiceId);
-    if (!inv || inv.status === 'paid') return false;
+    if (!inv) return false;
 
+    const todayDate = new Date().toISOString().split('T')[0];
     inv.status = 'paid';
-    inv.paidDate = new Date().toISOString().split('T')[0];
-    this.saveInvoices(invoices);
+    inv.paymentDate = inv.paymentDate || todayDate;
+    inv.paidDate = todayDate;
+    inv.updatedAt = new Date().toISOString();
 
-    // Add sessionsPurchased to student
-    const students = this.getStudents() || [];
-    const std = students.find((s) => s && s.id === inv.studentId);
-    if (std) {
-      const addedCount = inv.sessionsPurchased || 8;
-      if (!std.totalPaidSessions || std.totalPaidSessions === 0) {
-        // Lần đầu đóng học phí: Số buổi còn lại = đúng bằng số buổi học viên vừa đóng
-        std.remainingSessions = addedCount;
-        std.totalPaidSessions = addedCount;
-      } else {
-        // Từ lần thứ 2 trở đi: Tính theo công thức = (số buổi còn lại hiện tại) + (số buổi mới đóng)
-        std.remainingSessions = (std.remainingSessions || 0) + addedCount;
-        std.totalPaidSessions = (std.totalPaidSessions || 0) + addedCount;
-      }
-      this.saveStudents(students);
-    }
+    this.saveInvoices(invoices);
 
     return {
       success: true,
-      studentName: std?.name || inv.studentName,
+      studentName: inv.studentName,
       addedSessions: inv.sessionsPurchased || 8,
       amount: inv.amount,
     };

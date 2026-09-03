@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Student, Class, Session, HomeworkTask, HomeworkSubmission, Invoice, BankConfig, getStudentQuizletUrl } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { calculateStudentTuitionSummary } from '../../lib/tuitionEngine';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { MascotWidget } from '../common/MascotWidget';
 import { StudentAiChatbotModal } from './StudentAiChatbotModal';
@@ -137,6 +138,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   bankConfig,
   onRefreshData,
 }) => {
+  const tuitionSummary = calculateStudentTuitionSummary(currentStudent, invoices, sessions, classes);
   const [isExtraMaterialsOpen, setIsExtraMaterialsOpen] = useState(false);
   const [materialSearchQuery, setMaterialSearchQuery] = useState('');
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -1102,7 +1104,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             <div className="flex items-baseline justify-center gap-1 py-0.5">
               <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white font-mono leading-none tracking-tight">
-                {currentStudent.remainingSessions}
+                {tuitionSummary.remainingSessions}
               </span>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-none">
                 Buổi
@@ -1886,9 +1888,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 cumulativeSessions = totalPaid;
               }
 
-              const totalPaidDisplay = Math.max(cumulativeSessions, currentStudent.totalPaidSessions || 0, currentStudent.remainingSessions || 0);
-              const remainingDisplay = currentStudent.remainingSessions || 0;
-              const usedDisplay = Math.max(0, totalPaidDisplay - remainingDisplay);
+              const totalPaidDisplay = tuitionSummary.totalPaidSessions;
+              const remainingDisplay = tuitionSummary.remainingSessions;
+              const usedDisplay = tuitionSummary.totalBillableSessionsConducted;
 
               return (
                 <div className="space-y-4">

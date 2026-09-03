@@ -24,6 +24,9 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 }) => {
   const [packagePrice, setPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
   const [packageSessions, setPackageSessions] = useState(student.packageSessionCount || 8);
+  const [startFromSessionNumber, setStartFromSessionNumber] = useState<number>(1);
+  const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [notes, setNotes] = useState<string>('');
   const [tuitionPeriod, setTuitionPeriod] = useState<string>(`Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`);
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date();
@@ -58,29 +61,41 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       studentId: student.id,
       studentName: student.name,
       studentPhone: student.phone,
+      classId: targetClass?.id || '',
+      className: targetClass?.className || '',
       amount: packagePrice,
       sessionsPurchased: packageSessions,
+      startFromSessionNumber: Number(startFromSessionNumber) || 1,
       status: 'pending',
+      paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+      dueDate,
+      notes,
       qrContent: qrUrl,
       bankId: activeBankId,
       accountNo: activeAccountNo,
       accountName: activeAccountName,
     });
-    alert(`Đã tạo và lưu Phiếu thu #${receiptCode} ở trạng thái CHỜ THU HỌC PHÍ thành công! Khi phụ huynh chuyển khoản xong, bạn có thể tick Hoàn thành để cộng ${packageSessions} buổi cho học viên.`);
+    alert(`Đã tạo và lưu Phiếu thu #${receiptCode} ở trạng thái CHỜ THU HỌC PHÍ thành công!`);
     onRefreshData();
     onClose();
   };
 
   const handleMarkAsPaid = () => {
-    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Hệ thống sẽ cộng thêm ${packageSessions} buổi vào tài khoản.`)) {
+    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Hệ thống sẽ tính gói ${packageSessions} buổi bắt đầu từ buổi số #${startFromSessionNumber}.`)) {
       StorageEngine.addInvoice({
         code: receiptCode,
         studentId: student.id,
         studentName: student.name,
         studentPhone: student.phone,
+        classId: targetClass?.id || '',
+        className: targetClass?.className || '',
         amount: packagePrice,
         sessionsPurchased: packageSessions,
+        startFromSessionNumber: Number(startFromSessionNumber) || 1,
         status: 'paid',
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        dueDate,
+        notes,
         qrContent: qrUrl,
         bankId: activeBankId,
         accountNo: activeAccountNo,
@@ -88,7 +103,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       });
 
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      alert(`Thành công! Đã thu ${formatVND(packagePrice)} và cộng ${packageSessions} buổi vào tài khoản em ${student.name}.`);
+      alert(`Thành công! Đã lưu phiếu thu và tính gói ${packageSessions} buổi (bắt đầu từ buổi #${startFromSessionNumber}) cho em ${student.name}.`);
       onRefreshData();
       onClose();
     }
@@ -415,9 +430,51 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
         {/* BODY - Scrollable Content */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 min-h-0 text-xs font-medium">
           {/* Dynamic Package Settings Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs">
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học:</label>
+              <label className="block font-extrabold text-slate-700 mb-1">Ngày Thu Tiền (*):</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Số Tiền Thu (VNĐ) (*):</label>
+              <input
+                type="number"
+                value={packagePrice}
+                onChange={(e) => setPackagePrice(Number(e.target.value))}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Số Buổi Đã Mua (*):</label>
+              <input
+                type="number"
+                value={packageSessions}
+                onChange={(e) => setPackageSessions(Number(e.target.value))}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Bắt Đầu Tính Từ Buổi Số (*):</label>
+              <input
+                type="number"
+                min={1}
+                value={startFromSessionNumber}
+                onChange={(e) => setStartFromSessionNumber(Number(e.target.value))}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-extrabold text-purple-900 text-xs"
+                placeholder="Buổi #1"
+              />
+            </div>
+
+            <div>
+              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học / Diễn Giải:</label>
               <input
                 type="text"
                 value={tuitionPeriod}
@@ -428,32 +485,23 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Mức học phí (VNĐ):</label>
-              <input
-                type="number"
-                value={packagePrice}
-                onChange={(e) => setPackagePrice(Number(e.target.value))}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Số buổi đăng ký:</label>
-              <input
-                type="number"
-                value={packageSessions}
-                onChange={(e) => setPackageSessions(Number(e.target.value))}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Hạn nộp tiền:</label>
+              <label className="block font-extrabold text-slate-700 mb-1">Hạn Nộp Tiền (Nếu chờ):</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <label className="block font-extrabold text-slate-700 mb-1">Ghi Chú Phiếu Thu:</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-medium text-xs"
+                placeholder="Nhập ghi chú phiếu thu (ví dụ: Chuyển khoản VietQR, đã giảm giá 10%...)"
               />
             </div>
           </div>
