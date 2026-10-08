@@ -1387,8 +1387,11 @@ export const StorageEngine = {
     const targetClass = classes.find((c) => c && c.id === sessionData.classId);
 
     const existingClassSessions = sessions.filter((s) => s && s.classId === sessionData.classId);
+    const maxExisting = existingClassSessions.length > 0
+      ? Math.max(...existingClassSessions.map((s) => Number(s.sessionNumber) || 0))
+      : 0;
     const startNum = targetClass?.startSessionNumber || 1;
-    const sessionNumber = startNum + existingClassSessions.length;
+    const sessionNumber = maxExisting > 0 ? maxExisting + 1 : startNum;
 
     const newSession: Session = {
       id: `ses_${Date.now()}`,

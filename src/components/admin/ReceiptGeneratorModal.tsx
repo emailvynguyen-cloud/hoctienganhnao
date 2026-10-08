@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Student, BankConfig, Class } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Student, BankConfig, Class, Invoice, Session } from '../../types';
 import { StorageEngine } from '../../lib/storage';
+import { getNextStartSessionNumber } from '../../lib/tuitionEngine';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
 import { X, Copy, Check, QrCode, Sparkles, Send, ShieldCheck, DollarSign, Download, ImageIcon } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -10,6 +11,8 @@ interface ReceiptGeneratorModalProps {
   onClose: () => void;
   student: Student;
   classes: Class[];
+  invoices?: Invoice[];
+  sessions?: Session[];
   bankConfig: BankConfig;
   onRefreshData: () => void;
 }
@@ -19,6 +22,8 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   onClose,
   student,
   classes,
+  invoices,
+  sessions,
   bankConfig,
   onRefreshData,
 }) => {
@@ -34,6 +39,17 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
     return d.toISOString().split('T')[0];
   });
   const [copiedContent, setCopiedContent] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && student) {
+      const invs = invoices && invoices.length > 0 ? invoices : StorageEngine.getInvoices();
+      const sess = sessions && sessions.length > 0 ? sessions : StorageEngine.getSessions();
+      const calculatedStart = getNextStartSessionNumber(student, invs, sess, classes);
+      setStartFromSessionNumber(calculatedStart);
+      setPackagePrice(student.tuitionPackagePrice || 2000000);
+      setPackageSessions(student.packageSessionCount || 8);
+    }
+  }, [isOpen, student?.id]);
 
   if (!isOpen) return null;
 
@@ -471,6 +487,9 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
                 className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-extrabold text-purple-900 text-xs"
                 placeholder="Buổi #1"
               />
+              <span className="text-[10px] font-black text-purple-800 bg-purple-100 px-2 py-0.5 rounded mt-1 inline-block">
+                🎓 Gói: Buổi #{startFromSessionNumber} → Buổi #{startFromSessionNumber + (packageSessions || 8) - 1}
+              </span>
             </div>
 
             <div>

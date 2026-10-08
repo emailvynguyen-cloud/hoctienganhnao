@@ -1830,64 +1830,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             {/* Top 3 KPI Summary Cards inside Payment History Modal */}
             {(() => {
-              const paidInvoices = (invoices || [])
-                .filter((inv) => inv && inv.studentId === currentStudent.id && (inv.status === 'paid' || inv.status === 'completed'))
-                .sort((a, b) => (a.paidDate || a.createdDate || '').localeCompare(b.paidDate || b.createdDate || ''));
-
-              const historyList = [];
-              let cumulativeSessions = 0;
-
-              if (paidInvoices.length > 0) {
-                paidInvoices.forEach((inv, idx) => {
-                  const count = Number(inv.sessionsPurchased) || 8;
-                  const startSession = cumulativeSessions + 1;
-                  const endSession = cumulativeSessions + count;
-                  cumulativeSessions = endSession;
-
-                  historyList.push({
-                    index: idx + 1,
-                    code: inv.code,
-                    paidDate: inv.paidDate || inv.createdDate || 'Đã thanh toán',
-                    sessionsCount: count,
-                    amount: inv.amount,
-                    startSession,
-                    endSession,
-                  });
-                });
-              } else {
-                const totalPaid = Math.max(
-                  Number(currentStudent.totalPaidSessions) || 0,
-                  Number(currentStudent.remainingSessions) || 0,
-                  Number(currentStudent.packageSessionCount) || 8
-                );
-                const pkgPrice = Number(currentStudent.tuitionPackagePrice) || 2000000;
-                const sessionStep = Number(currentStudent.packageSessionCount) || 8;
-
-                let currentStart = 1;
-                let countRemaining = totalPaid;
-                let cycleIdx = 1;
-
-                while (countRemaining > 0) {
-                  const thisCycleCount = Math.min(countRemaining, sessionStep);
-                  const endSession = currentStart + thisCycleCount - 1;
-
-                  historyList.push({
-                    index: cycleIdx,
-                    code: `PACK-0${cycleIdx}`,
-                    paidDate: currentStudent.createdAt || 'Thời điểm nhập học',
-                    sessionsCount: thisCycleCount,
-                    amount: pkgPrice,
-                    startSession: currentStart,
-                    endSession: endSession,
-                  });
-
-                  currentStart = endSession + 1;
-                  countRemaining -= thisCycleCount;
-                  cycleIdx++;
-                }
-                cumulativeSessions = totalPaid;
-              }
-
+              const packages = tuitionSummary.activePackages || [];
               const totalPaidDisplay = tuitionSummary.totalPaidSessions;
               const remainingDisplay = tuitionSummary.remainingSessions;
               const usedDisplay = tuitionSummary.totalBillableSessionsConducted;
@@ -1921,54 +1864,75 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   {/* Detailed Payment Cycles Table / List */}
                   <div className="space-y-3">
                     <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                      📋 Danh Sách Chi Tiết Các Lần Đóng Học Phí:
+                      📋 Sổ Học Viên — Danh Sách Khoảng Gói Học Phí Chi Tiết:
                     </span>
 
-                    {historyList.reverse().map((item) => (
-                      <div
-                        key={item.index}
-                        className="p-4 rounded-2xl bg-gradient-to-r from-white via-pink-50/50 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 border border-pink-200/80 dark:border-slate-700 shadow-2xs space-y-2.5"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 dark:border-slate-700/60 pb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-pink-400 text-white shadow-2xs">
-                              Lần #{item.index}
-                            </span>
-                            <span className="text-xs font-black text-slate-900 dark:text-white">
-                              🗓️ Ngày đóng: <strong className="text-pink-600 dark:text-pink-300 font-extrabold">{item.paidDate}</strong>
-                            </span>
-                          </div>
-                          <span className="text-xs font-mono font-bold text-slate-500 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-pink-100">
-                            {item.code}
-                          </span>
-                        </div>
+                    {packages.map((pkg, idx) => {
+                      const isCompleted = pkg.sessionsRemaining === 0;
+                      const isOngoing = pkg.sessionsConducted > 0 && pkg.sessionsRemaining > 0;
+                      const currentActiveStart = pkg.startFromSessionNumber + pkg.sessionsConducted;
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-slate-500 font-bold">📦 Số buổi đóng:</span>
-                            <span className="font-black text-pink-700 dark:text-pink-300 bg-pink-100/80 dark:bg-pink-950/40 px-2 py-0.5 rounded-md border border-pink-200">
-                              +{item.sessionsCount} buổi học
-                            </span>
-                          </div>
-
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-slate-500 font-bold">🎓 Hạn buổi học:</span>
-                            <span className="font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200">
-                              Buổi #{item.startSession} → Buổi #{item.endSession}
-                            </span>
-                          </div>
-
-                          {item.amount && (
-                            <div className="flex items-center space-x-1.5 sm:col-span-2 pt-1 border-t border-dashed border-pink-100 dark:border-slate-700/50">
-                              <span className="text-slate-500 font-bold">💰 Số tiền đóng học phí:</span>
-                              <span className="font-black text-slate-900 dark:text-white text-sm">
-                                {formatVND(item.amount)}
+                      return (
+                        <div
+                          key={pkg.receiptId || idx}
+                          className="p-4 rounded-2xl bg-gradient-to-r from-white via-pink-50/50 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 border border-pink-200/80 dark:border-slate-700 shadow-2xs space-y-2.5"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 dark:border-slate-700/60 pb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-pink-500 text-white shadow-2xs">
+                                Gói #{idx + 1} ({pkg.sessionsPurchased} Buổi)
+                              </span>
+                              <span className="text-xs font-black text-slate-900 dark:text-white">
+                                🗓️ Ngày thu: <strong className="text-pink-600 dark:text-pink-300 font-extrabold">{pkg.paymentDate || 'Khởi tạo'}</strong>
                               </span>
                             </div>
-                          )}
+                            <span className="text-xs font-mono font-bold text-slate-500 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-lg border border-pink-100">
+                              {pkg.receiptCode}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pt-0.5">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-slate-500 font-bold">🎓 Phạm vi gói:</span>
+                              <span className="font-black text-purple-800 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/40 px-2 py-0.5 rounded-md border border-purple-200 font-mono">
+                                Buổi #{pkg.startFromSessionNumber} → Buổi #{pkg.endSessionNumber}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center space-x-1.5">
+                              <span className="text-slate-500 font-bold">📊 Tiến độ:</span>
+                              <span className="font-black text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                                Đã học: {pkg.sessionsConducted}/{pkg.sessionsPurchased} • Còn: {pkg.sessionsRemaining} buổi
+                              </span>
+                            </div>
+
+                            {isOngoing && (
+                              <div className="flex items-center space-x-1.5 sm:col-span-2">
+                                <span className="text-slate-500 font-bold">📍 Phạm vi hiện tại:</span>
+                                <span className="font-black text-pink-700 dark:text-pink-300 bg-pink-100/90 dark:bg-pink-950/40 px-2.5 py-0.5 rounded-md border border-pink-300 font-mono">
+                                  Buổi #{currentActiveStart} → Buổi #{pkg.endSessionNumber}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between sm:col-span-2 pt-1 border-t border-dashed border-pink-100 dark:border-slate-700/50">
+                              <span className="text-slate-500 font-bold">
+                                {pkg.amount ? `💰 Học phí: ${formatVND(pkg.amount)}` : ''}
+                              </span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                isCompleted
+                                  ? 'bg-slate-200 text-slate-700'
+                                  : isOngoing
+                                  ? 'bg-pink-100 text-pink-900 border border-pink-300 animate-pulse'
+                                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                              }`}>
+                                {isCompleted ? '✅ HOÀN THÀNH (8/8)' : isOngoing ? '🔥 ĐANG SỬ DỤNG' : '✨ GÓI MỚI NỐI TIẾP'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

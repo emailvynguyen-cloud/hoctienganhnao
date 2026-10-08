@@ -27,6 +27,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
   const [remainingSessions, setRemainingSessions] = useState(student.remainingSessions || 0);
   const [packageSessionCount, setPackageSessionCount] = useState(student.packageSessionCount || 8);
   const [tuitionPackagePrice, setTuitionPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
+  const [startSessionNumber, setStartSessionNumber] = useState(student.startSessionNumber || 1);
   const [internalNotes, setInternalNotes] = useState(student.internalNotes || '');
 
   const draftKey = `edit_student_${student.id}`;
@@ -78,6 +79,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
       remainingSessions: Number(remainingSessions) || 0,
       packageSessionCount: Number(packageSessionCount) || 8,
       tuitionPackagePrice: Number(tuitionPackagePrice) || 2000000,
+      startSessionNumber: Number(startSessionNumber) || 1,
       internalNotes,
     });
 
@@ -174,7 +176,7 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
                 <DollarSign className="w-4 h-4 mr-1 text-amber-600" /> 💳 Điều Chỉnh Gói Học Phí Hiện Tại:
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 <div className="space-y-1">
                   <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Số Buổi Còn Lại</label>
                   <input
@@ -205,6 +207,18 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
                     value={tuitionPackagePrice}
                     onChange={(e) => setTuitionPackagePrice(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Buổi Bắt Đầu Khởi Điểm</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={startSessionNumber}
+                    onChange={(e) => setStartSessionNumber(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
+                    placeholder="VD: 40"
                   />
                 </div>
               </div>

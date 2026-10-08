@@ -75,6 +75,7 @@ export interface Student {
   studentCode?: string;
   studentCodeStatus?: 'ACTIVE' | 'DISABLED';
   joinedDate?: string;
+  startSessionNumber?: number; // Số thứ tự buổi học bắt đầu khởi điểm kế thừa từ dữ liệu cũ (VD: 40)
   createdAt?: string;
 }
 

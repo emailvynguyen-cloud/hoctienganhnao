@@ -1541,10 +1541,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                           <div className="pt-2 border-t border-purple-100 text-[11px] font-medium space-y-1">
                             <span className="text-purple-900 font-extrabold block">Gói buổi thu:</span>
                             {summary.activePackages.map((pkg) => (
-                              <div key={pkg.receiptId} className="flex justify-between text-slate-600 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-lg border border-purple-100">
+                              <div key={pkg.receiptId} className="flex justify-between items-center text-slate-600 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-lg border border-purple-100">
                                 <span>#{pkg.receiptCode} ({pkg.paymentDate}):</span>
-                                <span className="font-bold text-purple-800">
-                                  {pkg.sessionsPurchased}B (từ buổi #{pkg.startFromSessionNumber})
+                                <span className="font-extrabold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                  {pkg.sessionsPurchased}B (Buổi #{pkg.startFromSessionNumber} → #{pkg.endSessionNumber})
                                 </span>
                               </div>
                             ))}
@@ -1939,6 +1939,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
           onClose={() => setSelectedStudentForReceipt(null)}
           student={selectedStudentForReceipt}
           classes={safeClasses}
+          invoices={invoices}
+          sessions={sessions}
           bankConfig={bankConfig}
           onRefreshData={() => {
             onUpdateInvoices();
