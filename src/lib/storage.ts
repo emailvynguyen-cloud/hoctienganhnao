@@ -1831,12 +1831,28 @@ export const StorageEngine = {
   },
 
   getLastStudentPortalUrl(): string | null {
-    return getItem<string | null>(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, null);
+    const raw = getItem<string | null>(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, null);
+    if (!raw) return null;
+    try {
+      const urlObj = new URL(raw, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      urlObj.searchParams.delete('tab');
+      return urlObj.pathname + (urlObj.search && urlObj.search !== '?' ? urlObj.search : '');
+    } catch (e) {
+      return raw.replace(/([?&])tab=[^&]*&?/, '$1').replace(/[?&]$/, '');
+    }
   },
 
   setLastStudentPortalUrl(url: string | null) {
     if (url) {
-      setItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, url);
+      let cleanUrl = url;
+      try {
+        const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+        urlObj.searchParams.delete('tab');
+        cleanUrl = urlObj.pathname + (urlObj.search && urlObj.search !== '?' ? urlObj.search : '');
+      } catch (e) {
+        cleanUrl = url.replace(/([?&])tab=[^&]*&?/, '$1').replace(/[?&]$/, '');
+      }
+      setItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL, cleanUrl);
     } else {
       localStorage.removeItem(STORAGE_KEYS.LAST_STUDENT_PORTAL_URL);
     }

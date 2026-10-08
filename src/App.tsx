@@ -69,6 +69,18 @@ function extractHashFromUrl(urlStr: string): string | null {
   return null;
 }
 
+function sanitizePortalUrl(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    urlObj.searchParams.delete('tab');
+    const search = urlObj.search && urlObj.search !== '?' ? urlObj.search : '';
+    return urlObj.pathname + search;
+  } catch (e) {
+    return url.replace(/([?&])tab=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  }
+}
+
 // Role Redirection Helper
 const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> = ({ currentUser, students }) => {
   if (!currentUser) {
@@ -78,7 +90,8 @@ const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> 
     if (currentStudentId) {
       const activeStudent = students.find((s) => s && s.id === currentStudentId && s.status !== 'soft_deleted');
       if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
-        const targetUrl = savedStudentUrl || `/student/${activeStudent.publicHash || activeStudent.id}`;
+        const rawTarget = savedStudentUrl || `/student/${activeStudent.publicHash || activeStudent.id}`;
+        const targetUrl = sanitizePortalUrl(rawTarget) || `/student/${activeStudent.publicHash || activeStudent.id}`;
         return <Navigate to={targetUrl} replace />;
       } else {
         // Clear invalid or disabled student session
@@ -86,7 +99,8 @@ const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> 
         StorageEngine.setLastStudentPortalUrl(null);
       }
     } else if (savedStudentUrl) {
-      const candidateHash = extractHashFromUrl(savedStudentUrl);
+      const cleanUrl = sanitizePortalUrl(savedStudentUrl);
+      const candidateHash = cleanUrl ? extractHashFromUrl(cleanUrl) : null;
       if (candidateHash) {
         const cleanCandidate = normalizeStudentKey(candidateHash);
         const activeStudent = students.find((s) => {
@@ -97,8 +111,8 @@ const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> 
           const matchName = s.name && normalizeStudentKey(s.name) === cleanCandidate;
           return matchHash || matchId || matchCode || matchName;
         });
-        if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
-          return <Navigate to={savedStudentUrl} replace />;
+        if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED' && cleanUrl) {
+          return <Navigate to={cleanUrl} replace />;
         }
       }
       StorageEngine.setLastStudentPortalUrl(null);
@@ -421,8 +435,8 @@ export default function App() {
         return matchHash || matchId || matchCode || matchName;
       });
       if (matchedStd) {
-        const currentUrl = location.pathname + location.search;
-        StorageEngine.setLastStudentPortalUrl(currentUrl);
+        const cleanPortalUrl = sanitizePortalUrl(location.pathname + location.search);
+        StorageEngine.setLastStudentPortalUrl(cleanPortalUrl || location.pathname);
       }
     }
   }, [activeStudentSecretHash, location.pathname, location.search, students]);
