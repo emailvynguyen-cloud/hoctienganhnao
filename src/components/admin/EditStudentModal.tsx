@@ -3,7 +3,7 @@ import { Student, Class } from '../../types';
 import { StorageEngine } from '../../lib/storage';
 import { DraftStorage } from '../../lib/draftStorage';
 import { DraftPromptBanner } from '../common/AddSessionModal';
-import { Edit3, X, DollarSign, BookOpen } from 'lucide-react';
+import { Edit3, X } from 'lucide-react';
 
 interface EditStudentModalProps {
   isOpen: boolean;
@@ -24,10 +24,6 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
   const [phone, setPhone] = useState(student.phone || '');
   const [email, setEmail] = useState(student.email || '');
   const [selectedClassId, setSelectedClassId] = useState(student.classIds?.[0] || classes[0]?.id || '');
-  const [remainingSessions, setRemainingSessions] = useState(student.remainingSessions || 0);
-  const [packageSessionCount, setPackageSessionCount] = useState(student.packageSessionCount || 8);
-  const [tuitionPackagePrice, setTuitionPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
-  const [startSessionNumber, setStartSessionNumber] = useState(student.startSessionNumber || 1);
   const [internalNotes, setInternalNotes] = useState(student.internalNotes || '');
 
   const draftKey = `edit_student_${student.id}`;
@@ -40,14 +36,11 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
         phone,
         email,
         selectedClassId,
-        remainingSessions,
-        packageSessionCount,
-        tuitionPackagePrice,
         internalNotes,
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [isOpen, draftKey, name, phone, email, selectedClassId, remainingSessions, packageSessionCount, tuitionPackagePrice, internalNotes]);
+  }, [isOpen, draftKey, name, phone, email, selectedClassId, internalNotes]);
 
   const handleRestoreDraft = (data: any) => {
     if (!data) return;
@@ -55,9 +48,6 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
     if (data.phone !== undefined) setPhone(data.phone);
     if (data.email !== undefined) setEmail(data.email);
     if (data.selectedClassId) setSelectedClassId(data.selectedClassId);
-    if (data.remainingSessions !== undefined) setRemainingSessions(data.remainingSessions);
-    if (data.packageSessionCount !== undefined) setPackageSessionCount(data.packageSessionCount);
-    if (data.tuitionPackagePrice !== undefined) setTuitionPackagePrice(data.tuitionPackagePrice);
     if (data.internalNotes !== undefined) setInternalNotes(data.internalNotes);
   };
 
@@ -76,10 +66,6 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
       phone,
       email,
       classIds: selectedClassId ? [selectedClassId] : student.classIds,
-      remainingSessions: Number(remainingSessions) || 0,
-      packageSessionCount: Number(packageSessionCount) || 8,
-      tuitionPackagePrice: Number(tuitionPackagePrice) || 2000000,
-      startSessionNumber: Number(startSessionNumber) || 1,
       internalNotes,
     });
 
@@ -113,8 +99,8 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
               <Edit3 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">✏️ Chỉnh Sửa Thông Tin Học Viên</h3>
-              <p className="text-xs text-slate-500 font-medium">Quyền Super Admin: Điều chỉnh thông tin cá nhân & gói học phí</p>
+              <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">✏️ Chỉnh Sửa Thông Tin Hồ Sơ Học Viên</h3>
+              <p className="text-xs text-slate-500 font-medium">Quyền Super Admin: Điều chỉnh thông tin cá nhân, SĐT, Email, Lớp học & Ghi chú</p>
             </div>
           </div>
           <button
@@ -131,6 +117,15 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
           {/* BODY CONTENT - Scrollable */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
             <DraftPromptBanner draftKey={draftKey} onRestore={handleRestoreDraft} />
+
+            {/* TUITION NOTICE BANNER */}
+            <div className="p-3.5 rounded-2xl bg-sky-50/80 dark:bg-slate-800/80 border border-sky-200 dark:border-sky-800 text-xs text-sky-900 dark:text-sky-300 font-medium flex items-center gap-2.5">
+              <span className="text-base shrink-0">💡</span>
+              <div>
+                <strong>Quản lý Học Phí:</strong> Việc lập phiếu thu, ghi nhận học phí và điều chỉnh lịch sử thanh toán được quản lý tập trung tại giao diện <strong>"Học Phí"</strong>.
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Họ Và Tên Học Viên (*)</label>
@@ -168,60 +163,6 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* TUITION PACKAGE ADJUSTMENT BOX */}
-            <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 space-y-3">
-              <span className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center uppercase tracking-wider">
-                <DollarSign className="w-4 h-4 mr-1 text-amber-600" /> 💳 Điều Chỉnh Gói Học Phí Hiện Tại:
-              </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Số Buổi Còn Lại</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={remainingSessions}
-                    onChange={(e) => setRemainingSessions(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Gói Số Buổi</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={packageSessionCount}
-                    onChange={(e) => setPackageSessionCount(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Giá Tiền Gói (VNĐ)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={tuitionPackagePrice}
-                    onChange={(e) => setTuitionPackagePrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-slate-700 dark:text-slate-300 text-[11px] font-extrabold block">Buổi Bắt Đầu Khởi Điểm</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={startSessionNumber}
-                    onChange={(e) => setStartSessionNumber(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold"
-                    placeholder="VD: 40"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="space-y-1">

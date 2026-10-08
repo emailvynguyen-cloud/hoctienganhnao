@@ -241,6 +241,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [tuitionSearchQuery, setTuitionSearchQuery] = useState('');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'paid' | 'pending' | 'cancelled'>('all');
+  const [isInvoiceListOpen, setIsInvoiceListOpen] = useState(false); // Default collapsed as requested
   const [editingInvoiceModal, setEditingInvoiceModal] = useState<Invoice | null>(null);
   const [auditLogSearchQuery, setAuditLogSearchQuery] = useState('');
   const [auditLogFilterType, setAuditLogFilterType] = useState('all');
@@ -292,8 +293,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
   const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPhone, setNewStudentPhone] = useState('');
   const [newStudentClassId, setNewStudentClassId] = useState('');
-  const [newSessionCount, setNewSessionCount] = useState(8);
-  const [newTuitionPrice, setNewTuitionPrice] = useState(2000000);
 
   useEffect(() => {
     if (safeClasses.length > 0 && !newStudentClassId) {
@@ -467,14 +466,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
       email: newStudentEmail || `${newStudentName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`,
       phone: newStudentPhone,
       classIds: [assignedClassId],
-      remainingSessions: newSessionCount || 8,
-      totalPaidSessions: newSessionCount || 8,
-      tuitionPackagePrice: newTuitionPrice || 2000000,
-      packageSessionCount: newSessionCount || 8,
+      remainingSessions: 0,
+      totalPaidSessions: 0,
+      tuitionPackagePrice: 2000000,
+      packageSessionCount: 8,
       avatar: KAKAOTALK_SVG_AVATARS.ryan,
     });
 
-    alert(`Đã thêm học viên "${newStudentName}" vào lớp thành công!`);
+    alert(`Đã thêm học viên "${newStudentName}" vào lớp thành công! Để ghi nhận thanh toán & lập phiếu thu, vui lòng chuyển sang giao diện "Học Phí".`);
     setNewStudentName('');
     setNewStudentEmail('');
     setNewStudentPhone('');
@@ -1281,166 +1280,221 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
 
           {/* SECTION 1: DANH SÁCH TOÀN BỘ PHIẾU THU HỌC PHÍ */}
           <div className="space-y-4 p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
-              <div>
-                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center">
-                  📑 Danh Sách Phiếu Thu Học Phí ({invoices.length} Phiếu Thu)
-                </h4>
-                <p className="text-xs text-slate-500 font-medium">
-                  Chỉnh sửa ngày thu, số tiền, số buổi và mốc bắt đầu tính bất cứ lúc nào
-                </p>
+            <div
+              onClick={() => setIsInvoiceListOpen(!isInvoiceListOpen)}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3 cursor-pointer select-none"
+            >
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsInvoiceListOpen(!isInvoiceListOpen);
+                  }}
+                  className="p-2 rounded-xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 transition cursor-pointer shrink-0"
+                >
+                  {isInvoiceListOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    📑 Danh Sách Phiếu Thu ({invoices.length} Phiếu Thu)
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {isInvoiceListOpen ? 'Nhấn để thu gọn danh sách phiếu thu' : 'Mặc định thu gọn • Nhấn để xem danh sách phiếu thu'}
+                  </p>
+                </div>
               </div>
 
-              {/* Status Filter Badges */}
-              <div className="flex items-center space-x-1.5 text-xs font-bold">
-                <button
-                  onClick={() => setInvoiceStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
-                    invoiceStatusFilter === 'all'
-                      ? 'bg-purple-600 text-white border-purple-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300'
-                  }`}
-                >
-                  Tất cả ({invoices.length})
-                </button>
-                <button
-                  onClick={() => setInvoiceStatusFilter('paid')}
-                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
-                    invoiceStatusFilter === 'paid'
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800'
-                  }`}
-                >
-                  Đã Thu ({invoices.filter((i) => i && i.status === 'paid').length})
-                </button>
-                <button
-                  onClick={() => setInvoiceStatusFilter('pending')}
-                  className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
-                    invoiceStatusFilter === 'pending'
-                      ? 'bg-amber-600 text-white border-amber-600'
-                      : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800'
-                  }`}
-                >
-                  Chờ Thu ({invoices.filter((i) => i && i.status === 'pending').length})
-                </button>
-              </div>
+              {/* Expand / Collapse Button Badge */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsInvoiceListOpen(!isInvoiceListOpen);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                {isInvoiceListOpen ? (
+                  <>
+                    <span>Thu Gọn</span>
+                    <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Xem Danh Sách ({invoices.length})</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </div>
 
-            {/* Invoices List */}
-            {(() => {
-              const filteredInvoices = (invoices || []).filter((inv) => {
-                if (!inv) return false;
-                if (invoiceStatusFilter !== 'all' && inv.status !== invoiceStatusFilter) return false;
-                if (!tuitionSearchQuery.trim()) return true;
-                const q = tuitionSearchQuery.toLowerCase();
-                return (
-                  (inv.code || '').toLowerCase().includes(q) ||
-                  (inv.studentName || '').toLowerCase().includes(q) ||
-                  (inv.studentPhone || '').toLowerCase().includes(q) ||
-                  (inv.notes || '').toLowerCase().includes(q)
-                );
-              });
-
-              if (filteredInvoices.length === 0) {
-                return (
-                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-400">
-                    Chưa có phiếu thu nào trong danh mục này.
+            {/* Render Invoices Filter & Cards Only When Open */}
+            {isInvoiceListOpen && (
+              <div className="space-y-4 pt-1 animate-fadeIn">
+                {/* Search & Status Filter Badges */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Tìm phiếu thu theo mã, tên học viên, SĐT..."
+                      value={tuitionSearchQuery}
+                      onChange={(e) => setTuitionSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    />
                   </div>
-                );
-              }
 
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {filteredInvoices.map((inv) => (
-                    <div
-                      key={inv.id}
-                      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3"
+                  <div className="flex items-center space-x-1.5 text-xs font-bold shrink-0">
+                    <button
+                      onClick={() => setInvoiceStatusFilter('all')}
+                      className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                        invoiceStatusFilter === 'all'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300'
+                      }`}
                     >
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <div>
-                          <span className="font-mono font-black text-xs text-purple-600 block">#{inv.code}</span>
-                          <h5 className="font-black text-sm text-slate-900 dark:text-white">{inv.studentName}</h5>
-                        </div>
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                            inv.status === 'paid'
-                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                              : inv.status === 'pending'
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
-                              : 'bg-rose-100 text-rose-900 border border-rose-300'
-                          }`}
+                      Tất cả ({invoices.length})
+                    </button>
+                    <button
+                      onClick={() => setInvoiceStatusFilter('paid')}
+                      className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                        invoiceStatusFilter === 'paid'
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-slate-800'
+                      }`}
+                    >
+                      Đã Thu ({invoices.filter((i) => i && i.status === 'paid').length})
+                    </button>
+                    <button
+                      onClick={() => setInvoiceStatusFilter('pending')}
+                      className={`px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                        invoiceStatusFilter === 'pending'
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-slate-800'
+                      }`}
+                    >
+                      Chờ Thu ({invoices.filter((i) => i && i.status === 'pending').length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Invoices List */}
+                {(() => {
+                  const filteredInvoices = (invoices || []).filter((inv) => {
+                    if (!inv) return false;
+                    if (invoiceStatusFilter !== 'all' && inv.status !== invoiceStatusFilter) return false;
+                    if (!tuitionSearchQuery.trim()) return true;
+                    const q = tuitionSearchQuery.toLowerCase();
+                    return (
+                      (inv.code || '').toLowerCase().includes(q) ||
+                      (inv.studentName || '').toLowerCase().includes(q) ||
+                      (inv.studentPhone || '').toLowerCase().includes(q) ||
+                      (inv.notes || '').toLowerCase().includes(q)
+                    );
+                  });
+
+                  if (filteredInvoices.length === 0) {
+                    return (
+                      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-400">
+                        Chưa có phiếu thu nào trong danh mục này.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {filteredInvoices.map((inv) => (
+                        <div
+                          key={inv.id}
+                          className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3"
                         >
-                          {inv.status === 'paid' ? '✅ Đã Thu Tiền' : inv.status === 'pending' ? '⏳ Chờ Thu Tiền' : '🚫 Đã Hủy'}
-                        </span>
-                      </div>
-
-                      <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Ngày thu tiền:</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{inv.paymentDate || inv.paidDate || inv.createdDate}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Số tiền:</span>
-                          <span className="font-black text-emerald-600">{formatVND(inv.amount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Số buổi thanh toán:</span>
-                          <span className="font-black text-purple-700">
-                            {inv.sessionsPurchased} buổi học
-                          </span>
-                        </div>
-                        {inv.notes && (
-                          <div className="pt-1 text-[11px] text-slate-500 font-normal italic">
-                            💬 Ghi chú: {inv.notes}
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <div>
+                              <span className="font-mono font-black text-xs text-purple-600 block">#{inv.code}</span>
+                              <h5 className="font-black text-sm text-slate-900 dark:text-white">{inv.studentName}</h5>
+                            </div>
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                                inv.status === 'paid'
+                                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                  : inv.status === 'pending'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                                  : 'bg-rose-100 text-rose-900 border border-rose-300'
+                              }`}
+                            >
+                              {inv.status === 'paid' ? '✅ Đã Thu Tiền' : inv.status === 'pending' ? '⏳ Chờ Thu Tiền' : '🚫 Đã Hủy'}
+                            </span>
                           </div>
-                        )}
-                      </div>
 
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setEditingInvoiceModal(inv)}
-                            className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
-                          >
-                            ✏️ Sửa Phiếu Thu
-                          </button>
+                          <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Ngày thu tiền:</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{inv.paymentDate || inv.paidDate || inv.createdDate}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Số tiền:</span>
+                              <span className="font-black text-emerald-600">{formatVND(inv.amount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Số buổi thanh toán:</span>
+                              <span className="font-black text-purple-700">
+                                {inv.sessionsPurchased} buổi học
+                              </span>
+                            </div>
+                            {inv.notes && (
+                              <div className="pt-1 text-[11px] text-slate-500 font-normal italic">
+                                💬 Ghi chú: {inv.notes}
+                              </div>
+                            )}
+                          </div>
 
-                          {inv.status === 'pending' && (
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => setEditingInvoiceModal(inv)}
+                                className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
+                              >
+                                ✏️ Sửa Phiếu Thu
+                              </button>
+
+                              {inv.status === 'pending' && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Xác nhận đã nhận ${formatVND(inv.amount)} từ em ${inv.studentName}?`)) {
+                                      StorageEngine.markInvoiceAsPaid(inv.id);
+                                      confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                                      onUpdateInvoices();
+                                      onUpdateStudents();
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer"
+                                >
+                                  ☑️ Tick Đã Thu
+                                </button>
+                              )}
+                            </div>
+
                             <button
                               onClick={() => {
-                                if (window.confirm(`Xác nhận đã nhận ${formatVND(inv.amount)} từ em ${inv.studentName}?`)) {
-                                  StorageEngine.markInvoiceAsPaid(inv.id);
-                                  confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                                if (window.confirm(`Bạn chắc chắn muốn xóa phiếu thu #${inv.code} của ${inv.studentName}?`)) {
+                                  StorageEngine.deleteInvoice(inv.id);
                                   onUpdateInvoices();
                                   onUpdateStudents();
                                 }
                               }}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer"
+                              title="Xóa phiếu thu này"
                             >
-                              ☑️ Tick Đã Thu
+                              🗑️ Xóa
                             </button>
-                          )}
+                          </div>
                         </div>
-
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Bạn chắc chắn muốn xóa phiếu thu #${inv.code} của ${inv.studentName}?`)) {
-                              StorageEngine.deleteInvoice(inv.id);
-                              onUpdateInvoices();
-                              onUpdateStudents();
-                            }
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs transition cursor-pointer"
-                          title="Xóa phiếu thu này"
-                        >
-                          🗑️ Xóa
-                        </button>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           {/* SECTION 2: STUDENT TUITION FEE STATUS GRID */}
@@ -1938,6 +1992,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
           isOpen={!!selectedStudentForReceipt}
           onClose={() => setSelectedStudentForReceipt(null)}
           student={selectedStudentForReceipt}
+          allStudents={safeStudents}
           classes={safeClasses}
           invoices={invoices}
           sessions={sessions}
@@ -2156,7 +2211,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                 </div>
                 <div>
                   <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">Thêm Học Viên Mới Vào Lớp</h3>
-                  <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên, SĐT, chọn lớp & gói số buổi đăng ký</p>
+                  <p className="text-xs text-slate-500 font-medium">Nhập thông tin tên, SĐT và chọn lớp học trực thuộc</p>
                 </div>
               </div>
               <button
@@ -2170,6 +2225,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
             {/* FORM CONTAINER - Scrollable Body & Fixed Footer */}
             <form onSubmit={handleCreateStudent} className="flex flex-col min-h-0 flex-1 overflow-hidden">
               <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+                
+                {/* TUITION NOTICE BANNER */}
+                <div className="p-3.5 rounded-2xl bg-sky-50/80 dark:bg-slate-800/80 border border-sky-200 dark:border-sky-800 text-xs text-sky-900 dark:text-sky-300 font-medium flex items-center gap-2.5">
+                  <span className="text-base shrink-0">💡</span>
+                  <div>
+                    <strong>Lập Phiếu Thu Học Phí:</strong> Sau khi tạo hồ sơ học viên, vui lòng chuyển sang giao diện <strong>"Học Phí"</strong> để tạo phiếu thu và ghi nhận thanh toán đầu tiên.
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Họ Và Tên Học Viên (*)</label>
@@ -2208,30 +2272,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Số Buổi Học Đăng Ký</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newSessionCount}
-                      onChange={(e) => setNewSessionCount(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-slate-700 dark:text-slate-300 font-extrabold block">Tổng Học Phí Gói (VNĐ)</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={newTuitionPrice}
-                      onChange={(e) => setNewTuitionPrice(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-pink-50/30 dark:bg-slate-800 dark:text-white font-extrabold"
-                    />
-                  </div>
                 </div>
 
                 <div className="space-y-1">

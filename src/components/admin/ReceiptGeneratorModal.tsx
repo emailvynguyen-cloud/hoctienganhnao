@@ -1,15 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Student, BankConfig, Class, Invoice, Session } from '../../types';
 import { StorageEngine } from '../../lib/storage';
-import { getNextStartSessionNumber } from '../../lib/tuitionEngine';
 import { formatVND, getVietQRUrl, copyToClipboard } from '../../lib/vietqr';
-import { X, Copy, Check, QrCode, Sparkles, Send, ShieldCheck, DollarSign, Download, ImageIcon } from 'lucide-react';
+import { X, Copy, Check, QrCode, Sparkles, Send, ShieldCheck, DollarSign, Download, ImageIcon, Search, UserCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+export function removeVietnameseTones(str: string): string {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+}
 
 interface ReceiptGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  student: Student;
+  student?: Student | null;
+  allStudents?: Student[];
   classes: Class[];
   invoices?: Invoice[];
   sessions?: Session[];
@@ -21,14 +32,17 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   isOpen,
   onClose,
   student,
+  allStudents,
   classes,
   invoices,
   sessions,
   bankConfig,
   onRefreshData,
 }) => {
-  const [packagePrice, setPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
-  const [packageSessions, setPackageSessions] = useState(student.packageSessionCount || 8);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(student || null);
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
+  const [packagePrice, setPackagePrice] = useState(2000000);
+  const [packageSessions, setPackageSessions] = useState(8);
   const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('');
   const [tuitionPeriod, setTuitionPeriod] = useState<string>(`Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`);
@@ -40,18 +54,45 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   const [copiedContent, setCopiedContent] = useState(false);
 
   useEffect(() => {
-    if (isOpen && student) {
-      setPackagePrice(student.tuitionPackagePrice || 2000000);
-      setPackageSessions(student.packageSessionCount || 8);
+    if (isOpen) {
+      const activeSt = student || (allStudents && allStudents.length > 0 ? allStudents[0] : null);
+      setSelectedStudent(activeSt);
+      if (activeSt) {
+        setPackagePrice(activeSt.tuitionPackagePrice || 2000000);
+        setPackageSessions(activeSt.packageSessionCount || 8);
+      }
+      setStudentSearchQuery('');
     }
   }, [isOpen, student?.id]);
 
+  const studentsList = useMemo(() => {
+    if (allStudents && allStudents.length > 0) return allStudents;
+    if (student) return [student];
+    return StorageEngine.getStudents();
+  }, [allStudents, student]);
+
+  const matchingStudents = useMemo(() => {
+    if (!studentSearchQuery.trim()) return [];
+    const q = removeVietnameseTones(studentSearchQuery);
+    return studentsList.filter((s) => {
+      if (!s) return false;
+      const nameMatch = removeVietnameseTones(s.name || '').includes(q);
+      const codeMatch = removeVietnameseTones(s.code || '').includes(q);
+      const phoneMatch = removeVietnameseTones(s.phone || '').includes(q);
+      return nameMatch || codeMatch || phoneMatch;
+    });
+  }, [studentsList, studentSearchQuery]);
+
   if (!isOpen) return null;
 
-  const targetClass = (classes || []).find((c) => c.id === student.classIds[0]) || classes[0];
+  const targetClass = selectedStudent
+    ? (classes || []).find((c) => selectedStudent.classIds?.includes(c.id)) || classes[0]
+    : classes[0];
 
   const receiptCode = `VY-REC-${Date.now().toString().slice(-6)}`;
-  const cleanStudentName = student.name.toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim();
+  const cleanStudentName = selectedStudent
+    ? selectedStudent.name.toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim()
+    : '';
   const transferInfo = `VY HOCPHI ${cleanStudentName.slice(0, 15)} ${packageSessions}B`;
 
   const activeBankId = bankConfig.bankId || 'MB';
@@ -67,11 +108,15 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   );
 
   const handleSavePendingInvoice = () => {
+    if (!selectedStudent) {
+      alert('Vui lòng chọn 1 học viên hợp lệ trước khi lập phiếu thu!');
+      return;
+    }
     StorageEngine.addInvoice({
       code: receiptCode,
-      studentId: student.id,
-      studentName: student.name,
-      studentPhone: student.phone,
+      studentId: selectedStudent.id,
+      studentName: selectedStudent.name,
+      studentPhone: selectedStudent.phone,
       classId: targetClass?.id || '',
       className: targetClass?.className || '',
       amount: packagePrice,
@@ -91,12 +136,16 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   };
 
   const handleMarkAsPaid = () => {
-    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Phiếu thu gói ${packageSessions} buổi sẽ tự động được xếp lịch đối chiếu theo thời gian với các buổi học thực tế trong lớp.`)) {
+    if (!selectedStudent) {
+      alert('Vui lòng chọn 1 học viên hợp lệ trước khi lập phiếu thu!');
+      return;
+    }
+    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${selectedStudent.name}? Phiếu thu gói ${packageSessions} buổi sẽ tự động được xếp lịch đối chiếu theo thời gian với các buổi học thực tế trong lớp.`)) {
       StorageEngine.addInvoice({
         code: receiptCode,
-        studentId: student.id,
-        studentName: student.name,
-        studentPhone: student.phone,
+        studentId: selectedStudent.id,
+        studentName: selectedStudent.name,
+        studentPhone: selectedStudent.phone,
         classId: targetClass?.id || '',
         className: targetClass?.className || '',
         amount: packagePrice,
@@ -112,7 +161,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       });
 
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      alert(`Thành công! Đã lưu phiếu thu ${packageSessions} buổi cho học viên ${student.name}.`);
+      alert(`Thành công! Đã lưu phiếu thu ${packageSessions} buổi cho học viên ${selectedStudent.name}.`);
       onRefreshData();
       onClose();
     }
@@ -120,6 +169,10 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
   // PRINT RECEIPT SLIP TO PDF / PRINTER
   const handlePrintReceiptPDF = () => {
+    if (!selectedStudent) {
+      alert('Vui lòng chọn học viên trước khi in phiếu thu!');
+      return;
+    }
     const printWindow = window.open('', '_blank', 'width=850,height=950');
     if (!printWindow) return;
 
@@ -140,7 +193,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           .table td.label { color: #64748b; font-weight: 600; width: 40%; }
           .table td.val { color: #0f172a; font-weight: 800; text-align: right; }
           .price { color: #047857; font-size: 18px; font-weight: 900; }
-          .qr-section { display: flex; align-items: center; justify-content: space-between; background: #fdf2f8; border: 2px dashed #f472b6; border-radius: 16px; padding: 15px 20px; margin-top: 20px; }
+          .qr-section { display: flex; align-items: center; justify-between: space-between; background: #fdf2f8; border: 2px dashed #f472b6; border-radius: 16px; padding: 15px 20px; margin-top: 20px; }
           .qr-text { font-size: 13px; color: #831843; font-weight: 700; line-height: 1.5; }
           .qr-img { width: 130px; height: 130px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; padding: 5px; }
           .footer { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; font-size: 13px; color: #475569; font-weight: 700; }
@@ -166,11 +219,11 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           <table class="table">
             <tr>
               <td class="label">Họ và tên học viên:</td>
-              <td class="val" style="color: #be185d; font-size: 16px;">${student.name}</td>
+              <td class="val" style="color: #be185d; font-size: 16px;">${selectedStudent.name}</td>
             </tr>
             <tr>
               <td class="label">Số điện thoại liên hệ:</td>
-              <td class="val">${student.phone || 'Chưa cập nhật'}</td>
+              <td class="val">${selectedStudent.phone || 'Chưa cập nhật'}</td>
             </tr>
             <tr>
               <td class="label">Lớp học đăng ký:</td>
@@ -237,6 +290,10 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
   // DOWNLOAD FULL RECEIPT AS HD PNG IMAGE (CANVAS DRAWING)
   const handleDownloadFullReceiptImage = async () => {
+    if (!selectedStudent) {
+      alert('Vui lòng chọn học viên trước khi tải ảnh phiếu thu!');
+      return;
+    }
     try {
       const canvas = document.createElement('canvas');
       const width = 750;
@@ -294,8 +351,8 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
       // Table Details List
       const rows = [
-        { label: 'Họ và tên học viên:', val: student.name, isBold: true, color: '#be185d' },
-        { label: 'Số điện thoại liên hệ:', val: student.phone || 'Chưa cập nhật', isBold: false, color: '#334155' },
+        { label: 'Họ và tên học viên:', val: selectedStudent.name, isBold: true, color: '#be185d' },
+        { label: 'Số điện thoại liên hệ:', val: selectedStudent.phone || 'Chưa cập nhật', isBold: false, color: '#334155' },
         { label: 'Lớp học đăng ký:', val: `${targetClass?.className || 'Lớp Ms. Vy English'} (${targetClass?.schedule || ''})`, isBold: true, color: '#0f172a' },
         { label: 'Kỳ học / Gói học phí:', val: `${tuitionPeriod} (${packageSessions} Buổi)`, isBold: true, color: '#6b21a8' },
         { label: 'Số tiền học phí:', val: formatVND(packagePrice), isBold: true, color: '#047857' },
@@ -373,11 +430,11 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       // Convert to image download link
       const dataUrl = canvas.toDataURL('image/png', 0.95);
       const link = document.createElement('a');
-      link.download = `PhieuThuHocPhi_MsVy_${student.name.replace(/\s+/g, '_')}_${receiptCode}.png`;
+      link.download = `PhieuThuHocPhi_MsVy_${selectedStudent.name.replace(/\s+/g, '_')}_${receiptCode}.png`;
       link.href = dataUrl;
       link.click();
 
-      alert(`Đã xuất và tải Ảnh Phiếu Thu Học Phí cho học viên ${student.name} thành công!`);
+      alert(`Đã xuất và tải Ảnh Phiếu Thu Học Phí cho học viên ${selectedStudent.name} thành công!`);
     } catch (e) {
       console.error('Error downloading full receipt image:', e);
       alert('Không thể tạo ảnh phiếu thu. Bạn có thể chọn In Phiếu Thu (PDF) thay thế!');
@@ -386,6 +443,10 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
   // HANDLE DOWNLOAD / SAVE RECEIPT IMAGE (TẢI ẢNH PHIẾU THU KÈM QR)
   const handleSaveReceiptImage = async () => {
+    if (!selectedStudent) {
+      alert('Vui lòng chọn học viên trước!');
+      return;
+    }
     try {
       const response = await fetch(qrUrl);
       const blob = await response.blob();
@@ -393,18 +454,18 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `Ma_VietQR_Hoc_Phi_${student.name.replace(/\s+/g, '_')}_${packageSessions}Buoi.png`;
+      link.download = `Ma_VietQR_Hoc_Phi_${selectedStudent.name.replace(/\s+/g, '_')}_${packageSessions}Buoi.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
 
-      alert(`Đã lưu ảnh Mã VietQR cho học viên ${student.name}! Bạn có thể gửi ảnh này trực tiếp qua Zalo cho Phụ huynh.`);
+      alert(`Đã lưu ảnh Mã VietQR cho học viên ${selectedStudent.name}! Bạn có thể gửi ảnh này trực tiếp qua Zalo cho Phụ huynh.`);
     } catch (e) {
       const link = document.createElement('a');
       link.href = qrUrl;
       link.target = '_blank';
-      link.download = `Ma_VietQR_Hoc_Phi_${student.name}.png`;
+      link.download = `Ma_VietQR_Hoc_Phi_${selectedStudent?.name || 'HocVien'}.png`;
       link.click();
     }
   };
@@ -424,7 +485,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
                 Hệ Thống Thu Học Phí & Mã VietQR Tự Động
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Học viên: <strong>{student.name}</strong> • SĐT: {student.phone || 'N/A'} • Lớp: {targetClass?.className}
+                Học viên: <strong>{selectedStudent?.name || 'Chưa chọn'}</strong> • SĐT: {selectedStudent?.phone || 'N/A'} • Lớp: {targetClass?.className || 'N/A'}
               </p>
             </div>
           </div>
@@ -438,157 +499,265 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
         {/* BODY - Scrollable Content */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 min-h-0 text-xs font-medium">
+          
+          {/* STUDENT SEARCH & SELECTION UI */}
+          <div className="p-4 rounded-2xl bg-purple-50/90 border border-purple-200 text-xs space-y-3 relative dark:bg-slate-800/80 dark:border-purple-900">
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-slate-800 dark:text-purple-200 flex items-center text-xs">
+                <UserCheck className="w-4 h-4 mr-1.5 text-purple-600 dark:text-purple-400" /> Tìm Kiếm & Chọn Học Viên (*):
+              </label>
+              {selectedStudent ? (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                  ✓ Đã chọn: {selectedStudent.name}
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-100 dark:bg-rose-950 dark:text-rose-300 px-2.5 py-0.5 rounded-full border border-rose-300 dark:border-rose-800">
+                  ⚠️ Chưa chọn học viên
+                </span>
+              )}
+            </div>
+
+            {/* Search Input Box */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+              <input
+                type="text"
+                value={studentSearchQuery}
+                onChange={(e) => setStudentSearchQuery(e.target.value)}
+                placeholder="Nhập tên học viên để tìm kiếm..."
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+              {studentSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setStudentSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {/* Search Autocomplete Dropdown List */}
+              {matchingStudents.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-purple-300 dark:border-purple-800 max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                  {matchingStudents.map((st) => {
+                    const stClasses = (classes || []).filter((c) => st.classIds?.includes(c.id));
+                    const classNamesText = stClasses.map((c) => c.className).join(', ') || 'Chưa xếp lớp';
+                    const isSelected = selectedStudent?.id === st.id;
+                    return (
+                      <div
+                        key={st.id}
+                        onClick={() => {
+                          setSelectedStudent(st);
+                          setPackagePrice(st.tuitionPackagePrice || 2000000);
+                          setPackageSessions(st.packageSessionCount || 8);
+                          setStudentSearchQuery('');
+                        }}
+                        className={`p-3 hover:bg-purple-50 dark:hover:bg-slate-800/90 cursor-pointer transition flex items-center justify-between gap-3 ${
+                          isSelected ? 'bg-purple-50/80 dark:bg-slate-800' : ''
+                        }`}
+                      >
+                        <div className="space-y-0.5">
+                          <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>{st.name}</span>
+                            <span className="font-mono text-[10px] text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-1.5 py-0.5 rounded font-bold">
+                              #{st.code || st.id.slice(0, 6)}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex flex-wrap items-center gap-3">
+                            <span>📞 {st.phone || 'Chưa có SĐT'}</span>
+                            <span>🏫 Lớp: <strong>{classNamesText}</strong></span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={`px-3 py-1 rounded-xl text-[11px] font-black shrink-0 transition ${
+                            isSelected ? 'bg-emerald-600 text-white' : 'bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          }`}
+                        >
+                          {isSelected ? '✓ Đang chọn' : 'Chọn học viên'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {studentSearchQuery.trim() !== '' && matchingStudents.length === 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-purple-200 p-3 text-center text-xs font-medium text-slate-400">
+                  Không tìm thấy học viên nào với từ khóa "{studentSearchQuery}"
+                </div>
+              )}
+            </div>
+
+            {/* Display Selected Student Card Badge */}
+            {selectedStudent ? (
+              <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
+                <div>
+                  <span className="text-slate-500 font-medium">Học viên được chọn: </span>
+                  <strong className="text-purple-900 dark:text-purple-300 font-black text-sm">{selectedStudent.name}</strong>
+                  <span className="ml-2 font-mono text-[10px] text-purple-600 bg-purple-50 dark:bg-purple-950 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">
+                    #{selectedStudent.code || selectedStudent.id.slice(0, 6)}
+                  </span>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                    SĐT: {selectedStudent.phone || 'Chưa có SĐT'} • Lớp: {targetClass?.className || 'Chưa xếp lớp'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300 text-center">
+                ⚠️ Vui lòng gõ tên học viên vào ô tìm kiếm ở trên để chọn học viên cần lập phiếu thu.
+              </div>
+            )}
+          </div>
+
           {/* Dynamic Package Settings Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs dark:bg-slate-800/40 dark:border-slate-700">
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Ngày Thu Tiền (*):</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Ngày Thu Tiền (*):</label>
               <input
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-xs"
               />
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Số Tiền Thu (VNĐ) (*):</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Số Tiền Thu (VNĐ) (*):</label>
               <input
                 type="number"
                 value={packagePrice}
                 onChange={(e) => setPackagePrice(Number(e.target.value))}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-xs"
               />
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Số Buổi Đã Mua (*):</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Số Buổi Đã Mua (*):</label>
               <input
                 type="number"
                 value={packageSessions}
                 onChange={(e) => setPackageSessions(Number(e.target.value))}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-bold text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-xs"
               />
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học / Diễn Giải:</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Kỳ Học / Diễn Giải:</label>
               <input
                 type="text"
                 value={tuitionPeriod}
                 onChange={(e) => setTuitionPeriod(e.target.value)}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-xs"
                 placeholder="Tháng 8/2026"
               />
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học / Diễn Giải:</label>
-              <input
-                type="text"
-                value={tuitionPeriod}
-                onChange={(e) => setTuitionPeriod(e.target.value)}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
-                placeholder="Tháng 8/2026"
-              />
-            </div>
-
-            <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Hạn Nộp Tiền (Nếu chờ):</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Hạn Nộp Tiền (Nếu chờ):</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-xs"
               />
             </div>
 
             <div className="sm:col-span-3">
-              <label className="block font-extrabold text-slate-700 mb-1">Ghi Chú Phiếu Thu:</label>
+              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">Ghi Chú Phiếu Thu:</label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-medium text-xs"
+                className="w-full p-2 rounded-xl border border-purple-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-medium text-xs"
                 placeholder="Nhập ghi chú phiếu thu (ví dụ: Chuyển khoản VietQR, đã giảm giá 10%...)"
               />
             </div>
           </div>
 
           {/* OFFICIAL RECEIPT VOUCHER */}
-          <div id="printable-receipt" className="p-5 rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 space-y-3.5 shadow-md text-slate-800">
-            
-            <div className="flex items-center justify-between border-b border-purple-200 pb-2.5">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-pink-400 text-white flex items-center justify-center font-black text-lg">
-                  🌸
+          {selectedStudent ? (
+            <div id="printable-receipt" className="p-5 rounded-3xl border-2 border-purple-300 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 space-y-3.5 shadow-md text-slate-800">
+              
+              <div className="flex items-center justify-between border-b border-purple-200 pb-2.5">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-pink-400 text-white flex items-center justify-center font-black text-lg">
+                    🌸
+                  </div>
+                  <div>
+                    <h4 className="font-black text-sm text-purple-900">MS. VY ENGLISH CENTER</h4>
+                    <p className="text-[10px] text-slate-500 font-medium">Phiếu Thu Học Phí & Mã Chuyển Khoản QR Động</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-black text-sm text-purple-900">MS. VY ENGLISH CENTER</h4>
-                  <p className="text-[10px] text-slate-500 font-medium">Phiếu Thu Học Phí & Mã Chuyển Khoản QR Động</p>
+
+                <div className="text-right">
+                  <span className="text-[11px] font-mono font-black text-pink-600 block">#{receiptCode}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Lập ngày: {new Date().toISOString().split('T')[0]}</span>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[11px] font-mono font-black text-pink-600 block">#{receiptCode}</span>
-                <span className="text-[10px] text-slate-400 font-medium">Lập ngày: {new Date().toISOString().split('T')[0]}</span>
+              {/* Receipt Details Table */}
+              <div className="space-y-1 text-xs font-medium">
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Họ và tên học viên:</span>
+                  <strong className="text-slate-900 font-black text-sm">{selectedStudent.name}</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Lớp học:</span>
+                  <strong>{targetClass?.className || 'Lớp Ms. Vy English'}</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Kỳ học / Gói học phí:</span>
+                  <strong className="text-purple-800">{tuitionPeriod} ({packageSessions} Buổi)</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Số tiền học phí:</span>
+                  <strong className="text-emerald-700 text-base font-black">{formatVND(packagePrice)}</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Hạn thanh toán:</span>
+                  <strong className="text-amber-800">{dueDate}</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
+                  <strong>{activeBankId} ({activeAccountNo}) - {activeAccountName}</strong>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-purple-100">
+                  <span className="text-slate-500">Cú pháp chuyển khoản:</span>
+                  <strong className="font-mono text-purple-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">{transferInfo}</strong>
+                </div>
               </div>
+
+              {/* VietQR Display Box */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-purple-200 shadow-xs">
+                <div className="text-center sm:text-left space-y-1">
+                  <span className="text-xs font-extrabold text-purple-900 uppercase block">
+                    📲 Mã VietQR Chuyển Khoản Tự Động
+                  </span>
+                  <p className="text-[11px] text-slate-500 max-w-xs">
+                    Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...) quét mã để thanh toán tự động đúng số tiền & cú pháp.
+                  </p>
+                </div>
+
+                <div className="bg-white p-2 rounded-2xl border border-purple-200 shadow-sm shrink-0">
+                  <img src={qrUrl} alt="VietQR Payment Code" className="w-36 h-36 object-contain" />
+                </div>
+              </div>
+
             </div>
-
-            {/* Receipt Details Table */}
-            <div className="space-y-1 text-xs font-medium">
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Họ và tên học viên:</span>
-                <strong className="text-slate-900 font-black text-sm">{student.name}</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Lớp học:</span>
-                <strong>{targetClass?.className || 'Lớp Ms. Vy English'}</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Kỳ học / Gói học phí:</span>
-                <strong className="text-purple-800">{tuitionPeriod} ({packageSessions} Buổi)</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Số tiền học phí:</span>
-                <strong className="text-emerald-700 text-base font-black">{formatVND(packagePrice)}</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Hạn thanh toán:</span>
-                <strong className="text-amber-800">{dueDate}</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Ngân hàng thụ hưởng:</span>
-                <strong>{activeBankId} ({activeAccountNo}) - {activeAccountName}</strong>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-purple-100">
-                <span className="text-slate-500">Cú pháp chuyển khoản:</span>
-                <strong className="font-mono text-purple-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">{transferInfo}</strong>
-              </div>
+          ) : (
+            <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 font-bold text-xs">
+              Vui lòng chọn học viên ở trên để xem bản xem trước Phiếu Thu & Mã VietQR.
             </div>
+          )}
 
-            {/* VietQR Display Box */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-purple-200 shadow-xs">
-              <div className="text-center sm:text-left space-y-1">
-                <span className="text-xs font-extrabold text-purple-900 uppercase block">
-                  📲 Mã VietQR Chuyển Khoản Tự Động
-                </span>
-                <p className="text-[11px] text-slate-500 max-w-xs">
-                  Mở ứng dụng Ngân hàng (MB, Vietcombank, Techcombank, Momo...) quét mã để thanh toán tự động đúng số tiền & cú pháp.
-                </p>
-              </div>
-
-              <div className="bg-white p-2 rounded-2xl border border-purple-200 shadow-sm shrink-0">
-                <img src={qrUrl} alt="VietQR Payment Code" className="w-36 h-36 object-contain" />
-              </div>
-            </div>
-
-          </div>
         </div>
 
         {/* FOOTER - Fixed Bottom */}
@@ -596,11 +765,13 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
-                copyToClipboard(`Nộp học phí em ${student.name} - Số tiền: ${formatVND(packagePrice)} - STK: ${activeBankId} ${activeAccountNo} (${activeAccountName}) - Nội dung: ${transferInfo}`);
+                if (!selectedStudent) return alert('Vui lòng chọn học viên!');
+                copyToClipboard(`Nộp học phí em ${selectedStudent.name} - Số tiền: ${formatVND(packagePrice)} - STK: ${activeBankId} ${activeAccountNo} (${activeAccountName}) - Nội dung: ${transferInfo}`);
                 setCopiedContent(true);
                 setTimeout(() => setCopiedContent(false), 2000);
               }}
-              className="px-3 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer"
+              disabled={!selectedStudent}
+              className="px-3 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition flex items-center cursor-pointer disabled:opacity-50"
             >
               {copiedContent ? <Check className="w-4 h-4 mr-1 text-emerald-600" /> : <Copy className="w-4 h-4 mr-1" />}
               {copiedContent ? 'Đã Copy Tin Nhắn' : '🔗 Copy Tin Nhắn'}
@@ -608,7 +779,8 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
             <button
               onClick={handleSaveReceiptImage}
-              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              disabled={!selectedStudent}
+              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer disabled:opacity-50"
               title="Tải duy nhất ảnh Mã QR"
             >
               <Download className="w-3.5 h-3.5 mr-1" /> 📸 Tải Ảnh QR
@@ -616,15 +788,17 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
             <button
               onClick={handleDownloadFullReceiptImage}
-              className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
-              title="Tải toàn bộ phiếu thu dạng ảnh sắc nét (kèm thông tin học viên, số tiền & QR)"
+              disabled={!selectedStudent}
+              className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer disabled:opacity-50"
+              title="Tải toàn bộ phiếu thu dạng ảnh sắc nét"
             >
               🖼️ Tải Ảnh Phiếu Thu (PNG)
             </button>
 
             <button
               onClick={handlePrintReceiptPDF}
-              className="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer"
+              disabled={!selectedStudent}
+              className="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs transition flex items-center shadow-md cursor-pointer disabled:opacity-50"
             >
               🖨️ In Phiếu Thu (PDF)
             </button>
@@ -633,7 +807,8 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={handleSavePendingInvoice}
-              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs transition shadow-xs flex items-center justify-center cursor-pointer"
+              disabled={!selectedStudent}
+              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs transition shadow-xs flex items-center justify-center cursor-pointer disabled:opacity-50"
               title="Lưu vào danh sách chờ nộp tiền"
             >
               ⏳ Lưu Phiếu Chờ
@@ -641,7 +816,8 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
             <button
               onClick={handleMarkAsPaid}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md flex items-center justify-center cursor-pointer"
+              disabled={!selectedStudent}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs hover:from-emerald-700 hover:to-teal-700 transition shadow-md flex items-center justify-center cursor-pointer disabled:opacity-50"
             >
               <ShieldCheck className="w-4 h-4 mr-1" /> Tick Đã Thu (+{packageSessions} Buổi)
             </button>
