@@ -1,6 +1,7 @@
 import React from 'react';
-import { Navigate, useLocation } from '../../lib/router';
 import { User, UserRole } from '../../types';
+import { LoginModal } from '../auth/LoginModal';
+import { StorageEngine } from '../../lib/storage';
 
 interface ProtectedRouteProps {
   currentUser: User | null;
@@ -13,20 +14,31 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles,
   children,
 }) => {
-  const location = useLocation();
-
   if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <LoginModal
+        isOpen={true}
+        canClose={false}
+        onClose={() => {}}
+        onLoginSuccess={(user) => {
+          StorageEngine.setCurrentUser(user);
+          window.location.reload();
+        }}
+      />
+    );
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
     const hasPermission = allowedRoles.includes(currentUser.role);
     if (!hasPermission) {
-      if (currentUser.role === 'student') return <Navigate to="/student" replace />;
-      if (currentUser.role === 'teacher') return <Navigate to="/teacher" replace />;
-      if (currentUser.role === 'admin') return <Navigate to="/admin" replace />;
-      if (currentUser.role === 'super_admin') return <Navigate to="/super-admin" replace />;
-      return <Navigate to="/student" replace />;
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-3">
+          <h2 className="text-lg font-black text-rose-600">Quyền Truy Cập Bị Hạn Chế</h2>
+          <p className="text-xs text-slate-500 font-medium">
+            Tài khoản của bạn ({currentUser.role}) không có quyền truy cập trang này.
+          </p>
+        </div>
+      );
     }
   }
 

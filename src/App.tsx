@@ -81,50 +81,7 @@ function sanitizePortalUrl(url: string | null): string | null {
   }
 }
 
-// Role Redirection Helper
-const RoleRedirect: React.FC<{ currentUser: User | null; students: Student[] }> = ({ currentUser, students }) => {
-  if (!currentUser) {
-    const currentStudentId = StorageEngine.getCurrentStudentSession();
-    const savedStudentUrl = StorageEngine.getLastStudentPortalUrl();
 
-    if (currentStudentId) {
-      const activeStudent = students.find((s) => s && s.id === currentStudentId && s.status !== 'soft_deleted');
-      if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED') {
-        const rawTarget = savedStudentUrl || `/student/${activeStudent.publicHash || activeStudent.id}`;
-        const targetUrl = sanitizePortalUrl(rawTarget) || `/student/${activeStudent.publicHash || activeStudent.id}`;
-        return <Navigate to={targetUrl} replace />;
-      } else {
-        // Clear invalid or disabled student session
-        StorageEngine.setCurrentStudentSession(null);
-        StorageEngine.setLastStudentPortalUrl(null);
-      }
-    } else if (savedStudentUrl) {
-      const cleanUrl = sanitizePortalUrl(savedStudentUrl);
-      const candidateHash = cleanUrl ? extractHashFromUrl(cleanUrl) : null;
-      if (candidateHash) {
-        const cleanCandidate = normalizeStudentKey(candidateHash);
-        const activeStudent = students.find((s) => {
-          if (!s || s.status === 'soft_deleted') return false;
-          const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanCandidate;
-          const matchId = s.id && normalizeStudentKey(s.id) === cleanCandidate;
-          const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanCandidate;
-          const matchName = s.name && normalizeStudentKey(s.name) === cleanCandidate;
-          return matchHash || matchId || matchCode || matchName;
-        });
-        if (activeStudent && activeStudent.studentCodeStatus !== 'DISABLED' && cleanUrl) {
-          return <Navigate to={cleanUrl} replace />;
-        }
-      }
-      StorageEngine.setLastStudentPortalUrl(null);
-    }
-    return <Navigate to="/login" replace />;
-  }
-  if (currentUser.role === 'student') return <Navigate to="/student" replace />;
-  if (currentUser.role === 'teacher') return <Navigate to="/teacher" replace />;
-  if (currentUser.role === 'admin') return <Navigate to="/admin" replace />;
-  if (currentUser.role === 'super_admin') return <Navigate to="/super-admin" replace />;
-  return <Navigate to="/student" replace />;
-};
 
 // Standalone Student Private Layout (NO Sidebar, NO Login Button, NO Admin Navigation; HAS Top Thi Đua)
 const StudentPrivateLayout: React.FC<{
@@ -243,12 +200,119 @@ const StudentPrivateLayout: React.FC<{
   );
 };
 
-// Root Route Handler (Fallback for path="/" if no student secret link is in search params)
+// Root Route Handler for path="/" (renders content directly at "/" without modifying URL)
 const RootRouteHandler: React.FC<{
   currentUser: User | null;
   students: Student[];
+  classes: Class[];
+  sessions: Session[];
+  homeworkTasks: HomeworkTask[];
+  homeworkSubmissions: HomeworkSubmission[];
+  invoices: Invoice[];
+  bankConfig: BankConfig;
+  loadData: () => void;
 }> = (props) => {
-  return <RoleRedirect currentUser={props.currentUser} students={props.students} />;
+  const { currentUser, students } = props;
+
+  // 1. If staff user is logged in, render their portal directly at "/"
+  if (currentUser) {
+    if (currentUser.role === 'teacher') {
+      return (
+        <TeacherPortal
+          currentUser={currentUser}
+          classes={props.classes}
+          students={students}
+          sessions={props.sessions}
+          onRefreshData={props.loadData}
+          onOpenAddSession={() => {}}
+        />
+      );
+    }
+    if (currentUser.role === 'admin' || currentUser.role === 'super_admin') {
+      return (
+        <AdminDashboard
+          currentUser={currentUser}
+          effectiveRole={currentUser.role}
+          students={students}
+          classes={props.classes}
+          invoices={props.invoices}
+          sessions={props.sessions}
+          bankConfig={props.bankConfig}
+          onUpdateStudents={props.loadData}
+          onUpdateClasses={props.loadData}
+          onUpdateInvoices={props.loadData}
+          onOpenAddSession={() => {}}
+          onOpenAccountManagement={() => {}}
+        />
+      );
+    }
+    if (currentUser.role === 'student') {
+      const studentObj = students.find((s) => s.email === currentUser.email) || students[0];
+      return (
+        <StudentPortal
+          currentStudent={studentObj}
+          classes={props.classes}
+          sessions={props.sessions}
+          homeworkTasks={props.homeworkTasks}
+          homeworkSubmissions={props.homeworkSubmissions}
+          invoices={props.invoices}
+          bankConfig={props.bankConfig}
+          onRefreshData={props.loadData}
+        />
+      );
+    }
+  }
+
+  // 2. If guest / no currentUser, check if active student session or saved student url exists
+  const currentStudentId = StorageEngine.getCurrentStudentSession();
+  const savedStudentUrl = StorageEngine.getLastStudentPortalUrl();
+  let matchedStudent: Student | undefined;
+
+  if (currentStudentId) {
+    matchedStudent = students.find((s) => s && s.id === currentStudentId && s.status !== 'soft_deleted');
+  } else if (savedStudentUrl) {
+    const candidateHash = extractHashFromUrl(savedStudentUrl);
+    if (candidateHash) {
+      const cleanCandidate = normalizeStudentKey(candidateHash);
+      matchedStudent = students.find((s) => {
+        if (!s || s.status === 'soft_deleted') return false;
+        const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanCandidate;
+        const matchId = s.id && normalizeStudentKey(s.id) === cleanCandidate;
+        const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanCandidate;
+        const matchName = s.name && normalizeStudentKey(s.name) === cleanCandidate;
+        return matchHash || matchId || matchCode || matchName;
+      });
+    }
+  }
+
+  if (matchedStudent && matchedStudent.studentCodeStatus !== 'DISABLED') {
+    return (
+      <StudentPrivateLayout
+        publicHash={matchedStudent.publicHash || matchedStudent.id}
+        students={students}
+        classes={props.classes}
+        sessions={props.sessions}
+        homeworkTasks={props.homeworkTasks}
+        homeworkSubmissions={props.homeworkSubmissions}
+        invoices={props.invoices}
+        bankConfig={props.bankConfig}
+        loadData={props.loadData}
+        currentUser={currentUser}
+      />
+    );
+  }
+
+  // 3. Otherwise, render LoginModal directly at "/" (NO REDIRECT to /login)
+  return (
+    <LoginModal
+      isOpen={true}
+      canClose={false}
+      onClose={() => {}}
+      onLoginSuccess={() => {
+        props.loadData();
+      }}
+    />
+  );
 };
 
 // Secret Link Handler (/s/:hash and ?hash=...)
@@ -268,7 +332,16 @@ const SecretLinkWrapper: React.FC<{
   const activeHash = hash || searchParams.get('hash') || searchParams.get('student') || '';
 
   if (!activeHash) {
-    return <Navigate to="/login" replace />;
+    return (
+      <LoginModal
+        isOpen={true}
+        canClose={false}
+        onClose={() => {}}
+        onLoginSuccess={() => {
+          props.onRefreshData();
+        }}
+      />
+    );
   }
 
   return (
@@ -502,8 +575,23 @@ export default function App() {
               />
             }
           >
-            {/* PUBLIC ROUTE: ROOT & ROLE REDIRECT */}
-            <Route path="/" element={<RootRouteHandler currentUser={currentUser} students={students} />} />
+            {/* PUBLIC ROUTE: ROOT */}
+            <Route
+              path="/"
+              element={
+                <RootRouteHandler
+                  currentUser={currentUser}
+                  students={students}
+                  classes={classes}
+                  sessions={sessions}
+                  homeworkTasks={homeworkTasks}
+                  homeworkSubmissions={homeworkSubmissions}
+                  invoices={invoices}
+                  bankConfig={bankConfig}
+                  loadData={loadData}
+                />
+              }
+            />
 
             {/* REALTIME ISOLATION TEST ROUTE */}
             <Route path="/realtime-test" element={<RealtimeIsolationTest />} />
