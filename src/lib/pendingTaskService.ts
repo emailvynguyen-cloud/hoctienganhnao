@@ -103,12 +103,21 @@ export const PendingTaskService = {
             taskSubscribers.forEach((cb) => cb([...inMemoryTasks]));
           }
         )
-        .subscribe((status: string) => {
-          console.log(`[REALTIME][PENDING_TASK] Subscription status: ${status}`);
+        .subscribe((status: string, err?: any) => {
+          console.log(`[REALTIME][PENDING_TASK] Subscription status: ${status}`, err || '');
           if (status === 'SUBSCRIBED') {
             this.fetchPendingTasks(teacherId).then((tasks) => {
-              callback([...tasks]);
+              taskSubscribers.forEach((cb) => cb([...tasks]));
             });
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[REALTIME][PENDING_TASK] Channel status error: ${status}. Scheduling re-subscription...`);
+            setTimeout(() => {
+              if (realtimeChannel) {
+                try { supabase.removeChannel(realtimeChannel); } catch (e) {}
+                realtimeChannel = null;
+              }
+              this.subscribePendingTasks(callback, teacherId);
+            }, 3000);
           }
         });
     } else {
@@ -263,7 +272,9 @@ export const PendingTaskService = {
         updated_at: nowIso,
       }));
 
-    // Merge into local and push to Supabase ONLY if task is NOT in dismissedSet and NOT already dismissed/completed in memory
+    const activeComputedTaskIds = new Set(dbTasks.map((t) => t.id));
+
+    // 1. Merge active computed tasks into local and push to Supabase if not present
     dbTasks.forEach((dt) => {
       if (dismissedSet.has(dt.id)) return;
 
@@ -276,6 +287,24 @@ export const PendingTaskService = {
         }
       }
     });
+
+    // 2. AUTO-COMPLETE DERIVED TASKS (Bug 2 Fix):
+    // Check all existing derived tasks in inMemoryTasks. If a task is of a derived type (unrecorded_session, missing_quizlet, missing_record_link)
+    // and is currently 'pending', but NO LONGER in activeComputedTaskIds (and not in dismissedSet),
+    // it means the user HAS SATISFIED the condition (e.g. filled out the session date, added quizlet link, or added record link)!
+    // Automatically mark it as 'completed' and sync status to Supabase!
+    const derivedTypes = new Set(['unrecorded_session', 'missing_quizlet', 'missing_record_link']);
+    inMemoryTasks.forEach((t) => {
+      if (derivedTypes.has(t.type) && t.status === 'pending') {
+        if (!activeComputedTaskIds.has(t.id) && !dismissedSet.has(t.id)) {
+          console.log('[PENDING_TASK][AUTO_COMPLETE] Task condition satisfied by data, marking completed:', t.id, t.title);
+          this.completePendingTask(t.id);
+        }
+      }
+    });
+
+    // 3. Notify all React subscribers of the updated task list
+    taskSubscribers.forEach((cb) => cb([...inMemoryTasks]));
 
     return inMemoryTasks;
   },
