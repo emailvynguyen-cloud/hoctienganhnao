@@ -247,62 +247,26 @@ const RootRouteHandler: React.FC<{
       );
     }
     if (currentUser.role === 'student') {
-      const studentObj = students.find((s) => s.email === currentUser.email) || students[0];
-      return (
-        <StudentPortal
-          currentStudent={studentObj}
-          classes={props.classes}
-          sessions={props.sessions}
-          homeworkTasks={props.homeworkTasks}
-          homeworkSubmissions={props.homeworkSubmissions}
-          invoices={props.invoices}
-          bankConfig={props.bankConfig}
-          onRefreshData={props.loadData}
-        />
-      );
+      const studentObj = students.find((s) => s.email === currentUser.email);
+      if (studentObj) {
+        return (
+          <StudentPortal
+            currentStudent={studentObj}
+            classes={props.classes}
+            sessions={props.sessions}
+            homeworkTasks={props.homeworkTasks}
+            homeworkSubmissions={props.homeworkSubmissions}
+            invoices={props.invoices}
+            bankConfig={props.bankConfig}
+            onRefreshData={props.loadData}
+          />
+        );
+      }
     }
   }
 
-  // 2. If guest / no currentUser, check if active student session or saved student url exists
-  const currentStudentId = StorageEngine.getCurrentStudentSession();
-  const savedStudentUrl = StorageEngine.getLastStudentPortalUrl();
-  let matchedStudent: Student | undefined;
-
-  if (currentStudentId) {
-    matchedStudent = students.find((s) => s && s.id === currentStudentId && s.status !== 'soft_deleted');
-  } else if (savedStudentUrl) {
-    const candidateHash = extractHashFromUrl(savedStudentUrl);
-    if (candidateHash) {
-      const cleanCandidate = normalizeStudentKey(candidateHash);
-      matchedStudent = students.find((s) => {
-        if (!s || s.status === 'soft_deleted') return false;
-        const matchHash = s.publicHash && normalizeStudentKey(s.publicHash) === cleanCandidate;
-        const matchId = s.id && normalizeStudentKey(s.id) === cleanCandidate;
-        const matchCode = s.studentCode && normalizeStudentKey(s.studentCode) === cleanCandidate;
-        const matchName = s.name && normalizeStudentKey(s.name) === cleanCandidate;
-        return matchHash || matchId || matchCode || matchName;
-      });
-    }
-  }
-
-  if (matchedStudent && matchedStudent.studentCodeStatus !== 'DISABLED') {
-    return (
-      <StudentPrivateLayout
-        publicHash={matchedStudent.publicHash || matchedStudent.id}
-        students={students}
-        classes={props.classes}
-        sessions={props.sessions}
-        homeworkTasks={props.homeworkTasks}
-        homeworkSubmissions={props.homeworkSubmissions}
-        invoices={props.invoices}
-        bankConfig={props.bankConfig}
-        loadData={props.loadData}
-        currentUser={currentUser}
-      />
-    );
-  }
-
-  // 3. Otherwise, render LoginModal directly at "/" (NO REDIRECT to /login)
+  // 2. For path "/", ALWAYS render Main Website Homepage / Login Portal directly at "/"
+  // (Strictly NO student session hijacking of "/" and NO Student Nunu fallback!)
   return (
     <LoginModal
       isOpen={true}
