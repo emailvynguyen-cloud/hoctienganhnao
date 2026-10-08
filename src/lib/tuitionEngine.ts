@@ -26,72 +26,9 @@ export interface StudentTuitionSummary {
 }
 
 /**
- * Automatically calculates the starting session number for a new tuition receipt.
- * Ensures tuition packages are strictly cumulative based on student's history:
- * nextStart = max(highest invoice endSessionNumber, highest conducted sessionNumber, baseline - 1) + 1
- */
-export function getNextStartSessionNumber(
-  student: Student | null | undefined,
-  invoices: Invoice[] = [],
-  sessions: Session[] = [],
-  classes: Class[] = []
-): number {
-  if (!student || !student.id) return 1;
-
-  // 1. Valid non-cancelled invoices for this student
-  const studentInvoices = (invoices || []).filter(
-    (inv) => inv && inv.studentId === student.id && inv.status !== 'cancelled'
-  );
-
-  // Highest end session number across existing invoices
-  let maxInvoiceEndSession = 0;
-  if (studentInvoices.length > 0) {
-    studentInvoices.forEach((inv) => {
-      const start = Number(inv.startFromSessionNumber) || 1;
-      const count = Number(inv.sessionsPurchased) || 8;
-      const end = start + count - 1;
-      if (end > maxInvoiceEndSession) {
-        maxInvoiceEndSession = end;
-      }
-    });
-  }
-
-  // 2. Highest conducted session number for student's classes
-  const studentClassIds = Array.isArray(student.classIds) ? student.classIds : [];
-  const studentSessions = (sessions || []).filter(
-    (s) => s && s.classId && studentClassIds.includes(s.classId) && isBillableStudentSession(s, student.id)
-  );
-
-  let maxConductedSessionNumber = 0;
-  if (studentSessions.length > 0) {
-    studentSessions.forEach((s) => {
-      const sNum = Number(s.sessionNumber) || 0;
-      if (sNum > maxConductedSessionNumber) {
-        maxConductedSessionNumber = sNum;
-      }
-    });
-  }
-
-  // 3. Baseline starting session from Student or Class
-  let baselineStart = Number(student.startSessionNumber) || 1;
-  if (baselineStart === 1 && studentClassIds.length > 0) {
-    const targetClass = (classes || []).find((c) => c && studentClassIds.includes(c.id));
-    if (targetClass?.startSessionNumber && targetClass.startSessionNumber > 1) {
-      baselineStart = targetClass.startSessionNumber;
-    }
-  }
-
-  const highestReached = Math.max(maxInvoiceEndSession, maxConductedSessionNumber);
-  if (highestReached > 0) {
-    return Math.max(highestReached + 1, baselineStart);
-  }
-
-  return baselineStart;
-}
-
-/**
  * CENTRAL SINGLE SOURCE OF TRUTH TUITION & REMAINING SESSION ENGINE
  * Calculates student's total paid sessions, billable sessions conducted, and exact remaining sessions.
+ * Matches tuition receipts chronologically against actual class sessions (Session.sessionNumber).
  * Shared and consumed identically by ALL portals: Super Admin, Admin, Teacher, and Student.
  */
 export function calculateStudentTuitionSummary(
@@ -115,7 +52,7 @@ export function calculateStudentTuitionSummary(
       };
     }
 
-    // 1. Filter student's valid receipts (paid invoices)
+    // 1. Filter student's valid receipts (paid/completed invoices)
     const studentInvoices = (invoices || []).filter((inv) => {
       if (!inv || !inv.studentId) return false;
       if (inv.studentId !== student.id) return false;
@@ -123,7 +60,7 @@ export function calculateStudentTuitionSummary(
       return inv.status === 'paid' || !inv.status;
     });
 
-    // 2. Filter sessions for student's classes
+    // 2. Filter & sort actual billable sessions for student's classes (sorted chronologically)
     const studentClassIds = targetClassId ? [targetClassId] : Array.isArray(student.classIds) ? student.classIds : [];
 
     const studentSessions = (sessions || []).filter((s) => {
@@ -132,7 +69,14 @@ export function calculateStudentTuitionSummary(
       return isBillableStudentSession(s, student.id);
     });
 
-    // Baseline start threshold
+    studentSessions.sort((a, b) => {
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      return (Number(a.sessionNumber) || 0) - (Number(b.sessionNumber) || 0);
+    });
+
+    // Baseline starting threshold if no class sessions recorded yet
     let baselineStart = Number(student.startSessionNumber) || 1;
     if (baselineStart === 1 && studentClassIds.length > 0) {
       const cls = classes.find((c) => c && studentClassIds.includes(c.id));
@@ -145,7 +89,6 @@ export function calculateStudentTuitionSummary(
     let effectiveInvoices = [...studentInvoices];
     if (effectiveInvoices.length === 0) {
       const legacyPaid = Number(student.totalPaidSessions) || Number(student.packageSessionCount) || 8;
-      const legacyStart = baselineStart;
       const safeIdStr = String(student.id || 'STD');
       effectiveInvoices = [
         {
@@ -156,7 +99,6 @@ export function calculateStudentTuitionSummary(
           studentPhone: student.phone || '',
           amount: student.tuitionPackagePrice || 0,
           sessionsPurchased: legacyPaid,
-          startFromSessionNumber: legacyStart,
           status: 'paid',
           paymentDate: student.joinedDate || student.createdAt || '2026-08-01',
           createdDate: student.createdAt || '2026-08-01',
@@ -165,64 +107,48 @@ export function calculateStudentTuitionSummary(
       ];
     }
 
-    // 4. Sort receipts by paymentDate / createdDate / startFromSessionNumber
+    // 4. Sort receipts strictly chronologically by paymentDate / paidDate / createdDate / code
     effectiveInvoices.sort((a, b) => {
       const dateA = a.paymentDate || a.paidDate || a.createdDate || '';
       const dateB = b.paymentDate || b.paidDate || b.createdDate || '';
       if (dateA !== dateB) return dateA.localeCompare(dateB);
-      const startA = Number(a.startFromSessionNumber) || 1;
-      const startB = Number(b.startFromSessionNumber) || 1;
-      return startA - startB;
+      return (a.code || '').localeCompare(b.code || '');
     });
 
-    // Ensure sequential non-overlapping package ranges
-    let runningStart = baselineStart;
-    const resolvedInvoices = effectiveInvoices.map((inv, idx) => {
-      let start = Number(inv.startFromSessionNumber);
-      if (!start || (idx > 0 && start <= runningStart)) {
-        start = runningStart;
-      }
-      const count = Number(inv.sessionsPurchased) || 8;
-      const end = start + count - 1;
-      runningStart = end + 1;
-      return {
-        ...inv,
-        resolvedStart: start,
-        resolvedEnd: end,
-      };
-    });
+    // 5. Sequential Chronological Matching against actual class sessions
+    let currentBillableIdx = 0;
+    let runningProjectedStart = baselineStart;
 
-    // 5. Calculate total paid sessions across all valid receipts
-    const totalPaidSessions = resolvedInvoices.reduce((sum, inv) => sum + (Number(inv.sessionsPurchased) || 0), 0);
-
-    // 6. Determine overall start threshold (min startFromSessionNumber across packages)
-    const minStartSessionNumber = resolvedInvoices.length > 0
-      ? Math.min(...resolvedInvoices.map((inv) => inv.resolvedStart))
-      : baselineStart;
-
-    // 7. Filter billable sessions conducted with sessionNumber >= minStartSessionNumber
-    const billableConductedSessions = studentSessions.filter((s) => {
-      const sNum = Number(s.sessionNumber) || 1;
-      return sNum >= minStartSessionNumber;
-    });
-
-    const totalBillableSessionsConducted = billableConductedSessions.length;
-
-    // 8. Calculate exact remaining sessions
-    const remainingSessions = totalPaidSessions - totalBillableSessionsConducted;
-
-    // 9. Breakdown per active package / receipt
-    const activePackages: StudentReceiptBreakdown[] = resolvedInvoices.map((inv) => {
-      const startNum = inv.resolvedStart;
+    const activePackages: StudentReceiptBreakdown[] = effectiveInvoices.map((inv) => {
       const purchased = Number(inv.sessionsPurchased) || 0;
-      const endNum = inv.resolvedEnd;
+      const sliceStart = currentBillableIdx;
+      const sliceEnd = currentBillableIdx + purchased;
 
-      const conductedForPkg = studentSessions.filter((s) => {
-        const sNum = Number(s.sessionNumber) || 1;
-        return sNum >= startNum && sNum <= endNum;
-      }).length;
+      const conductedSessions = studentSessions.slice(sliceStart, sliceEnd);
+      const sessionsConducted = conductedSessions.length;
+      const sessionsRemaining = Math.max(0, purchased - sessionsConducted);
 
-      const remainingForPkg = Math.max(0, purchased - conductedForPkg);
+      let startNum = 0;
+      let endNum = 0;
+
+      if (conductedSessions.length > 0) {
+        startNum = Number(conductedSessions[0].sessionNumber) || 1;
+        const lastConductedNum = Number(conductedSessions[conductedSessions.length - 1].sessionNumber) || startNum;
+        if (sessionsRemaining === 0) {
+          endNum = lastConductedNum;
+        } else {
+          // Unrecorded sessions in this package projected after the last recorded session
+          endNum = lastConductedNum + sessionsRemaining;
+        }
+        runningProjectedStart = endNum + 1;
+      } else {
+        // No recorded sessions in this package slice yet
+        startNum = runningProjectedStart;
+        endNum = startNum + purchased - 1;
+        runningProjectedStart = endNum + 1;
+      }
+
+      currentBillableIdx += purchased;
 
       return {
         receiptId: inv.id,
@@ -232,11 +158,15 @@ export function calculateStudentTuitionSummary(
         sessionsPurchased: purchased,
         startFromSessionNumber: startNum,
         endSessionNumber: endNum,
-        sessionsConducted: conductedForPkg,
-        sessionsRemaining: remainingForPkg,
+        sessionsConducted,
+        sessionsRemaining,
         notes: inv.notes,
       };
     });
+
+    const totalPaidSessions = effectiveInvoices.reduce((sum, inv) => sum + (Number(inv.sessionsPurchased) || 0), 0);
+    const totalBillableSessionsConducted = studentSessions.length;
+    const remainingSessions = totalPaidSessions - totalBillableSessionsConducted;
 
     return {
       studentId: student.id,
@@ -246,7 +176,7 @@ export function calculateStudentTuitionSummary(
       remainingSessions,
       isOverdue: remainingSessions <= 0,
       isLowBalance: remainingSessions > 0 && remainingSessions <= 2,
-      receiptsCount: resolvedInvoices.length,
+      receiptsCount: effectiveInvoices.length,
       activePackages,
     };
   } catch (err) {

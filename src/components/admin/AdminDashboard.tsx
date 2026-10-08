@@ -1384,9 +1384,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
                           <span className="font-black text-emerald-600">{formatVND(inv.amount)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Số buổi & Mốc tính:</span>
+                          <span className="text-slate-500">Số buổi thanh toán:</span>
                           <span className="font-black text-purple-700">
-                            {inv.sessionsPurchased} buổi (từ buổi #{inv.startFromSessionNumber || 1})
+                            {inv.sessionsPurchased} buổi học
                           </span>
                         </div>
                         {inv.notes && (

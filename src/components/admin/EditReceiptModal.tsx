@@ -22,7 +22,6 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
   const [paymentDate, setPaymentDate] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
   const [sessionsPurchased, setSessionsPurchased] = useState<number>(8);
-  const [startFromSessionNumber, setStartFromSessionNumber] = useState<number>(1);
   const [status, setStatus] = useState<'paid' | 'pending' | 'cancelled'>('paid');
   const [notes, setNotes] = useState<string>('');
 
@@ -31,7 +30,6 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
       setPaymentDate(invoice.paymentDate || invoice.paidDate || invoice.createdDate || new Date().toISOString().split('T')[0]);
       setAmount(Number(invoice.amount) || 0);
       setSessionsPurchased(Number(invoice.sessionsPurchased) || 8);
-      setStartFromSessionNumber(Number(invoice.startFromSessionNumber) || 1);
       setStatus(invoice.status === 'cancelled' ? 'cancelled' : invoice.status === 'pending' ? 'pending' : 'paid');
       setNotes(invoice.notes || '');
     }
@@ -56,7 +54,6 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
       paidDate: status === 'paid' ? paymentDate : undefined,
       amount: Number(amount) || 0,
       sessionsPurchased: Number(sessionsPurchased) || 8,
-      startFromSessionNumber: Number(startFromSessionNumber) || 1,
       status,
       notes,
     });
@@ -160,20 +157,7 @@ export const EditReceiptModal: React.FC<EditReceiptModalProps> = ({
               />
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">
-                Bắt Đầu Tính Từ Buổi Số (*) <span className="text-[10px] text-pink-600 font-medium">(Các buổi trước buổi số này sẽ KHÔNG trừ vào gói)</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={startFromSessionNumber}
-                onChange={(e) => setStartFromSessionNumber(Number(e.target.value))}
-                className="w-full p-2.5 rounded-xl border border-pink-300 dark:border-pink-800 bg-pink-50/50 dark:bg-pink-950/30 font-mono font-black text-pink-700 dark:text-pink-300 text-xs"
-                placeholder="Buổi #1"
-                required
-              />
-            </div>
+
 
             <div className="sm:col-span-2">
               <label className="block font-extrabold text-slate-700 dark:text-slate-300 mb-1">

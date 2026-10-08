@@ -29,7 +29,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 }) => {
   const [packagePrice, setPackagePrice] = useState(student.tuitionPackagePrice || 2000000);
   const [packageSessions, setPackageSessions] = useState(student.packageSessionCount || 8);
-  const [startFromSessionNumber, setStartFromSessionNumber] = useState<number>(1);
   const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('');
   const [tuitionPeriod, setTuitionPeriod] = useState<string>(`Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`);
@@ -42,10 +41,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
 
   useEffect(() => {
     if (isOpen && student) {
-      const invs = invoices && invoices.length > 0 ? invoices : StorageEngine.getInvoices();
-      const sess = sessions && sessions.length > 0 ? sessions : StorageEngine.getSessions();
-      const calculatedStart = getNextStartSessionNumber(student, invs, sess, classes);
-      setStartFromSessionNumber(calculatedStart);
       setPackagePrice(student.tuitionPackagePrice || 2000000);
       setPackageSessions(student.packageSessionCount || 8);
     }
@@ -81,7 +76,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       className: targetClass?.className || '',
       amount: packagePrice,
       sessionsPurchased: packageSessions,
-      startFromSessionNumber: Number(startFromSessionNumber) || 1,
       status: 'pending',
       paymentDate: paymentDate || new Date().toISOString().split('T')[0],
       dueDate,
@@ -97,7 +91,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
   };
 
   const handleMarkAsPaid = () => {
-    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Hệ thống sẽ tính gói ${packageSessions} buổi bắt đầu từ buổi số #${startFromSessionNumber}.`)) {
+    if (window.confirm(`Xác nhận đã nhận ${formatVND(packagePrice)} từ học viên ${student.name}? Phiếu thu gói ${packageSessions} buổi sẽ tự động được xếp lịch đối chiếu theo thời gian với các buổi học thực tế trong lớp.`)) {
       StorageEngine.addInvoice({
         code: receiptCode,
         studentId: student.id,
@@ -107,7 +101,6 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
         className: targetClass?.className || '',
         amount: packagePrice,
         sessionsPurchased: packageSessions,
-        startFromSessionNumber: Number(startFromSessionNumber) || 1,
         status: 'paid',
         paymentDate: paymentDate || new Date().toISOString().split('T')[0],
         dueDate,
@@ -119,7 +112,7 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
       });
 
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
-      alert(`Thành công! Đã lưu phiếu thu và tính gói ${packageSessions} buổi (bắt đầu từ buổi #${startFromSessionNumber}) cho em ${student.name}.`);
+      alert(`Thành công! Đã lưu phiếu thu ${packageSessions} buổi cho học viên ${student.name}.`);
       onRefreshData();
       onClose();
     }
@@ -478,18 +471,14 @@ export const ReceiptGeneratorModal: React.FC<ReceiptGeneratorModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-extrabold text-slate-700 mb-1">Bắt Đầu Tính Từ Buổi Số (*):</label>
+              <label className="block font-extrabold text-slate-700 mb-1">Kỳ Học / Diễn Giải:</label>
               <input
-                type="number"
-                min={1}
-                value={startFromSessionNumber}
-                onChange={(e) => setStartFromSessionNumber(Number(e.target.value))}
-                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-mono font-extrabold text-purple-900 text-xs"
-                placeholder="Buổi #1"
+                type="text"
+                value={tuitionPeriod}
+                onChange={(e) => setTuitionPeriod(e.target.value)}
+                className="w-full p-2 rounded-xl border border-purple-200 bg-white font-bold text-xs"
+                placeholder="Tháng 8/2026"
               />
-              <span className="text-[10px] font-black text-purple-800 bg-purple-100 px-2 py-0.5 rounded mt-1 inline-block">
-                🎓 Gói: Buổi #{startFromSessionNumber} → Buổi #{startFromSessionNumber + (packageSessions || 8) - 1}
-              </span>
             </div>
 
             <div>
