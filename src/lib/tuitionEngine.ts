@@ -85,27 +85,8 @@ export function calculateStudentTuitionSummary(
       }
     }
 
-    // 3. If student has NO receipts, construct virtual fallback from student legacy fields for 100% data preservation
+    // 3. Only use actual valid receipts (no virtual fallback receipts)
     let effectiveInvoices = [...studentInvoices];
-    if (effectiveInvoices.length === 0) {
-      const legacyPaid = Number(student.totalPaidSessions) || Number(student.packageSessionCount) || 8;
-      const safeIdStr = String(student.id || 'STD');
-      effectiveInvoices = [
-        {
-          id: `legacy_${safeIdStr}`,
-          code: `LEGACY-${safeIdStr.slice(-4).toUpperCase()}`,
-          studentId: student.id,
-          studentName: student.name || 'Học viên',
-          studentPhone: student.phone || '',
-          amount: student.tuitionPackagePrice || 0,
-          sessionsPurchased: legacyPaid,
-          status: 'paid',
-          paymentDate: student.joinedDate || student.createdAt || '2026-08-01',
-          createdDate: student.createdAt || '2026-08-01',
-          notes: 'Phiếu thu tự động khởi tạo từ dữ liệu học phí ban đầu',
-        },
-      ];
-    }
 
     // 4. Sort receipts strictly chronologically by paymentDate / paidDate / createdDate / code
     effectiveInvoices.sort((a, b) => {
@@ -184,9 +165,9 @@ export function calculateStudentTuitionSummary(
     return {
       studentId: student?.id || '',
       classId: targetClassId,
-      totalPaidSessions: Number(student?.totalPaidSessions) || 8,
+      totalPaidSessions: 0,
       totalBillableSessionsConducted: 0,
-      remainingSessions: Number(student?.remainingSessions) || 8,
+      remainingSessions: 0,
       isOverdue: false,
       isLowBalance: false,
       receiptsCount: 0,

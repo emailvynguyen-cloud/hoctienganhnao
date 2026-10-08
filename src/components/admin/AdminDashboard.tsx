@@ -1264,18 +1264,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = React.memo(({
               </p>
             </div>
 
-            <button
-              onClick={() => {
-                if (safeStudents.length > 0) {
-                  setSelectedStudentForReceipt(safeStudents[0]);
-                } else {
-                  alert('Chưa có học viên nào trong hệ thống!');
-                }
-              }}
-              className="px-5 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
-            >
-              <DollarSign className="w-4 h-4 mr-1.5" /> + Tạo Phiếu Thu / VietQR Mới
-            </button>
+            <div className="flex items-center space-x-2 shrink-0">
+              <button
+                onClick={() => {
+                  const res = StorageEngine.auditAndResetUnbackedTuitionData();
+                  onUpdateStudents();
+                  alert(
+                    `📊 KẾT QUẢ RÀ SOÁT & RESET DỮ LIỆU HỌC PHÍ\n` +
+                    `----------------------------------------\n` +
+                    `1. Tổng số học viên đã rà soát: ${res.totalStudentsAudited} học viên\n` +
+                    `2. Số học viên có phiếu thu hợp lệ: ${res.validReceiptsStudentsCount} học viên\n` +
+                    `3. Số khoản học phí không có phiếu thu phát hiện: ${res.unbackedTuitionDiscovered} khoản\n` +
+                    `4. Số khoản đã reset thành công: ${res.resetSuccessCount} khoản\n` +
+                    `5. Số khoản cần kiểm tra thủ công: ${res.manualCheckCount} khoản\n` +
+                    `----------------------------------------\n` +
+                    `✅ Bản sao lưu an toàn đã được lưu vào localStorage:\n${res.backupKey}`
+                  );
+                }}
+                className="px-4 py-3 rounded-2xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/70 text-purple-900 dark:text-purple-200 font-extrabold text-xs border border-purple-200 dark:border-purple-800 transition flex items-center shrink-0 cursor-pointer shadow-2xs"
+                title="Rà soát toàn bộ học viên và reset các khoản học phí không có phiếu thu tương ứng"
+              >
+                🔍 Rà Soát Học Phí
+              </button>
+
+              <button
+                onClick={() => {
+                  if (safeStudents.length > 0) {
+                    setSelectedStudentForReceipt(safeStudents[0]);
+                  } else {
+                    alert('Chưa có học viên nào trong hệ thống!');
+                  }
+                }}
+                className="px-5 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition flex items-center shrink-0 cursor-pointer"
+              >
+                <DollarSign className="w-4 h-4 mr-1.5" /> + Tạo Phiếu Thu / VietQR Mới
+              </button>
+            </div>
           </div>
 
           {/* SECTION 1: DANH SÁCH TOÀN BỘ PHIẾU THU HỌC PHÍ */}

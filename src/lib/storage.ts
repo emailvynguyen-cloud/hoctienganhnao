@@ -34,6 +34,7 @@ import { generatePublicHash } from './obfuscate';
 import { db } from './firebase';
 import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
 import { KAKAOTALK_SVG_AVATARS } from './kakaotalkAvatars';
+import { calculateStudentTuitionSummary } from './tuitionEngine';
 
 const STORAGE_KEYS = {
   STUDENTS: 'vy_students_v4',
@@ -478,8 +479,104 @@ export const StorageEngine = {
     }
   },
 
+  auditAndResetUnbackedTuitionData(): {
+    totalStudentsAudited: number;
+    unbackedTuitionDiscovered: number;
+    resetSuccessCount: number;
+    validReceiptsStudentsCount: number;
+    manualCheckCount: number;
+    backupKey: string;
+  } {
+    const rawStudents = getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS) || [];
+    const invoices = getItem<Invoice[]>(STORAGE_KEYS.INVOICES, INITIAL_INVOICES) || [];
+    const sessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS) || [];
+    const classes = getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES) || [];
+
+    // 1. Create Timestamped Backup in LocalStorage before mutating
+    const backupKey = `vy_students_v4_tuition_backup_${Date.now()}`;
+    try {
+      localStorage.setItem(backupKey, JSON.stringify(rawStudents));
+      console.log('[TUITION_AUDIT] Created backup at:', backupKey);
+    } catch (e) {
+      console.error('[TUITION_AUDIT] Failed to create backup in localStorage:', e);
+    }
+
+    let totalStudentsAudited = 0;
+    let unbackedTuitionDiscovered = 0;
+    let resetSuccessCount = 0;
+    let validReceiptsStudentsCount = 0;
+    let manualCheckCount = 0;
+    let hasChanges = false;
+
+    const updatedStudents = rawStudents.map((std) => {
+      if (!std || std.status === 'soft_deleted') return std;
+      totalStudentsAudited++;
+
+      // Check for valid paid/pending invoices matching this student
+      const studentValidInvoices = (invoices || []).filter((inv) => {
+        if (!inv || !inv.studentId || inv.studentId !== std.id) return false;
+        if (inv.status === 'cancelled') return false;
+        return inv.status === 'paid' || inv.status === 'pending' || !inv.status;
+      });
+
+      const paidInvoices = studentValidInvoices.filter((i) => i.status === 'paid' || !i.status);
+
+      if (paidInvoices.length === 0) {
+        // Student has NO valid paid receipts
+        const hadLegacyPaid = (std.totalPaidSessions || 0) > 0;
+        const summary = calculateStudentTuitionSummary(std, invoices, sessions, classes);
+
+        if (hadLegacyPaid || std.remainingSessions !== summary.remainingSessions || std.totalPaidSessions !== 0) {
+          unbackedTuitionDiscovered++;
+          resetSuccessCount++;
+          hasChanges = true;
+
+          return {
+            ...std,
+            totalPaidSessions: 0,
+            remainingSessions: summary.remainingSessions,
+          };
+        }
+      } else {
+        // Student HAS valid paid receipts
+        validReceiptsStudentsCount++;
+        const summary = calculateStudentTuitionSummary(std, invoices, sessions, classes);
+        if (
+          std.totalPaidSessions !== summary.totalPaidSessions ||
+          std.remainingSessions !== summary.remainingSessions
+        ) {
+          hasChanges = true;
+          return {
+            ...std,
+            totalPaidSessions: summary.totalPaidSessions,
+            remainingSessions: summary.remainingSessions,
+          };
+        }
+      }
+
+      return std;
+    });
+
+    if (hasChanges) {
+      setItem(STORAGE_KEYS.STUDENTS, updatedStudents);
+    }
+
+    return {
+      totalStudentsAudited,
+      unbackedTuitionDiscovered,
+      resetSuccessCount,
+      validReceiptsStudentsCount,
+      manualCheckCount,
+      backupKey,
+    };
+  },
+
   getStudents(): Student[] {
     const rawStudents = getItem<Student[]>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS) || [];
+    const invoices = getItem<Invoice[]>(STORAGE_KEYS.INVOICES, INITIAL_INVOICES) || [];
+    const sessions = getItem<Session[]>(STORAGE_KEYS.SESSIONS, INITIAL_SESSIONS) || [];
+    const classes = getItem<Class[]>(STORAGE_KEYS.CLASSES, INITIAL_CLASSES) || [];
+
     let modified = false;
     const existingCodes = rawStudents.map((s) => s && s.studentCode).filter(Boolean) as string[];
 
@@ -499,12 +596,20 @@ export const StorageEngine = {
         updated = true;
       }
 
+      // Check tuition normalization strictly from valid invoices
+      const summary = calculateStudentTuitionSummary(std, invoices, sessions, classes);
+      if (std.totalPaidSessions !== summary.totalPaidSessions || std.remainingSessions !== summary.remainingSessions) {
+        updated = true;
+      }
+
       if (updated) {
         modified = true;
         return {
           ...std,
           studentCode: code,
           studentCodeStatus: codeStatus,
+          totalPaidSessions: summary.totalPaidSessions,
+          remainingSessions: summary.remainingSessions,
         };
       }
       return std;
